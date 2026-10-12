@@ -44,6 +44,33 @@
     return GROUP_ORDER.map((g) => ({ name: g, items: buckets.get(g) })).filter((x) => x.items.length);
   });
 
+  // What each step (and stage) actually does — authored here, matching the pipeline's tick() calls.
+  const STEP_HELP = {
+    startup: "Python importing the pipeline + agent machinery before the run starts (pre-run overhead).",
+    preparing: "Validate the clip, load your profile, and set up the run.",
+    "sampling frames": "Pick the frames to analyze — motion-weighted, so the busy moments get more.",
+    "measuring motion": "Compute the objective metrics from the frames (energy, shift, region motion, ball/rally).",
+    "writing artifacts": "Render the contact sheet, motion map and metrics so the vision model can read them.",
+    "vision: overview": "Vision pass 1 — the model reads the contact sheet and proposes the moments worth a closer look.",
+    "vision: zoom": "Sample extra frames inside the moments the model flagged.",
+    "vision: detail": "Vision pass 2 — zoom in and return findings with timestamps + confidence.",
+    "vision: reviewing image": "Single still — one vision pass on the image (posture only).",
+    "agent writing report": "The text model turns the observations into the coaching report (its tool calls happen here).",
+    "agent: analyzing": "Agentic mode — the model drives the analysis and writes the report.",
+    "saving report": "Persist the report to disk (<stem>_report.json).",
+    verifying: "A second model pass that prunes any finding the evidence doesn't support.",
+    exporting: "Write the export files (Markdown / HTML / PDF).",
+    done: "Run complete.",
+  };
+  const GROUP_HELP = {
+    setup: "Before the pipeline: imports and setup.",
+    measure: "Stage 1 — clip → frames + measurements.",
+    observe: "Stage 2 — frames → observations (vision).",
+    coach: "Stage 3 — observations → coaching report.",
+    finalize: "Wrap-up: save run details and export the report.",
+    other: "Uncategorized steps.",
+  };
+
   let view = $state("Stages");
   const TABS = ["Stages", "Calls & tools"];
 </script>
@@ -92,11 +119,13 @@
     {#if timeline.length}
       {#each grouped as g}
         <div class="mt-3 first:mt-0">
-          <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{g.name}</div>
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-accent" title={GROUP_HELP[g.name] || ""}>
+            {g.name}
+          </div>
           <ol class="mt-1 space-y-1.5">
             {#each g.items as t}
               {@const secs = Number(t.seconds) || 0}
-              <li class="flex items-center gap-3 text-sm">
+              <li class="flex items-center gap-3 text-sm" title={STEP_HELP[t.stage] || ""}>
                 <span class="w-44 shrink-0 truncate pl-2 {t.stage === 'startup' ? 'text-muted' : ''}">{stageLabel(t.stage)}</span>
                 <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
                   <div
@@ -116,6 +145,25 @@
         under the <b>stage</b> they run in — the pipeline's three stages are
         <b>measure → observe → coach</b> (plus setup before and finalize after).
       </p>
+      <details class="mt-3 text-xs">
+        <summary class="cursor-pointer text-muted">What the stages &amp; steps mean</summary>
+        <ul class="mt-2 space-y-1">
+          {#each GROUP_ORDER as g}
+            {#if GROUP_HELP[g] && grouped.some((x) => x.name === g)}
+              <li><span class="font-semibold text-app">{g}</span> — <span class="text-muted">{GROUP_HELP[g]}</span></li>
+            {/if}
+          {/each}
+        </ul>
+        <ul class="mt-2 space-y-1 border-t-2 border-line pt-2">
+          {#each grouped as g}
+            {#each g.items as t}
+              {#if STEP_HELP[t.stage]}
+                <li><span class="font-mono text-app">{stageLabel(t.stage)}</span> — <span class="text-muted">{STEP_HELP[t.stage]}</span></li>
+              {/if}
+            {/each}
+          {/each}
+        </ul>
+      </details>
     {:else}
       <p class="text-sm text-muted">No stage timings saved.</p>
     {/if}
