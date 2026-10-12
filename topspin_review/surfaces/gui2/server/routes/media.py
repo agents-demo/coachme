@@ -34,7 +34,9 @@ def artifact(stem: str, kind: str) -> FileResponse:
 
 @router.get("/clip/{stem}/{key}")
 def clip(stem: str, key: str) -> FileResponse:
-    if any(ch in key for ch in ("/", "\\", ".")):
+    # Clip keys are timestamps like "1.1", so dots are allowed; the key is looked up in the
+    # report's clips map (not used as a path), so only separator/empty keys need rejecting.
+    if not key or "/" in key or "\\" in key or key in (".", ".."):
         raise HTTPException(status_code=400, detail="invalid clip key")
     path = read.clip_path(stem, key)
     if path is None:
