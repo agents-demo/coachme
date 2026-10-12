@@ -235,6 +235,24 @@ def rally_segments(activity: list[dict], timestamps: list[float]) -> list[dict]:
     return [seg for seg in segments if seg["end"] - seg["start"] >= 0.4]
 
 
+def phase_segments(
+    activity: list[dict], timestamps: list[float], contact_times: list[float], bounce_times: list[float]
+) -> list[dict]:
+    """Active spans labelled by what happened inside them (rally vs. movement)."""
+    out: list[dict] = []
+    for r in rally_segments(activity, timestamps):
+        hits = [round(t, 2) for t in contact_times if r["start"] <= t <= r["end"]]
+        bounces = [round(t, 2) for t in bounce_times if r["start"] <= t <= r["end"]]
+        if hits:
+            label = f"Rally · {len(hits)} contact(s)"
+        elif bounces:
+            label = f"Bounce play · {len(bounces)}"
+        else:
+            label = "Movement"
+        out.append({"start": r["start"], "end": r["end"], "label": label, "contacts": hits, "bounces": bounces})
+    return out
+
+
 def detect(frames: list[Image.Image], timestamps: list[float], activity: list[dict]) -> dict:
     """Aggregate heuristic ball/track/contact/rally information."""
     tracks = track(frames, timestamps)
@@ -245,6 +263,7 @@ def detect(frames: list[Image.Image], timestamps: list[float], activity: list[di
     visible = len({p["t"] for p in (main["points"] if main else [])})
     speeds = _speed_profile(main["points"]) if main and len(main["points"]) > 1 else []
     traj = trajectory3d(main) if main else []
+    segments = phase_segments(activity, timestamps, contact_times, bounce_times)
 
     stats = {
         "visible_frames": visible,
@@ -280,6 +299,7 @@ def detect(frames: list[Image.Image], timestamps: list[float], activity: list[di
         "contacts": contact_times,
         "bounces": bounce_times,
         "rallies": rallies,
+        "segments": segments,
         "stats": stats,
         "trajectory3d": traj,
     }

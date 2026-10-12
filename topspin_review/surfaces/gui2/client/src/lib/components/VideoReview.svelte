@@ -3,6 +3,7 @@
   import { issueGroups, movementSeries, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
   import MotionChart from "./MotionChart.svelte";
   import Timeline from "./Timeline.svelte";
+  import Segments from "./Segments.svelte";
 
   let { report } = $props();
 
@@ -297,6 +298,12 @@
         <Timeline {markers} {duration} playhead={currentTime} onseek={seek} />        <p class="mt-1 text-xs text-muted">
           Issue timeline — each mark is a flagged moment (red = high, amber = medium, grey = low confidence). Click to jump.
         </p>
+      </div>
+    {/if}
+
+    {#if !isPhoto && report.has_source}
+      <div class="mt-3">
+        <Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} />
       </div>
     {/if}
 
