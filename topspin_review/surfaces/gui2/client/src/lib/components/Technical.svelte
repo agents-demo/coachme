@@ -31,10 +31,10 @@
     "agent: analyzing": "Report (coach)",
     "saving report": "Report (coach)",
     verifying: "Report (coach)",
-    exporting: "Export",
-    done: "Export",
+    exporting: "Finalize",
+    done: "Finalize",
   };
-  const GROUP_ORDER = ["Setup", "Measure", "Vision (observe)", "Report (coach)", "Export", "Other"];
+  const GROUP_ORDER = ["Setup", "Measure", "Vision (observe)", "Report (coach)", "Finalize", "Other"];
   const grouped = $derived.by(() => {
     const buckets = new Map(GROUP_ORDER.map((g) => [g, []]));
     for (const t of timeline) buckets.get(STEP_GROUP[t.stage] || "Other").push(t);
@@ -77,7 +77,7 @@
     "agent: analyzing": "Agentic mode — the model drives the analysis.",
     "saving report": "Save the report file.",
     verifying: "A second model pass that prunes unsupported findings.",
-    exporting: "Write the export files (Markdown / HTML / PDF).",
+    exporting: "Wrap-up: collect token usage, save the run's details, then write the export files (Markdown / HTML / PDF).",
     done: "Run complete.",
   };
 
