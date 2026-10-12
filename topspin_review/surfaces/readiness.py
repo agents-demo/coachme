@@ -24,8 +24,25 @@ def checks() -> list[dict]:
     """The readiness checks, in display order."""
     model_ok = _model_ok()
     vision_name = os.getenv("VISION_MODEL_NAME") or "deepseek-v4-flash-vision-exp"
-    pose_ok = importlib.util.find_spec("mediapipe") is not None
     pdf_ok = importlib.util.find_spec("reportlab") is not None
+    # Pose needs mediapipe's legacy Pose solution, which newer mediapipe builds dropped —
+    # so check that it actually works, not just that the package is installed.
+    mp_installed = importlib.util.find_spec("mediapipe") is not None
+    pose_ok = False
+    if mp_installed:
+        try:
+            from topspin_review.core.video import pose as pose_mod
+
+            pose_ok = pose_mod.available()
+        except Exception:
+            pose_ok = False
+    pose_detail = (
+        "mediapipe pose"
+        if pose_ok
+        else "mediapipe installed but its Pose API is unavailable (pose overlay off)"
+        if mp_installed
+        else "pip install -r requirements.txt (mediapipe)"
+    )
     clip = runtime.DATA_DIR / "sample.mp4"
     return [
         {
@@ -41,7 +58,7 @@ def checks() -> list[dict]:
         {
             "name": "pose",
             "ok": pose_ok,
-            "detail": "mediapipe" if pose_ok else "pip install -r requirements.txt (mediapipe)",
+            "detail": pose_detail,
         },
         {
             "name": "pdf",
