@@ -315,13 +315,30 @@ def analyze(
     region_track = regions(frames, mask)
     pose_seq = pose_estimate(frames) if with_pose else None
     energies = [s["energy"] for s in steps]
+
+    post = posture(track)
+    mech = mechanics(region_track)
+
+    # Calibration: express ranges relative to the subject's own size, so numbers are
+    # comparable across camera distance/zoom (a farther player is smaller, not slower).
+    sub_w = float(post.get("box_width_mean") or 0.0)
+    sub_h = float(post.get("box_height_mean") or 0.0)
+    calibrated: dict = {}
+    if sub_w > 0:
+        calibrated["lower_lateral_range_bw"] = round(mech["lower_lateral_range"] / sub_w, 3)
+        calibrated["upper_lateral_range_bw"] = round(mech["upper_lateral_range"] / sub_w, 3)
+    if sub_h > 0:
+        calibrated["crouch_change_bh"] = round(mech["crouch_box_range"] / sub_h, 3)
+
     return {
         "activity": steps,
         "track": track,
-        "posture": posture(track),
-        "mechanics": mechanics(region_track),
+        "posture": post,
+        "mechanics": mech,
         "pose": pose_seq,
         "pose_summary": pose.summarize(pose_seq),
+        "calibration": {"subject_width": sub_w, "subject_height": sub_h, "basis": "subject_box"},
+        "calibrated": calibrated,
         "subject_coverage": round(float(mask.mean()), 3) if mask is not None else None,
         "ball": ball or {},
         "peak_motion_time": max(steps, key=lambda s: s["energy"])["t"] if steps else None,
@@ -371,4 +388,8 @@ def text(metrics: dict) -> str:
             f"- footwork (pose estimate): {fw.get('steps')} lateral step(s), "
             f"{fw.get('hops')} hop(s)/split-step(s), base travel {fw.get('base_travel')}"
         )
+    cal = metrics.get("calibrated") or {}
+    if cal:
+        rendered = ", ".join(f"{k}={v}" for k, v in cal.items())
+        lines.append(f"- calibrated (body-relative, distance-independent): {rendered}")
     return "\n".join(lines)
