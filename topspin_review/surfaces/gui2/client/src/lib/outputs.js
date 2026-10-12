@@ -61,6 +61,24 @@ export function outputs(report) {
   }
   groups.push({ id: "clip", group: "Your clip", items: clipItems });
 
+  // --- Moments ----------------------------------------------------------------
+  if ((report?.issues || []).some((i) => (i.evidence_times || []).length)) {
+    groups.push({
+      id: "moments",
+      group: "Moments",
+      items: [
+        {
+          id: "moments",
+          label: "Moments to review",
+          how: "The exact seconds the coach flagged, grouped by issue. Click one to play just that moment.",
+          method: "Built from the report's issues: each issue's evidence timestamps (with its confidence) become a clickable moment; clicking opens a modal player seeked to that second.",
+          detail: "surfaces/gui2 client · Moments.svelte (from report issues)",
+          local: true,
+        },
+      ],
+    });
+  }
+
   // --- Your movement ----------------------------------------------------------
   const movement = [
     {

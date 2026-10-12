@@ -7,6 +7,7 @@
   import PoseChart from "$lib/components/PoseChart.svelte";
   import Pose3D from "$lib/components/Pose3D.svelte";
   import Ball3D from "$lib/components/Ball3D.svelte";
+  import Moments from "$lib/components/Moments.svelte";
   import Provenance from "$lib/components/Provenance.svelte";
   import { outputs } from "$lib/outputs";
   import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
@@ -210,6 +211,8 @@
               <div class="mt-3">
                 {#if it.id === "video"}
                   <VideoReview {report} />
+                {:else if it.id === "moments"}
+                  <Moments {report} />
                 {:else if it.id === "pose_angles"}
                   <PoseChart {report} />
                 {:else if it.id === "pose3d"}

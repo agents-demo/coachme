@@ -1,6 +1,6 @@
 <script>
   import { source, saveAnnotations, trimUrl } from "$lib/api";
-  import { issueGroups, movementSeries, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
+  import { issueGroups, movementSeries, fmtTime } from "$lib/format";
   import MotionChart from "./MotionChart.svelte";
   import Timeline from "./Timeline.svelte";
   import Segments from "./Segments.svelte";
@@ -16,20 +16,6 @@
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report.source || ""));
   const duration = $derived(Math.max(0.001, ...(report.frame_times || [1])));
   const markers = $derived(groups.flatMap((g) => g.times.map((t) => ({ t, confidence: g.confidence }))));
-
-  const activeGroup = $derived.by(() => {
-    let best = -1;
-    let bestT = -Infinity;
-    groups.forEach((g, i) =>
-      g.times.forEach((t) => {
-        if (t <= currentTime + 0.8 && t > bestT) {
-          bestT = t;
-          best = i;
-        }
-      }),
-    );
-    return best;
-  });
 
   function seek(t) {
     if (video) {
@@ -196,7 +182,7 @@
   {/if}
 {/snippet}
 
-<div class="grid gap-6 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]">
+<div>
   <div>
     {#if report.has_source}
       {#if isPhoto}
@@ -321,45 +307,6 @@
           Movement over time — a spike is a step or a swing. Click the chart to jump the video.
         </p>
       </div>
-    {/if}
-  </div>
-
-  <div>
-    <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">
-      Moments to review {#if groups.length}<span class="text-muted">· {groups.length}</span>{/if}
-    </h3>
-    {#if !groups.length}
-      <p class="mt-2 text-sm text-muted">No timestamped issues.</p>
-    {:else}
-      <ol class="mt-2 space-y-2">
-        {#each groups as g, i}
-          <li
-            class="rounded-xl border-2 p-3 transition"
-            class:border-accent2={i === activeGroup}
-            class:bg-surface={i === activeGroup}
-            class:border-line={i !== activeGroup}
-          >
-            <div class="flex items-start gap-2">
-              <span class="text-sm leading-snug">{g.text}</span>
-              {#if g.confidence}
-                <span class="ml-auto shrink-0 text-xs {CONF_TONE[g.confidence] || "text-muted"}" title={CONF_HELP}>
-                  {g.confidence} confidence
-                </span>
-              {/if}
-            </div>
-            {#if g.times.length}
-              <div class="mt-2 flex flex-wrap gap-1.5">
-                {#each g.times as t}
-                  <button
-                    onclick={() => seek(t)}
-                    class="rounded-full border-2 border-line px-2.5 py-0.5 font-mono text-xs text-accent2 transition hover:border-accent2"
-                  >▶ {fmtTime(t)}</button>
-                {/each}
-              </div>
-            {/if}
-          </li>
-        {/each}
-      </ol>
     {/if}
   </div>
 </div>
