@@ -206,7 +206,8 @@
           {#each activeGroup.items as it (it.id)}
             <section>
               <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
-              <div class="mt-2">
+              <Provenance item={it} />
+              <div class="mt-3">
                 {#if it.id === "video"}
                   <VideoReview {report} />
                 {:else if it.id === "pose_angles"}
@@ -221,7 +222,6 @@
                   </figure>
                 {/if}
               </div>
-              <Provenance item={it} />
             </section>
           {/each}
         </div>

@@ -6,7 +6,7 @@
   let open = $state(false);
 </script>
 
-<p class="mt-2 text-xs text-muted">
+<p class="mt-1 text-xs text-muted">
   {item.how}
   {#if !item.local}
     <span class="ml-1 inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent2">✨ AI model</span>
