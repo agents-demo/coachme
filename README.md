@@ -12,6 +12,7 @@ Web UI / CLI.
 - **Run a demo step by step:** [docs/RUN_DEMO.md](docs/RUN_DEMO.md).
 - **Full guide:** [docs/USAGE.md](docs/USAGE.md) — setup, surfaces, workflow, API, scripts, settings, troubleshooting.
 - **Design:** [docs/architecture.md](docs/architecture.md).
+- **Roadmap:** [docs/ROADMAP.md](docs/ROADMAP.md) — competitor feature plan for later implementation.
 
 The rest of this file covers what it does, the architecture, and the knobs.
 
