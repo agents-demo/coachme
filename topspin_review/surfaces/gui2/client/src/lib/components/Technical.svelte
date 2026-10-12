@@ -18,6 +18,9 @@
   function stageLabel(stage) {
     return stage === "startup" ? "startup (imports & setup)" : stage;
   }
+
+  let view = $state("Stages");
+  const TABS = ["Stages", "Calls & tools"];
 </script>
 
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -46,87 +49,96 @@
   reply. <b>cached</b> is the discounted subset the provider serves from its prompt cache.
 </p>
 
-{#if models.text || models.vision}
-  <p class="mt-2 text-xs text-muted">
-    Text: {models.text || "?"} · Vision: {models.vision || "?"} · {models.provider || "?"} ({models.api_base || ""})
-  </p>
-{/if}
+<div class="mt-5 flex gap-5">
+  {#each TABS as t}
+    <button
+      onclick={() => (view = t)}
+      class="whitespace-nowrap border-b-2 pb-1 text-sm font-semibold transition"
+      class:border-accent={view === t}
+      class:text-app={view === t}
+      class:border-transparent={view !== t}
+      class:text-muted={view !== t}
+    >{t}</button>
+  {/each}
+</div>
 
-{#if timeline.length}
-  <h3 class="mt-5 font-display text-sm font-bold uppercase tracking-wide text-muted">
-    Stages <span class="font-normal normal-case tracking-normal">· time taken</span>
-  </h3>
-  <ol class="mt-2 space-y-1.5">
-    {#each timeline as t}
-      {@const secs = Number(t.seconds) || 0}
-      <li class="flex items-center gap-3 text-sm">
-        <span class="w-44 shrink-0 truncate {t.stage === 'startup' ? 'text-muted' : ''}">{stageLabel(t.stage)}</span>
-        <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
-          <div
-            class="h-full rounded-full {t.stage === 'startup' ? 'bg-line' : 'bg-accent'}"
-            style={`width:${totalSeconds ? Math.max(1.5, (secs / totalSeconds) * 100) : 0}%`}
-          ></div>
-        </div>
-        <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(2)}s</span>
-      </li>
-    {/each}
-  </ol>
-  <p class="mt-3 text-xs text-muted">
-    Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(2)}s</span>
-    &nbsp;·&nbsp;bar length and numbers are <b>durations</b> (how long each step took), not timestamps.
-  </p>
-{/if}
-
-{#if calls.length || tools.length}
-  <h3 class="mt-5 font-display text-sm font-bold uppercase tracking-wide text-muted">Model &amp; tool calls</h3>
-  <div class="mt-2 space-y-2">
-    {#each calls as c}
-      <details class="card p-3 text-sm">
-        <summary class="cursor-pointer font-semibold">
-          {#if c.probe}
-            🔍 image-support probe
-          {:else}
-            ↳ Model call {c.model ? `· ${c.model}` : ""} {c.label ? `· ${c.label}` : ""}
-          {/if}
-          <span class="ml-2 text-xs text-muted">
-            {c.prompt_tokens ?? 0} in / {c.completion_tokens ?? 0} out{#if c.cached_tokens} · {c.cached_tokens} cached{/if}{#if c.seconds} · {c.seconds}s{/if}
-          </span>
-        </summary>
-        {#if c.probe}
-          <p class="mt-2 text-xs text-muted">
-            A one-word self-check that the model can read images
-            (“What color is this image?” → “{c.output}”). Not part of the analysis.
-          </p>
-        {/if}
-        <div class="mt-2 space-y-2">
-          {#each c.input || [] as m}
-            <div>
-              <div class="text-xs uppercase text-muted">{m.role}</div>
-              <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
+<div class="mt-3">
+  {#if view === "Stages"}
+    {#if timeline.length}
+      <ol class="space-y-1.5">
+        {#each timeline as t}
+          {@const secs = Number(t.seconds) || 0}
+          <li class="flex items-center gap-3 text-sm">
+            <span class="w-44 shrink-0 truncate {t.stage === 'startup' ? 'text-muted' : ''}">{stageLabel(t.stage)}</span>
+            <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
+              <div
+                class="h-full rounded-full {t.stage === 'startup' ? 'bg-line' : 'bg-accent'}"
+                style={`width:${totalSeconds ? Math.max(1.5, (secs / totalSeconds) * 100) : 0}%`}
+              ></div>
             </div>
-          {/each}
-          {#if c.output}
-            <div class="text-xs uppercase text-muted">output</div>
-            <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{c.output}</pre>
-          {/if}
-        </div>
-      </details>
-    {/each}
-    {#each tools as t}
-      <details class="card p-3 text-sm">
-        <summary class="cursor-pointer font-semibold">
-          🔧 Tool · {t.name || "tool"}{#if t.seconds}<span class="ml-2 text-xs text-muted">{t.seconds}s</span>{/if}
-        </summary>
-        <div class="mt-2 text-xs uppercase text-muted">arguments</div>
-        <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{pretty(t.arguments) || "{}"}</pre>
-        {#if t.result}
-          <div class="mt-2 text-xs uppercase text-muted">result</div>
-          <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{t.result}</pre>
-        {/if}
-        {#if t.error}<p class="mt-2 text-xs text-bad">{t.error}</p>{/if}
-      </details>
-    {/each}
-  </div>
-{:else}
-  <p class="mt-4 text-sm text-muted">No call detail saved (SAVE_CALL_IO may be off).</p>
-{/if}
+            <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(2)}s</span>
+          </li>
+        {/each}
+      </ol>
+      <p class="mt-3 text-xs text-muted">
+        Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(2)}s</span>
+        &nbsp;·&nbsp;bar length and numbers are <b>durations</b> (how long each step took), not timestamps.
+      </p>
+    {:else}
+      <p class="text-sm text-muted">No stage timings saved.</p>
+    {/if}
+  {:else}
+    {#if calls.length || tools.length}
+      <div class="space-y-2">
+        {#each calls as c}
+          <details class="card p-3 text-sm">
+            <summary class="cursor-pointer font-semibold">
+              {#if c.probe}
+                🔍 image-support probe
+              {:else}
+                ↳ Model call {c.model ? `· ${c.model}` : ""} {c.label ? `· ${c.label}` : ""}
+              {/if}
+              <span class="ml-2 text-xs text-muted">
+                {c.prompt_tokens ?? 0} in / {c.completion_tokens ?? 0} out{#if c.cached_tokens} · {c.cached_tokens} cached{/if}{#if c.seconds} · {Number(c.seconds).toFixed(2)}s{/if}
+              </span>
+            </summary>
+            {#if c.probe}
+              <p class="mt-2 text-xs text-muted">
+                A one-word self-check that the model can read images
+                (“What color is this image?” → “{c.output}”). Not part of the analysis.
+              </p>
+            {/if}
+            <div class="mt-2 space-y-2">
+              {#each c.input || [] as m}
+                <div>
+                  <div class="text-xs uppercase text-muted">{m.role}</div>
+                  <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
+                </div>
+              {/each}
+              {#if c.output}
+                <div class="text-xs uppercase text-muted">output</div>
+                <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{c.output}</pre>
+              {/if}
+            </div>
+          </details>
+        {/each}
+        {#each tools as t}
+          <details class="card p-3 text-sm">
+            <summary class="cursor-pointer font-semibold">
+              🔧 Tool · {t.name || "tool"}{#if t.seconds}<span class="ml-2 text-xs text-muted">{Number(t.seconds).toFixed(2)}s</span>{/if}
+            </summary>
+            <div class="mt-2 text-xs uppercase text-muted">arguments</div>
+            <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{pretty(t.arguments) || "{}"}</pre>
+            {#if t.result}
+              <div class="mt-2 text-xs uppercase text-muted">result</div>
+              <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{t.result}</pre>
+            {/if}
+            {#if t.error}<p class="mt-2 text-xs text-bad">{t.error}</p>{/if}
+          </details>
+        {/each}
+      </div>
+    {:else}
+      <p class="text-sm text-muted">No call detail saved (SAVE_CALL_IO may be off).</p>
+    {/if}
+  {/if}
+</div>
