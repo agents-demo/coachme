@@ -31,6 +31,8 @@ export const artifact = (stem, kind) => `/artifact/${encodeURIComponent(stem)}/$
 export const clip = (stem, key) => `/clip/${encodeURIComponent(stem)}/${encodeURIComponent(key)}`;
 export const callImage = (stem, name) => `/callmedia/${encodeURIComponent(stem)}/${encodeURIComponent(name)}`;
 export const exportUrl = (stem, fmt) => `/export/${encodeURIComponent(stem)}/${fmt}`;
+export const reelUrl = (stem) => `/reel/${encodeURIComponent(stem)}`;
+export const cardUrl = (stem) => `/cards/${encodeURIComponent(stem)}`;
 // A thumbnail for a session card: the full-frame pose image (real frame + skeleton) if present,
 // else the motion map, else the frames contact sheet, else the source photo.
 export const thumb = (report) =>

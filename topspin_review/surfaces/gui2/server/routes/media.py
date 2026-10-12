@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
-from topspin_review.integrations.storage import runtime
+from topspin_review.integrations.storage import runtime, store
 from topspin_review.surfaces.gui2.server import read
 
 router = APIRouter()
@@ -54,3 +54,34 @@ def callmedia(stem: str, name: str) -> FileResponse:
     if not path.exists():
         raise HTTPException(status_code=404, detail="not found")
     return FileResponse(path, headers=_NO_STORE)
+
+
+@router.get("/reel/{stem}")
+def reel(stem: str) -> FileResponse:
+    """Download a highlight reel: the run's key-moment clips stitched into one video."""
+    report = store.find_report(stem)
+    clips = (report or {}).get("clips") or {}
+    if not clips:
+        raise HTTPException(status_code=404, detail="no clips to stitch")
+    paths = [clips[k] for k in sorted(clips, key=lambda s: float(s))]
+    out = runtime.ARTIFACTS_DIR / f"{stem}_reel.mp4"
+    if not out.exists():
+        from topspin_review.integrations import media
+
+        if not media.make_reel(paths, out):
+            raise HTTPException(status_code=500, detail="could not build the reel")
+    return FileResponse(out, media_type="video/mp4", headers=_NO_STORE)
+
+
+@router.get("/cards/{stem}")
+def share_card(stem: str) -> Response:
+    """A branded share-card PNG for a run."""
+    report = store.find_report(stem)
+    if not report:
+        raise HTTPException(status_code=404, detail="unknown report")
+    from topspin_review.integrations import cards
+
+    png = cards.share_card(report)
+    if not png:
+        raise HTTPException(status_code=500, detail="could not render the card")
+    return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-store"})

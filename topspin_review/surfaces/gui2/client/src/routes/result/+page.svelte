@@ -1,6 +1,6 @@
 <script>
   import { page } from "$app/stores";
-  import { getReport, ask, artifact, exportUrl } from "$lib/api";
+  import { getReport, ask, artifact, exportUrl, reelUrl, cardUrl } from "$lib/api";
   import VideoReview from "$lib/components/VideoReview.svelte";
   import Technical from "$lib/components/Technical.svelte";
   import ReadAloud from "$lib/components/ReadAloud.svelte";
@@ -307,9 +307,13 @@
       {/if}
 
       <h4 class="mt-4 text-sm font-semibold text-app">Download</h4>
-      <div class="mt-1 flex gap-3 text-sm">
+      <div class="mt-1 flex flex-wrap gap-3 text-sm">
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "md")} download>Download Markdown</a>
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "html")} target="_blank" rel="noreferrer">Open HTML</a>
+        {#if report.clips && Object.keys(report.clips).length}
+          <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={reelUrl(report.stem)} download>Highlight reel (mp4)</a>
+        {/if}
+        <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={cardUrl(report.stem)} download>Share card (PNG)</a>
       </div>
     {:else if tab === "Diagnostics"}
       <Technical {report} />

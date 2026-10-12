@@ -61,3 +61,39 @@ def make_clips(
         if make_clip(video, float(t) - before, float(t) + after, out):
             clips[str(round(float(t), 1))] = str(out)
     return clips
+
+
+def make_reel(clip_paths: list[str], out_path: Path, width: int = 1280, height: int = 720) -> bool:
+    """Concatenate clips into one highlight reel, re-encoded to a uniform size."""
+    import os
+    import subprocess
+    import tempfile
+
+    paths = [p for p in clip_paths if p and Path(p).exists()]
+    if not paths:
+        return False
+    list_file = None
+    try:
+        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as fh:
+            list_file = fh.name
+            for p in paths:
+                fh.write(f"file '{Path(p).as_posix()}'\n")
+        subprocess.run(
+            [
+                _ffmpeg(), "-y", "-f", "concat", "-safe", "0", "-i", list_file,
+                "-vf",
+                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1",
+                "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-an", str(out_path),
+            ],
+            capture_output=True,
+        )
+        return out_path.exists() and out_path.stat().st_size > 0
+    except Exception:
+        return False
+    finally:
+        if list_file:
+            try:
+                os.unlink(list_file)
+            except Exception:
+                pass
