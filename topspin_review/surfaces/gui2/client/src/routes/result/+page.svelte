@@ -3,7 +3,7 @@
   import { getReport, ask, artifact, exportUrl } from "$lib/api";
   import VideoReview from "$lib/components/VideoReview.svelte";
   import Technical from "$lib/components/Technical.svelte";
-  import { scoreTone, issueText, fmtTime } from "$lib/format";
+  import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
 
   const stem = $derived($page.url.searchParams.get("stem") || "");
   let report = $state(null);
@@ -112,7 +112,12 @@
               {#if i.evidence_times?.length}
                 <span class="ml-1 font-mono text-xs text-accent2">{i.evidence_times.map((t) => fmtTime(t)).join(", ")}</span>
               {/if}
-              {#if i.confidence}<span class="ml-1 text-xs text-muted">({i.confidence})</span>{/if}
+              {#if i.confidence}
+                <span
+                  class="ml-2 whitespace-nowrap rounded-full border-2 border-line px-2 py-0.5 text-xs {CONF_TONE[i.confidence] || 'text-muted'}"
+                  title={CONF_HELP}
+                >{i.confidence} confidence</span>
+              {/if}
             </li>
           {/each}
         </ul>

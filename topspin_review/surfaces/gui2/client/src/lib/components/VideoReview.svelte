@@ -1,6 +1,6 @@
 <script>
   import { source } from "$lib/api";
-  import { issueGroups, movementSeries, fmtTime } from "$lib/format";
+  import { issueGroups, movementSeries, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
   import MotionChart from "./MotionChart.svelte";
 
   let { report } = $props();
@@ -11,8 +11,6 @@
   const groups = $derived(issueGroups(report));
   const series = $derived(movementSeries(report));
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report.source || ""));
-
-  const CONF_TONE = { high: "text-bad", medium: "text-warn", low: "text-muted" };
 
   // The issue whose moment is the most recent at/before the playhead.
   const activeGroup = $derived.by(() => {
@@ -84,7 +82,9 @@
             <div class="flex items-start gap-2">
               <span class="text-sm leading-snug">{g.text}</span>
               {#if g.confidence}
-                <span class="ml-auto shrink-0 text-xs {CONF_TONE[g.confidence] || "text-muted"}">{g.confidence}</span>
+                <span class="ml-auto shrink-0 text-xs {CONF_TONE[g.confidence] || "text-muted"}" title={CONF_HELP}>
+                  {g.confidence} confidence
+                </span>
               {/if}
             </div>
             {#if g.times.length}

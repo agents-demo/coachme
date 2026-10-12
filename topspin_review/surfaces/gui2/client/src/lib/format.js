@@ -18,6 +18,12 @@ export function scoreTone(score) {
   return "text-bad";
 }
 
+// How sure the model is that a finding is real (from the sampled frames + measured motion).
+export const CONF_TONE = { high: "text-bad", medium: "text-warn", low: "text-muted" };
+export const CONF_HELP =
+  "Confidence: how sure the model is that this finding is real, from the frames it read and the measured motion. " +
+  "high = clear evidence; medium = likely; low = uncertain (treat as a hint, not a fact).";
+
 export function issueText(issue) {
   if (typeof issue === "string") return issue;
   return issue?.issue || "";
