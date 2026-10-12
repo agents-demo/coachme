@@ -76,6 +76,12 @@
     const name = kind === "vision" ? models.vision : models.text;
     return `Uses the ${kind} model${name ? ` (${name})` : ""}.`;
   }
+  // Bookends are shown as a single stage row (their sub-steps are trivial bookkeeping).
+  const COLLAPSED = new Set(["Setup", "Finalize"]);
+  const GROUP_TIP = {
+    Setup: "Load the pipeline and prepare the clip (before the stages).",
+    Finalize: "Collect usage, save the run's details, and write the export files.",
+  };
   // Hover tooltip text for each step.
   const STEP_SHORT = {
     startup: "Load the pipeline code (imports) — pre-run overhead.",
@@ -142,35 +148,49 @@
   {#if view === "Stages"}
     {#if timeline.length}
       {#each grouped as g}
-        <div class="mt-3 first:mt-0">
-          <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{g.name}</div>
-          <ol class="mt-1 space-y-1.5">
-            {#each g.items as t}
-              {@const secs = Number(t.seconds) || 0}
-              <li class="flex items-center gap-3 text-sm">
-                <div class="flex w-52 shrink-0 items-center gap-1.5 pl-2">
-                  <span
-                    class="truncate {t.stage === 'startup' ? 'text-muted' : ''}{STEP_SHORT[t.stage] ? ' cursor-help' : ''}"
-                    title={STEP_SHORT[t.stage] || ""}
-                  >{shortLabel(t.stage)}</span>
-                  {#if MODEL_STEP[t.stage]}
+        {@const gsecs = g.items.reduce((a, t) => a + (Number(t.seconds) || 0), 0)}
+        {#if COLLAPSED.has(g.name)}
+          <div class="mt-3 first:mt-0 flex items-center gap-3 text-sm">
+            <span class="w-52 shrink-0 pl-2 font-semibold" title={GROUP_TIP[g.name] || ""}>{g.name}</span>
+            <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
+              <div
+                class="h-full rounded-full bg-line"
+                style={`width:${totalSeconds ? Math.max(1.5, (gsecs / totalSeconds) * 100) : 0}%`}
+              ></div>
+            </div>
+            <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{gsecs.toFixed(2)}s</span>
+          </div>
+        {:else}
+          <div class="mt-3 first:mt-0">
+            <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{g.name}</div>
+            <ol class="mt-1 space-y-1.5">
+              {#each g.items as t}
+                {@const secs = Number(t.seconds) || 0}
+                <li class="flex items-center gap-3 text-sm">
+                  <div class="flex w-52 shrink-0 items-center gap-1.5 pl-2">
                     <span
-                      class="shrink-0 rounded border border-line px-1 text-[9px] font-semibold uppercase {MODEL_STEP[t.stage] === 'vision' ? 'text-accent2' : 'text-accent'}"
-                      title={modelName(t.stage)}
-                    >{MODEL_STEP[t.stage]}</span>
-                  {/if}
-                </div>
-                <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
-                  <div
-                    class="h-full rounded-full {t.stage === 'startup' ? 'bg-line' : 'bg-accent'}"
-                    style={`width:${totalSeconds ? Math.max(1.5, (secs / totalSeconds) * 100) : 0}%`}
-                  ></div>
-                </div>
-                <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(2)}s</span>
-              </li>
-            {/each}
-          </ol>
-        </div>
+                      class="truncate {t.stage === 'startup' ? 'text-muted' : ''}{STEP_SHORT[t.stage] ? ' cursor-help' : ''}"
+                      title={STEP_SHORT[t.stage] || ""}
+                    >{shortLabel(t.stage)}</span>
+                    {#if MODEL_STEP[t.stage]}
+                      <span
+                        class="shrink-0 rounded border border-line px-1 text-[9px] font-semibold uppercase {MODEL_STEP[t.stage] === 'vision' ? 'text-accent2' : 'text-accent'}"
+                        title={modelName(t.stage)}
+                      >{MODEL_STEP[t.stage]}</span>
+                    {/if}
+                  </div>
+                  <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
+                    <div
+                      class="h-full rounded-full {t.stage === 'startup' ? 'bg-line' : 'bg-accent'}"
+                      style={`width:${totalSeconds ? Math.max(1.5, (secs / totalSeconds) * 100) : 0}%`}
+                    ></div>
+                  </div>
+                  <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(2)}s</span>
+                </li>
+              {/each}
+            </ol>
+          </div>
+        {/if}
       {/each}
       <p class="mt-3 text-xs text-muted">
         Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(2)}s</span>
