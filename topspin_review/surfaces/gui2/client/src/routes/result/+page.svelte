@@ -4,6 +4,7 @@
   import VideoReview from "$lib/components/VideoReview.svelte";
   import Technical from "$lib/components/Technical.svelte";
   import ReadAloud from "$lib/components/ReadAloud.svelte";
+  import PoseChart from "$lib/components/PoseChart.svelte";
   import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
 
   const stem = $derived($page.url.searchParams.get("stem") || "");
@@ -56,7 +57,8 @@
     }
     return out;
   });
-  const subTabs = $derived(["Video", ...views.map((v) => v.id)]);
+  const hasPoseAngles = $derived((report?.metrics?.pose || []).some((p) => p && p.l_knee != null));
+  const subTabs = $derived(["Video", ...views.map((v) => v.id), ...(hasPoseAngles ? ["Pose angles"] : [])]);
   const hasImages = $derived(subTabs.length > 1);
 
   const issues = $derived(report?.issues || []);
@@ -182,6 +184,8 @@
 
       {#if watchView === "Video" || !hasImages}
         <VideoReview {report} />
+      {:else if watchView === "Pose angles"}
+        <PoseChart {report} />
       {:else}
         {@const v = views.find((x) => x.id === watchView)}
         {#if v}
