@@ -81,6 +81,16 @@ def ball_model() -> str:
     return os.getenv("BALL_MODEL", "auto").strip().lower()
 
 
+def ball_sample_fps() -> float:
+    """Target fps for the dedicated ball-tracking pass (the ball is on screen briefly)."""
+    return float(os.getenv("BALL_SAMPLE_FPS", "5"))
+
+
+def ball_max_frames() -> int:
+    """Upper bound on frames in the dedicated ball pass."""
+    return int(os.getenv("BALL_MAX_FRAMES", "200"))
+
+
 def retrieval_enabled() -> bool:
     """Add lexically-retrieved past sessions to the report context."""
     return _bool("RETRIEVAL", "true")

@@ -31,6 +31,7 @@ _MIN_AREA = 2
 _MAX_AREA = 200
 _MAX_STEP = 0.16  # normalized per-frame link distance
 _MAX_MISSED = 2
+_MIN_TRAVEL = 0.05  # a real ball crosses the frame; reject near-static false positives
 _REF_RADIUS = 5.0  # px at analysis size ~ "ball at nominal distance" (for depth)
 
 
@@ -157,8 +158,19 @@ def track(frames: list[Image.Image], timestamps: list[float]) -> list[dict]:
                 tr["missed"] += 1
         tracks = [tr for tr in tracks if tr["missed"] <= _MAX_MISSED]
     tracks = [tr for tr in tracks if len(tr["points"]) >= 3]
+    tracks = [tr for tr in tracks if _travel(tr) >= _MIN_TRAVEL]
     tracks.sort(key=lambda tr: len(tr["points"]), reverse=True)
     return tracks
+
+
+def _travel(tr: dict) -> float:
+    """Largest extent of a track (x or y range) — used to drop static false positives."""
+    points = tr.get("points") or []
+    if not points:
+        return 0.0
+    xs = [p["cx"] for p in points]
+    ys = [p["cy"] for p in points]
+    return max(max(xs) - min(xs), max(ys) - min(ys))
 
 
 def _append(tr: dict, cand: dict, t: float) -> None:

@@ -49,10 +49,20 @@ def measure(
     tick(progress, "measuring flow", 23)
     flow_series = flow.magnitude(frames)
 
-    # Ball tracking is its own step: with the ONNX detector it's per-frame inference
-    # (the slowest CV pass after pose) and can be toggled off.
+    # Ball tracking is its own step: the ball is only on screen for a fraction of a
+    # second, so it gets a dedicated dense pass (independent of the vision frames).
     tick(progress, "tracking ball", 26)
-    ball_info = ball.detect(frames, timestamps, steps)
+    if is_still:
+        ball_info = ball.detect(frames, timestamps, steps)
+    else:
+        duration_s = float(meta.get("duration") or 0.0) or (timestamps[-1] if timestamps else 0.0)
+        ball_frames, ball_times = sampling.sample_burst(
+            video_path, 0.0, duration_s or 1e9, config.ball_sample_fps(), cap=config.ball_max_frames()
+        )
+        if len(ball_frames) >= 3:
+            ball_info = ball.detect(ball_frames, ball_times, metrics.activity(ball_frames, ball_times))
+        else:
+            ball_info = ball.detect(frames, timestamps, steps)
     measured = metrics.analyze(frames, timestamps, ball=ball_info, region_box=region_box, with_pose=False)
     measured["flow"] = flow_series
 
