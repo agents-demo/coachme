@@ -337,6 +337,7 @@ def analyze(
         "mechanics": mech,
         "pose": pose_seq,
         "pose_summary": pose.summarize(pose_seq),
+        "pose3d_summary": pose.summarize3d(pose_seq),
         "calibration": {"subject_width": sub_w, "subject_height": sub_h, "basis": "subject_box"},
         "calibrated": calibrated,
         "subject_coverage": round(float(mask.mean()), 3) if mask is not None else None,
@@ -382,6 +383,10 @@ def text(metrics: dict) -> str:
     if pose_summary:
         rendered = ", ".join(f"{k}={v}" for k, v in pose_summary.items())
         lines.append(f"- pose joints (degrees/normalized): {rendered}")
+    p3 = metrics.get("pose3d_summary") or {}
+    if p3:
+        rendered = ", ".join(f"{k}={v}" for k, v in p3.items())
+        lines.append(f"- pose 3D (degrees, world-landmark): {rendered}")
     fw = metrics.get("footwork") or {}
     if fw:
         lines.append(

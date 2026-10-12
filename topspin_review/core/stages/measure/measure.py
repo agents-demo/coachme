@@ -52,6 +52,7 @@ def measure(
     pose_seq = pose.estimate(frames)
     measured["pose"] = pose_seq
     measured["pose_summary"] = pose.summarize(pose_seq)
+    measured["pose3d_summary"] = pose.summarize3d(pose_seq)
     measured["footwork"] = metrics.footwork(pose_seq)
 
     return Measurement(
