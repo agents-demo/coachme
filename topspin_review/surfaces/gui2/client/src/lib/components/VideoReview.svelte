@@ -257,22 +257,22 @@
         <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Timeline</h3>
         <p class="mt-1 text-xs text-muted">All tied to the playhead — watch them move together; click any to jump.</p>
         <div class="mt-2 space-y-3 rounded-xl border-2 border-line p-3">
-          <div>
-            <div class="text-xs font-semibold text-muted">Issues</div>
-            <div class="mt-1"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
-          </div>
-          {#if (report.metrics?.ball?.segments || []).length}
-            <div>
-              <div class="text-xs font-semibold text-muted">Rally phases</div>
-              <div class="mt-1"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
-            </div>
-          {/if}
           {#if series.length}
             <div>
               <div class="text-xs font-semibold text-muted">Movement</div>
               <div class="mt-1"><MotionChart {series} playhead={currentTime} onseek={seek} /></div>
             </div>
           {/if}
+          {#if (report.metrics?.ball?.segments || []).length}
+            <div>
+              <div class="text-xs font-semibold text-muted">Rally phases</div>
+              <div class="mt-1"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
+            </div>
+          {/if}
+          <div>
+            <div class="text-xs font-semibold text-muted">Issues</div>
+            <div class="mt-1"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
+          </div>
         </div>
       </div>
 
