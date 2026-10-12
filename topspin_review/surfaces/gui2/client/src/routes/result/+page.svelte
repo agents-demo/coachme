@@ -30,9 +30,10 @@
   const caveats = $derived((report?.limitations || []).filter((l) => !clipWarnings.includes(l)));
 
   // Watch sub-tabs: "Video", then one tab per available analysis image.
+  // Order: the motion map (the readable insight) first, then the raw sampled frames, then the pose overlay.
   const ARTIFACTS = {
-    "Sampled frames": { kind: "frames", caption: "Sampled frames the model read." },
     "Motion map": { kind: "motion", caption: "Motion map — red = where you moved most." },
+    "Sampled frames": { kind: "frames", caption: "Sampled frames the model read." },
     Pose: { kind: "pose", caption: "Body-pose overlay." },
   };
   const subTabs = $derived([
