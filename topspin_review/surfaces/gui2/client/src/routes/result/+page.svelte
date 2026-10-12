@@ -118,11 +118,11 @@
   <div class="mt-3">
     {#if tab === "Watch"}
       {#if evidence}
-        <div class="mb-3 inline-flex rounded-lg border-2 border-line p-0.5 text-sm">
+        <div class="mb-3 inline-flex gap-1 rounded-lg border-2 border-line p-0.5 text-sm">
           {#each ["Video", "Frames & map"] as v}
             <button
               onclick={() => (watchView = v)}
-              class="rounded-md px-3 py-1 font-semibold transition"
+              class="rounded-md px-3 py-1 font-semibold transition hover:bg-surface"
               class:bg-surface={watchView === v}
               class:text-app={watchView === v}
               class:text-muted={watchView !== v}
