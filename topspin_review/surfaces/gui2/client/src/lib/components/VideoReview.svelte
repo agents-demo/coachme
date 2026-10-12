@@ -5,6 +5,8 @@
   import Timeline from "./Timeline.svelte";
   import Segments from "./Segments.svelte";
   import Moments from "./Moments.svelte";
+  import Provenance from "./Provenance.svelte";
+  import { outputs } from "$lib/outputs";
 
   let { report } = $props();
 
@@ -17,6 +19,18 @@
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report.source || ""));
   const duration = $derived(Math.max(0.001, ...(report.frame_times || [1])));
   const markers = $derived(groups.flatMap((g) => g.times.map((t) => ({ t, confidence: g.confidence, text: g.text }))));
+
+  // Provenance for the timeline rows / key-moments list. Movement + rally come
+  // from the catalog (real algorithms); issues + moments come from the model's report.
+  const catalog = $derived(Object.fromEntries(outputs(report).flatMap((g) => g.items).map((i) => [i.id, i])));
+  const issuesItem = {
+    how: "The moments the coach flagged in the written report — each mark is one issue's timestamp (colour = confidence). Click to jump; hover to read.",
+    local: false,
+  };
+  const momentsItem = {
+    how: "The same flagged moments as a list — click a time to play just that moment.",
+    local: false,
+  };
 
   function seek(t) {
     if (video) {
@@ -261,23 +275,27 @@
             <div>
               <div class="text-xs font-semibold text-muted">Movement</div>
               <div class="mt-1"><MotionChart {series} playhead={currentTime} onseek={seek} /></div>
+              {#if catalog.movement}<Provenance item={catalog.movement} />{/if}
             </div>
           {/if}
           {#if (report.metrics?.ball?.segments || []).length}
             <div>
               <div class="text-xs font-semibold text-muted">Rally phases</div>
               <div class="mt-1"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
+              {#if catalog.segments}<Provenance item={catalog.segments} />{/if}
             </div>
           {/if}
           <div>
             <div class="text-xs font-semibold text-muted">Issues</div>
             <div class="mt-1"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
+            <Provenance item={issuesItem} />
           </div>
         </div>
       </div>
 
       <div class="mt-4">
         <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
+        <Provenance item={momentsItem} />
         <div class="mt-2">
           <Moments {report} />
         </div>

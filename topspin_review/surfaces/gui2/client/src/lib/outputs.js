@@ -65,7 +65,7 @@ export function outputs(report) {
       id: "movement",
       label: "Movement over time",
       stepLabel: "Measured your movement",
-      how: "How much you moved between each sampled moment. Taller bar = more movement (a step or a swing).",
+      how: "The clip's movement energy, moment to moment — a peak is a step or a swing.",
       method: "For every consecutive pair of sampled frames: downscale to 320×180 grayscale, take the mean absolute pixel difference (inside the subject region when available) as the energy; the global shift (dx, dy) between the two frames comes from FFT phase correlation.",
       detail: "core/video/metrics.py · activity()",
       engine: "NumPy",
