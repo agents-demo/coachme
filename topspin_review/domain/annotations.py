@@ -1,10 +1,10 @@
-"""Shape annotations drawn on a frame (arrow / line / circle / pen). Pure."""
+"""Shape annotations drawn on a frame (arrow / line / circle / pen / angle). Pure."""
 
 from __future__ import annotations
 
 from typing import Any
 
-TYPES = ("arrow", "line", "circle", "pen")
+TYPES = ("arrow", "line", "circle", "pen", "angle")
 DEFAULT_COLOR = "#f97316"
 
 
@@ -25,7 +25,16 @@ def normalize(items: Any) -> list[dict]:
         if kind not in TYPES:
             continue
         color = str(item.get("color") or DEFAULT_COLOR)[:16]
-        if kind == "pen":
+        if kind == "angle":
+            pts = [
+                [_c(p[0]), _c(p[1])]
+                for p in (item.get("points") or [])
+                if isinstance(p, (list, tuple)) and len(p) == 2
+            ][:3]
+            if len(pts) < 3:
+                continue
+            out.append({"type": "angle", "color": color, "points": pts})
+        elif kind == "pen":
             pts = [
                 [_c(p[0]), _c(p[1])]
                 for p in (item.get("points") or [])

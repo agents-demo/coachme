@@ -79,6 +79,7 @@
   let tool = $state("arrow");
   let shapes = $state([]);
   let drawing = $state(null);
+  let anglePts = $state([]);
   let dirty = $state(false);
   let status = $state("");
 
@@ -96,6 +97,17 @@
     if (!drawMode) return;
     if (video) video.pause();
     const [x, y] = norm(evt);
+    if (tool === "angle") {
+      const pts = [...anglePts, [x, y]];
+      if (pts.length === 3) {
+        shapes = [...shapes, { type: "angle", color: COLOR, points: pts }];
+        anglePts = [];
+        dirty = true;
+      } else {
+        anglePts = pts;
+      }
+      return;
+    }
     drawing = tool === "pen" ? { type: "pen", color: COLOR, points: [[x, y]] } : { type: tool, color: COLOR, x1: x, y1: y, x2: x, y2: y };
   }
   function move(evt) {
@@ -117,7 +129,19 @@
   }
   function clear() {
     shapes = [];
+    anglePts = [];
     dirty = true;
+  }
+  // Angle at the middle of 3 normalized points, corrected for the video's aspect ratio.
+  function angleAt(pts) {
+    const rect = stage?.getBoundingClientRect();
+    const ar = rect && rect.height ? rect.width / rect.height : 1;
+    const [a, b, c] = pts;
+    const v1 = [(a[0] - b[0]) * ar, a[1] - b[1]];
+    const v2 = [(c[0] - b[0]) * ar, c[1] - b[1]];
+    const dot = v1[0] * v2[0] + v1[1] * v2[1];
+    const n = Math.hypot(...v1) * Math.hypot(...v2);
+    return n ? Math.round((Math.acos(Math.max(-1, Math.min(1, dot / n))) * 180) / Math.PI) : 0;
   }
   async function save() {
     status = "saving…";
@@ -143,6 +167,19 @@
       rx={Math.abs(s.x2 - s.x1) / 2} ry={Math.abs(s.y2 - s.y1) / 2}
       fill="none" stroke={s.color || COLOR} stroke-width="2" vector-effect="non-scaling-stroke"
     />
+  {:else if s.type === "angle"}
+    <polyline
+      points={s.points.map((p) => `${p[0]},${p[1]}`).join(" ")}
+      fill="none" stroke={s.color || COLOR} stroke-width="2" vector-effect="non-scaling-stroke"
+    />
+    {#each s.points as p}
+      <circle cx={p[0]} cy={p[1]} r="0.008" fill={s.color || COLOR} vector-effect="non-scaling-stroke" />
+    {/each}
+    <text
+      x={s.points[1][0]} y={s.points[1][1] - 0.035}
+      text-anchor="middle" font-size="0.045" font-weight="700" fill={s.color || COLOR}
+      stroke="#0b0f14" stroke-width="0.006" paint-order="stroke"
+    >{angleAt(s.points)}°</text>
   {:else}
     <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={s.color || COLOR} stroke-width="2" vector-effect="non-scaling-stroke" />
     {#if s.type === "arrow"}
@@ -164,6 +201,12 @@
           >
             {#each shapes as s (s)}{@render shape(s)}{/each}
             {#if drawing}{@render shape(drawing)}{/if}
+            {#if anglePts.length}
+              {#each anglePts as p}<circle cx={p[0]} cy={p[1]} r="0.008" fill={COLOR} vector-effect="non-scaling-stroke" />{/each}
+              {#if anglePts.length === 2}
+                <line x1={anglePts[0][0]} y1={anglePts[0][1]} x2={anglePts[1][0]} y2={anglePts[1][1]} stroke={COLOR} stroke-width="2" vector-effect="non-scaling-stroke" />
+              {/if}
+            {/if}
           </svg>
         </div>
       {:else}
@@ -177,6 +220,12 @@
           >
             {#each shapes as s (s)}{@render shape(s)}{/each}
             {#if drawing}{@render shape(drawing)}{/if}
+            {#if anglePts.length}
+              {#each anglePts as p}<circle cx={p[0]} cy={p[1]} r="0.008" fill={COLOR} vector-effect="non-scaling-stroke" />{/each}
+              {#if anglePts.length === 2}
+                <line x1={anglePts[0][0]} y1={anglePts[0][1]} x2={anglePts[1][0]} y2={anglePts[1][1]} stroke={COLOR} stroke-width="2" vector-effect="non-scaling-stroke" />
+              {/if}
+            {/if}
           </svg>
         </div>
       {/if}
@@ -193,7 +242,7 @@
         class:border-line={!drawMode}
       >✏ {drawMode ? "Drawing" : "Draw"}</button>
       {#if drawMode}
-        {#each [["arrow", "Arrow"], ["circle", "Circle"], ["pen", "Pen"]] as [id, label]}
+        {#each [["arrow", "Arrow"], ["circle", "Circle"], ["pen", "Pen"], ["angle", "Angle"]] as [id, label]}
           <button
             onclick={() => (tool = id)}
             class="rounded-lg border-2 px-2.5 py-1 text-xs font-semibold transition"
@@ -201,6 +250,7 @@
             class:border-line={tool !== id}
           >{label}</button>
         {/each}
+        {#if tool === "angle"}<span class="text-xs text-muted">click 3 points — angle is at the 2nd</span>{/if}
         <button onclick={undo} class="rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold">Undo</button>
         <button onclick={clear} class="rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold">Clear</button>
         <button onclick={save} disabled={!dirty} class="rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-white disabled:opacity-50">Save</button>
