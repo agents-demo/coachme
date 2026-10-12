@@ -175,31 +175,35 @@
                   </p>
                 {/if}
                 <div class="mt-2 space-y-2">
-                  {#each c.input || [] as m}
-                    <div>
-                      <div class="text-xs uppercase text-muted">{m.role}</div>
-                      <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
-                    </div>
-                  {/each}
-                  {#if c.requested?.length}
-                    <div>
-                      <div class="text-xs uppercase text-muted">requested tool{c.requested.length > 1 ? "s" : ""}</div>
-                      {#each c.requested as tc}
+                  <div>
+                    <div class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">Input — everything sent to the model</div>
+                    {#if c.input?.length}
+                      {#each c.input as m}
                         <div class="mt-1">
-                          <span class="font-mono text-xs text-accent2">{tc.name}</span>
-                          {#if tc.arguments}
-                            <pre class="mt-1 overflow-auto rounded bg-ink/40 p-2 text-xs">{tc.arguments}</pre>
-                          {/if}
+                          <div class="text-xs uppercase text-muted">{m.role}</div>
+                          <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
                         </div>
                       {/each}
-                    </div>
-                  {/if}
-                  {#if c.output}
-                    <div class="text-xs uppercase text-muted">output</div>
-                    <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{c.output}</pre>
-                  {:else if c.requested?.length}
-                    <p class="text-xs text-muted">No text — the model requested the tool(s) above.</p>
-                  {/if}
+                    {:else}
+                      <p class="text-xs text-muted">Input not saved (SAVE_CALL_IO is off) or unavailable.</p>
+                    {/if}
+                  </div>
+                  <div>
+                    <div class="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-muted">Output — what the model produced</div>
+                    {#if c.requested?.length}
+                      {#each c.requested as tc}
+                        <div class="mt-1 text-xs">↳ requested tool <code class="text-accent2">{tc.name}</code> with:</div>
+                        {#if tc.arguments}
+                          <pre class="mt-1 overflow-auto rounded bg-ink/40 p-2 text-xs">{tc.arguments}</pre>
+                        {/if}
+                      {/each}
+                    {/if}
+                    {#if c.output}
+                      <pre class="mt-1 overflow-auto rounded bg-ink/40 p-2 text-xs">{c.output}</pre>
+                    {:else if !c.requested?.length}
+                      <p class="mt-1 text-xs text-muted">Output not saved (SAVE_CALL_IO is off) or the model produced no text.</p>
+                    {/if}
+                  </div>
                 </div>
               </details>
             {:else}
@@ -208,13 +212,17 @@
                 <summary class="cursor-pointer font-semibold">
                   🔧 Tool · {t.name || "tool"}{#if t.seconds}<span class="ml-2 text-xs text-muted">{Number(t.seconds).toFixed(2)}s</span>{/if}
                 </summary>
-                <div class="mt-2 text-xs uppercase text-muted">arguments</div>
-                <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{pretty(t.arguments) || "{}"}</pre>
-                {#if t.result}
-                  <div class="mt-2 text-xs uppercase text-muted">result</div>
-                  <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{t.result}</pre>
-                {/if}
-                {#if t.error}<p class="mt-2 text-xs text-bad">{t.error}</p>{/if}
+                <div class="mt-2 space-y-2">
+                  <div>
+                    <div class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">Input — arguments passed to the tool</div>
+                    <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{pretty(t.arguments) || "{}"}</pre>
+                  </div>
+                  <div>
+                    <div class="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-muted">Output — result the tool returned</div>
+                    {#if t.error}<p class="text-xs text-bad">{t.error}</p>{/if}
+                    <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{t.result || "(empty)"}</pre>
+                  </div>
+                </div>
               </details>
             {/if}
           {/each}
