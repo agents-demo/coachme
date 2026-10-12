@@ -15,59 +15,70 @@
   const cachedTotal = $derived(
     usage.cached_tokens ?? (usage.vision?.cached_tokens || 0) + (usage.text?.cached_tokens || 0),
   );
-  function stageLabel(stage) {
-    return stage === "startup" ? "startup (imports & setup)" : stage;
-  }
-
-  // The architectural stages (core.stages) are measure → observe → coach; each progress tick
-  // below is a sub-step inside one of them (plus a setup prologue and a finalize epilogue).
-  const STAGE_GROUP = {
-    startup: "setup",
-    preparing: "setup",
-    "sampling frames": "measure",
-    "measuring motion": "measure",
-    "writing artifacts": "measure",
-    "vision: overview": "observe",
-    "vision: zoom": "observe",
-    "vision: detail": "observe",
-    "vision: reviewing image": "observe",
-    "agent writing report": "coach",
-    "saving report": "coach",
-    verifying: "coach",
-    exporting: "finalize",
-    done: "finalize",
+  // Each progress tick belongs to a pipeline stage. The header names are plain-English, with the
+  // architecture name in parentheses (measure / observe / coach) so the two levels still line up.
+  const STEP_GROUP = {
+    startup: "Setup",
+    preparing: "Setup",
+    "sampling frames": "Measure",
+    "measuring motion": "Measure",
+    "writing artifacts": "Measure",
+    "vision: overview": "Vision (observe)",
+    "vision: zoom": "Vision (observe)",
+    "vision: detail": "Vision (observe)",
+    "vision: reviewing image": "Vision (observe)",
+    "agent writing report": "Report (coach)",
+    "agent: analyzing": "Report (coach)",
+    "saving report": "Report (coach)",
+    verifying: "Report (coach)",
+    exporting: "Export",
+    done: "Export",
   };
-  const GROUP_ORDER = ["setup", "measure", "observe", "coach", "finalize", "other"];
+  const GROUP_ORDER = ["Setup", "Measure", "Vision (observe)", "Report (coach)", "Export", "Other"];
   const grouped = $derived.by(() => {
     const buckets = new Map(GROUP_ORDER.map((g) => [g, []]));
-    for (const t of timeline) buckets.get(STAGE_GROUP[t.stage] || "other").push(t);
+    for (const t of timeline) buckets.get(STEP_GROUP[t.stage] || "Other").push(t);
     return GROUP_ORDER.map((g) => ({ name: g, items: buckets.get(g) })).filter((x) => x.items.length);
   });
 
-  // Clean display label: drop the "vision:" / "agent" internal prefixes (the group header says it).
+  // Plain-English name for each step (no "vision:"/"agent" jargon).
+  const STEP_NAME = {
+    startup: "Load pipeline",
+    preparing: "Prepare clip",
+    "sampling frames": "Pick frames",
+    "measuring motion": "Measure movement",
+    "writing artifacts": "Render images",
+    "vision: overview": "First look",
+    "vision: zoom": "Zoom in",
+    "vision: detail": "Detailed findings",
+    "vision: reviewing image": "Review image",
+    "agent writing report": "Write report",
+    "agent: analyzing": "Analyze",
+    "saving report": "Save report",
+    verifying: "Double-check",
+    exporting: "Export files",
+    done: "Done",
+  };
   function shortLabel(stage) {
-    if (stage.startsWith("vision: ")) return stage.slice("vision: ".length);
-    if (stage === "agent writing report") return "writing report";
-    if (stage === "agent: analyzing") return "analyzing";
-    return stage;
+    return STEP_NAME[stage] || stage;
   }
-  // One-line, plain meaning shown inline on each row (nobody reads a glossary).
+  // Hover tooltip text for each step.
   const STEP_SHORT = {
-    startup: "load the pipeline (imports)",
-    preparing: "validate clip + load profile",
-    "sampling frames": "choose frames (motion-weighted)",
-    "measuring motion": "compute metrics from the frames",
-    "writing artifacts": "render frames + motion map",
-    "vision: overview": "pass 1 — read the frames, pick moments",
-    "vision: zoom": "sample more frames in those moments",
-    "vision: detail": "pass 2 — findings + confidence",
-    "vision: reviewing image": "one pass on the still image",
-    "agent writing report": "text model writes the report",
-    "agent: analyzing": "model drives the analysis",
-    "saving report": "save the report file",
-    verifying: "2nd pass prunes unsupported issues",
-    exporting: "write markdown / html / pdf",
-    done: "complete",
+    startup: "Load the pipeline code (imports) — pre-run overhead.",
+    preparing: "Validate the clip and load your profile.",
+    "sampling frames": "Choose the frames to analyze (motion-weighted).",
+    "measuring motion": "Compute the objective metrics from the frames.",
+    "writing artifacts": "Render the frames + motion map the vision model reads.",
+    "vision: overview": "Vision pass 1 — read the frames and pick the moments to zoom.",
+    "vision: zoom": "Sample more frames inside those moments.",
+    "vision: detail": "Vision pass 2 — findings with timestamps + confidence.",
+    "vision: reviewing image": "One vision pass on the still image (posture only).",
+    "agent writing report": "The text model writes the coaching report.",
+    "agent: analyzing": "Agentic mode — the model drives the analysis.",
+    "saving report": "Save the report file.",
+    verifying: "A second model pass that prunes unsupported findings.",
+    exporting: "Write the export files (Markdown / HTML / PDF).",
+    done: "Run complete.",
   };
 
   let view = $state("Stages");
@@ -141,8 +152,8 @@
       {/each}
       <p class="mt-3 text-xs text-muted">
         Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(2)}s</span>
-        &nbsp;·&nbsp;bars and numbers are <b>durations</b>. Each row is a <b>step</b>, grouped under its
-        pipeline <b>stage</b> (measure → observe → coach).
+        &nbsp;·&nbsp;bars and numbers are <b>durations</b>. Each row is a <b>step</b>, grouped under the
+        <b>stage</b> it runs in (Measure → Vision → Report). Hover a step for what it does.
       </p>
     {:else}
       <p class="text-sm text-muted">No stage timings saved.</p>
