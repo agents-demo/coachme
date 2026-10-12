@@ -9,6 +9,12 @@
   const tools = $derived(report.tools || []);
   const nCalls = $derived(usage.calls ?? (usage.vision?.calls || 0) + (usage.text?.calls || 0));
   const tokens = $derived(usage.total_tokens ?? (usage.vision?.total_tokens || 0) + (usage.text?.total_tokens || 0));
+
+  const timeline = $derived(report.timeline || []);
+  const totalSeconds = $derived(timeline.reduce((a, t) => a + (Number(t.seconds) || 0), 0));
+  function stageLabel(stage) {
+    return stage === "startup" ? "startup (imports & setup)" : stage;
+  }
 </script>
 
 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -24,15 +30,29 @@
   </p>
 {/if}
 
-{#if report.timeline?.length}
-  <h3 class="mt-5 font-display text-sm font-bold uppercase tracking-wide text-muted">Stages</h3>
-  <ol class="mt-2 space-y-1">
-    {#each report.timeline as t}
-      <li class="flex items-center justify-between rounded-lg border-2 border-line px-3 py-1.5 text-sm">
-        <span>{t.stage}</span><span class="font-mono text-xs text-muted">{t.seconds}s</span>
+{#if timeline.length}
+  <h3 class="mt-5 font-display text-sm font-bold uppercase tracking-wide text-muted">
+    Stages <span class="font-normal normal-case tracking-normal">· time taken</span>
+  </h3>
+  <ol class="mt-2 space-y-1.5">
+    {#each timeline as t}
+      {@const secs = Number(t.seconds) || 0}
+      <li class="flex items-center gap-3 text-sm">
+        <span class="w-44 shrink-0 truncate {t.stage === 'startup' ? 'text-muted' : ''}">{stageLabel(t.stage)}</span>
+        <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
+          <div
+            class="h-full rounded-full {t.stage === 'startup' ? 'bg-line' : 'bg-accent'}"
+            style={`width:${totalSeconds ? Math.max(1.5, (secs / totalSeconds) * 100) : 0}%`}
+          ></div>
+        </div>
+        <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(1)}s</span>
       </li>
     {/each}
   </ol>
+  <p class="mt-3 text-xs text-muted">
+    Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(1)}s</span>
+    &nbsp;·&nbsp;bar length and numbers are <b>durations</b> (how long each step took), not timestamps.
+  </p>
 {/if}
 
 {#if calls.length || tools.length}
