@@ -185,11 +185,24 @@ export function outputs(report) {
       kind: "ball",
       stepLabel: "Tracked the ball",
       how: onnx
-        ? "The route the ball took across the clip, found automatically and drawn over a frame. A rough guide."
+        ? "The route the ball took, found automatically and drawn over a frame. A rough guide."
         : "The route the ball took, drawn over a frame. A rough guide — the ball is hard to track reliably.",
       method: onnx
         ? "A trained YOLO detector (ONNX, letterboxed to 640, class-agnostic NMS) finds the ball in each frame; a constant-velocity nearest-neighbour tracker links detections (max jump 0.16, tolerating 2 missed frames, tracks of ≥3 points). The main track is drawn over the middle frame."
         : "Each frame is masked for bright, round-ish warm/white blobs (small colour+shape criteria, optionally confirmed by OpenCV Hough circles); a constant-velocity nearest-neighbour tracker links them (max jump 0.16, tolerating 2 missed frames, tracks of ≥3 points), and the main track is drawn over the middle frame.",
+      detail: onnx ? "integrations/ballmodel.py · detect()" : "core/stages/measure/ball.py · candidates()",
+      engine: onnx ? "onnxruntime" : "NumPy",
+      local: true,
+    });
+  } else {
+    ball.push({
+      id: "ball",
+      label: "Ball path",
+      stepLabel: "Tracked the ball",
+      how: "No ball detected in this clip — automatic ball tracking is hard here. A clearer, side-on angle usually helps.",
+      method: onnx
+        ? "A trained YOLO detector (ONNX) ran on every sampled frame, but no stable track formed (needs ≥3 linked points)."
+        : "Bright, round-ish blob detection ran on every frame, but no stable track formed (needs ≥3 linked points).",
       detail: onnx ? "integrations/ballmodel.py · detect()" : "core/stages/measure/ball.py · candidates()",
       engine: onnx ? "onnxruntime" : "NumPy",
       local: true,
@@ -206,7 +219,7 @@ export function outputs(report) {
       local: true,
     });
   }
-  if (ball.length) groups.push({ id: "ball", group: "The ball", items: ball });
+  groups.push({ id: "ball", group: "The ball", items: ball });
 
   return groups;
 }

@@ -228,6 +228,10 @@
                   <figure>
                     <img src={artifact(report.stem, it.kind)} alt={it.label} class="w-full rounded-xl border-2 border-line" />
                   </figure>
+                {:else if it.id === "ball"}
+                  <p class="rounded-xl border-2 border-line p-4 text-sm text-muted">
+                    No ball detected in this clip — automatic ball tracking is hard here. A clearer, side-on angle usually helps.
+                  </p>
                 {/if}
               </div>
             </section>
