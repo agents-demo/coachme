@@ -4,6 +4,7 @@
   import MotionChart from "./MotionChart.svelte";
   import Timeline from "./Timeline.svelte";
   import Segments from "./Segments.svelte";
+  import Moments from "./Moments.svelte";
 
   let { report } = $props();
 
@@ -260,6 +261,13 @@
         <p class="mt-1 text-xs text-muted">
           Each mark is a moment the coach flagged (red = high, amber = medium, grey = low confidence). Click to jump; hover a mark to read it.
         </p>
+      </div>
+
+      <div class="mt-4">
+        <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
+        <div class="mt-2">
+          <Moments {report} />
+        </div>
       </div>
     {/if}
 

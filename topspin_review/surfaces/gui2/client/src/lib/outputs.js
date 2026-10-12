@@ -59,23 +59,6 @@ export function outputs(report) {
   }
   groups.push({ id: "clip", group: "Your clip", items: clipItems });
 
-  // --- Moments ----------------------------------------------------------------
-  if ((report?.issues || []).some((i) => (i.evidence_times || []).length)) {
-    groups.push({
-      id: "moments",
-      group: "Key moments",
-      items: [
-        {
-          id: "moments",
-          label: "Key moments",
-          how: "The seconds the coach flagged in the written report. Click one to play just that moment.",
-          detail: "comes from the written report (the coach's issues) — no separate computation",
-          local: true,
-        },
-      ],
-    });
-  }
-
   // --- Your movement ----------------------------------------------------------
   const movement = [
     {
