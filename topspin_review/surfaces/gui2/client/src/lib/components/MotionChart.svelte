@@ -1,47 +1,33 @@
 <script>
-  import { fmtTime } from "$lib/format";
-
   let { series = [], playhead = 0, onseek } = $props();
 
-  let svg = $state();
-  const W = 640;
-  const H = 90;
-  const pad = 4;
-
+  let el = $state();
   const maxE = $derived(Math.max(0.0001, ...series.map((s) => s.energy)));
   const tMax = $derived(Math.max(0.001, ...series.map((s) => s.t)));
 
-  const X = (t) => pad + (W - 2 * pad) * (t / tMax);
-  const Y = (e) => H - pad - (H - 2 * pad) * (e / maxE);
-
-  const line = $derived(
-    series.map((s, i) => `${i ? "L" : "M"}${X(s.t).toFixed(1)},${Y(s.energy).toFixed(1)}`).join(" "),
-  );
-  const area = $derived(`${line} L${X(tMax).toFixed(1)},${H - pad} L${X(0).toFixed(1)},${H - pad} Z`);
-  const playX = $derived(X(Math.min(Math.max(playhead, 0), tMax)));
-
   function seek(evt) {
-    const rect = svg.getBoundingClientRect();
-    const x = ((evt.clientX - rect.left) / rect.width) * W;
-    const t = Math.min(Math.max((x - pad) / (W - 2 * pad), 0), 1) * tMax;
-    onseek?.(t);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const frac = Math.max(0, Math.min(1, (evt.clientX - rect.left) / rect.width));
+    onseek?.(frac * tMax);
   }
 </script>
 
-<svg
-  bind:this={svg}
-  viewBox={`0 0 ${W} ${H}`}
-  class="w-full cursor-pointer select-none"
-  onpointerdown={seek}
-  onpointermove={(e) => e.buttons === 1 && seek(e)}
-  role="img"
+<div
+  bind:this={el}
+  onclick={seek}
+  role="slider"
   aria-label="movement over time"
+  tabindex="0"
+  class="relative h-6 w-full cursor-pointer overflow-hidden rounded-full border-2 border-line bg-surface"
 >
-  <path d={area} fill="rgba(79,70,229,0.18)" />
-  <path d={line} fill="none" stroke="#4f46e5" stroke-width="2" vector-effect="non-scaling-stroke" />
-  <line x1={playX} y1={pad} x2={playX} y2={H - pad} stroke="#fb7185" stroke-width="2" vector-effect="non-scaling-stroke" />
-</svg>
-<div class="flex justify-between text-[10px] text-muted">
-  <span>0s</span>
-  <span>{fmtTime(tMax)}</span>
+  <div class="flex h-full items-end gap-px px-px">
+    {#each series as s}
+      <span class="flex-1 rounded-t-sm" style={`height:${Math.max(6, (s.energy / maxE) * 100)}%; background:#3b82f6; opacity:0.55`}></span>
+    {/each}
+  </div>
+  <span
+    class="absolute inset-y-0 w-0.5 bg-accent"
+    style={`left:${(Math.min(Math.max(playhead, 0), tMax) / tMax) * 100}%`}
+  ></span>
 </div>
