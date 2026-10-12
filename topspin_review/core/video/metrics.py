@@ -219,6 +219,47 @@ def pose_estimate(frames: list[Image.Image]) -> list | None:
     return pose.estimate(frames)
 
 
+def footwork(pose_seq: list | None) -> dict:
+    """Coarse footwork events from the pose ankles: lateral steps, hops/split-steps, base travel.
+
+    Heuristic and pose-dependent — treat as an indicator, not a precise count.
+    """
+    if not pose_seq:
+        return {}
+    xs: list[float | None] = []
+    ys: list[float | None] = []
+    for p in pose_seq:
+        lm = (p or {}).get("landmarks")
+        if not lm or len(lm) <= 28:
+            xs.append(None)
+            ys.append(None)
+            continue
+        lx, ly, _ = lm[27]  # left ankle
+        rx, ry, _ = lm[28]  # right ankle
+        xs.append(float((lx + rx) / 2))
+        ys.append(float((ly + ry) / 2))
+
+    pts = [(x, y) for x, y in zip(xs, ys) if x is not None]
+    if len(pts) < 3:
+        return {}
+    cx = [p[0] for p in pts]
+    cy = [p[1] for p in pts]
+
+    deltas = [cx[i] - cx[i - 1] for i in range(1, len(cx))]
+    steps = sum(1 for i in range(1, len(deltas)) if deltas[i] * deltas[i - 1] < 0 and abs(deltas[i]) > 0.01)
+    hops = sum(
+        1
+        for i in range(1, len(cy) - 1)
+        if cy[i] <= cy[i - 1] and cy[i] <= cy[i + 1] and (min(cy[i - 1], cy[i + 1]) - cy[i]) > 0.015
+    )
+    return {
+        "steps": steps,
+        "hops": hops,
+        "base_travel": round(max(cx) - min(cx), 3),
+        "base_height_range": round(max(cy) - min(cy), 3),
+    }
+
+
 def position_heatmap(
     frames: list[Image.Image], track: list[dict | None], size: tuple[int, int] = (640, 360)
 ) -> Image.Image | None:
@@ -324,4 +365,10 @@ def text(metrics: dict) -> str:
     if pose_summary:
         rendered = ", ".join(f"{k}={v}" for k, v in pose_summary.items())
         lines.append(f"- pose joints (degrees/normalized): {rendered}")
+    fw = metrics.get("footwork") or {}
+    if fw:
+        lines.append(
+            f"- footwork (pose estimate): {fw.get('steps')} lateral step(s), "
+            f"{fw.get('hops')} hop(s)/split-step(s), base travel {fw.get('base_travel')}"
+        )
     return "\n".join(lines)
