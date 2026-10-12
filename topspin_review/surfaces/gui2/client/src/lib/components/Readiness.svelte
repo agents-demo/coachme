@@ -14,13 +14,14 @@
 </script>
 
 {#if checks.length}
-  <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-    <span class="font-semibold uppercase tracking-wide text-muted">Readiness</span>
+  <div class="mt-4 flex flex-wrap items-center gap-2 text-[11px]">
+    <span class="uppercase tracking-wide text-muted">Environment</span>
     {#each checks as c}
-      <span class="inline-flex items-center gap-1 {c.ok ? "text-app" : "text-muted"}">
-        <span class={c.ok ? "text-good" : "text-warn"}>{c.ok ? "✓" : "○"}</span>
-        {c.name}
-        <span class="text-muted">· {c.detail}</span>
+      <span
+        class="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 {c.ok ? "text-muted" : "text-warn"}"
+        title={c.detail}
+      >
+        <span class={c.ok ? "text-good" : "text-warn"}>{c.ok ? "✓" : "○"}</span>{c.name}
       </span>
     {/each}
   </div>

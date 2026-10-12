@@ -49,6 +49,7 @@ def _summary(report: dict) -> dict[str, Any]:
         "score": round(float(score.get("score", 0)), 1),
         "is_photo": Path(source).suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif"},
         "has_source": _exists(source),
+        "has_frames": _exists((report.get("artifacts") or {}).get("frames")),
         "lower_range": returns.get("lower_lateral_range"),
     }
 

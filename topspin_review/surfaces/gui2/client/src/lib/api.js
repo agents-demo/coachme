@@ -30,6 +30,13 @@ export const source = (stem) => `/source/${encodeURIComponent(stem)}`;
 export const artifact = (stem, kind) => `/artifact/${encodeURIComponent(stem)}/${kind}`;
 export const clip = (stem, key) => `/clip/${encodeURIComponent(stem)}/${encodeURIComponent(key)}`;
 export const exportUrl = (stem, fmt) => `/export/${encodeURIComponent(stem)}/${fmt}`;
+// A thumbnail for a session card: the frame contact sheet if present, else the source photo.
+export const thumb = (report) =>
+  report.has_frames
+    ? artifact(report.stem, "frames")
+    : report.is_photo && report.has_source
+      ? source(report.stem)
+      : "";
 
 export async function upload(file) {
   const form = new FormData();
