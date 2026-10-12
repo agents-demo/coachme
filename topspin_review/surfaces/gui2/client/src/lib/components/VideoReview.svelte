@@ -39,6 +39,23 @@
   function onTime() {
     if (video) currentTime = video.currentTime;
   }
+
+  // A6: frame-step + slow-mo.
+  const fps = $derived(Number(report.fps) || 30);
+  let rate = $state(1);
+  function setRate(r) {
+    rate = r;
+    if (video) video.playbackRate = r;
+  }
+  function step(dir) {
+    if (!video) return;
+    video.pause();
+    video.currentTime = Math.max(0, video.currentTime + dir / fps);
+    currentTime = video.currentTime;
+  }
+  function onLoaded() {
+    if (video) video.playbackRate = rate;
+  }
 </script>
 
 <div class="grid gap-6 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]">
@@ -48,10 +65,30 @@
         <img src={source(report.stem)} alt="session photo" class="w-full rounded-[14px] border-2 border-line" />
       {:else}
         <!-- svelte-ignore a11y_media_has_caption -->
-        <video bind:this={video} src={source(report.stem)} controls preload="metadata" ontimeupdate={onTime}></video>
+        <video bind:this={video} src={source(report.stem)} controls preload="metadata" ontimeupdate={onTime} onloadedmetadata={onLoaded}></video>
       {/if}
     {:else}
       <p class="rounded-[14px] border-2 border-line p-6 text-sm text-muted">Media not found on disk.</p>
+    {/if}
+
+    {#if report.has_source && !isPhoto}
+      <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <button onclick={() => step(-1)} class="rounded-lg border-2 border-line px-2.5 py-1 font-semibold" title="Previous frame (step 1/fps)">⏮</button>
+        <button onclick={() => step(1)} class="rounded-lg border-2 border-line px-2.5 py-1 font-semibold" title="Next frame (step 1/fps)">⏭</button>
+        <span class="text-xs text-muted">frame step · {Math.round(fps)} fps</span>
+        <div class="ml-auto inline-flex overflow-hidden rounded-lg border-2 border-line">
+          {#each [0.25, 0.5, 1] as r}
+            <button
+              onclick={() => setRate(r)}
+              class="px-2.5 py-1 text-xs font-semibold transition"
+              class:bg-surface={rate === r}
+              class:text-app={rate === r}
+              class:text-muted={rate !== r}
+            >{r}×</button>
+          {/each}
+        </div>
+        <span class="font-mono text-xs text-muted">{fmtTime(currentTime)}</span>
+      </div>
     {/if}
 
     {#if series.length}

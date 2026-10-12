@@ -129,6 +129,7 @@ class Strategy:
                 "source": params.video_path,
                 "frames": len(params.frames),
                 "frame_times": [round(t, 2) for t in params.timestamps],
+                "fps": (params.meta or {}).get("fps"),
                 "artifacts": params.artifact_paths,
                 "region_box": list(params.region_box) if params.region_box else None,
             }
