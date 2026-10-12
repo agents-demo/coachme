@@ -1,7 +1,7 @@
 // Everything an analysis produces, grouped by what the user cares about. Each
 // item carries two clearly separated explanations:
-//   - how:    PLAIN English, one line, for the player (no jargon).
-//   - method: the TECHNICAL method, for a developer (shown behind "details").
+//   - how:    PLAIN English, for the player (no jargon).
+//   - method: the full TECHNICAL method, for a developer (behind "details").
 //   - detail/engine: source location + third-party engine (behind "details").
 // Shared by the Review tabs and the first-run tour.
 //
@@ -24,8 +24,8 @@ export function outputs(report) {
       id: "video",
       label: "Video",
       stepLabel: "Your upload",
-      how: "Your clip as you uploaded it. The moments worth a look are marked on the timeline.",
-      method: "n/a — this is your input file.",
+      how: "Your clip exactly as you uploaded it. The moments worth a look are marked on the timeline underneath.",
+      method: "Nothing is computed here — this is your input file, served unchanged. The timeline markers come from the report's issues and the detected phases.",
       detail: "your uploaded file",
       local: true,
     },
@@ -39,8 +39,8 @@ export function outputs(report) {
       id: "clips",
       label: `Moment clips (${clips.length})`,
       stepLabel: "Cut after the report",
-      how: "A short clip around each flagged moment, so you can watch the key bits back to back.",
-      method: "ffmpeg: trim ±window around each flagged timestamp, re-encode to a uniform size, concatenate.",
+      how: "Short clips around the main flagged moments, so you can watch the key bits back to back.",
+      method: "Takes the flagged timestamps (up to 3), and for each cuts a window of 1s before to 2s after into its own short mp4 with ffmpeg. (The downloadable reel later concatenates these.)",
       detail: "integrations/media.py · make_clips()",
       engine: "ffmpeg",
       local: true,
@@ -52,8 +52,8 @@ export function outputs(report) {
       label: "Frames read",
       kind: "frames",
       stepLabel: "Rendered an image",
-      how: "The few stills taken from your clip — the exact pictures the AI coach looked at. It picks the moments where the most happened.",
-      method: "ffmpeg decodes the video; frames are ranked by motion-weighted grayscale abs-diff energy, the top ones (up to a cap) kept, then tiled into a contact sheet with Pillow.",
+      how: "The handful of stills taken from your clip — the exact pictures the AI coach looked at. It favours the moments where the most happened.",
+      method: "Adaptive motion-weighted sampling: ffmpeg decodes up to 64 probe frames (downscaled to 160×90); per-interval motion = mean abs grayscale diff between consecutive probes; the frame budget (default 12) is split across intervals weighted 0.3 + energy/peak; frames are placed evenly inside each interval, first and last always kept. The chosen frames are then tiled into one contact sheet (Pillow) and cached.",
       detail: "core/stages/measure/sampling.py + core/video/imaging.py · contact_sheet()",
       engine: "ffmpeg (decode) + Pillow",
       local: true,
@@ -67,8 +67,8 @@ export function outputs(report) {
       id: "movement",
       label: "Movement over time",
       stepLabel: "Measured your movement",
-      how: "How much you moved through the clip. Higher bar = more movement (a step or a swing).",
-      method: "Per frame-pair: mean abs grayscale diff inside the subject mask (energy); inter-frame shift via FFT phase correlation.",
+      how: "How much you moved between each sampled moment. Taller bar = more movement (a step or a swing).",
+      method: "For every consecutive pair of sampled frames: downscale to 320×180 grayscale, take the mean absolute pixel difference (inside the subject region when available) as the energy; the global shift (dx, dy) between the two frames comes from FFT phase correlation.",
       detail: "core/video/metrics.py · activity()",
       engine: "NumPy",
       local: true,
@@ -79,8 +79,8 @@ export function outputs(report) {
       id: "segments",
       label: "Segmentation phases",
       stepLabel: "Tracked the ball",
-      how: "The clip split into parts where you were rallying vs. just moving, based on when the ball changed direction.",
-      method: "Reverse points along the ball track (x-flip = hit, y-flip = bounce); label contiguous spans above a noise threshold.",
+      how: "The clip split into phases — a rally where the ball kept changing direction (a hit or bounce), or plain movement in between.",
+      method: "Movement energy is compared against a threshold of max(median×1.3, median+0.5); contiguous spans above it become segments (≥0.4s). Each segment is labelled by the ball track's direction reversals inside it — a horizontal flip = a hit, a vertical flip = a bounce — giving 'Rally · N contacts', 'Bounce play', or 'Movement'.",
       detail: "core/stages/measure/ball.py · phase_segments()",
       local: true,
     });
@@ -92,7 +92,7 @@ export function outputs(report) {
       kind: "motion",
       stepLabel: "Rendered an image",
       how: "A heat map of where the picture changed most — red is where your action happened.",
-      method: "Sum consecutive-frame abs grayscale diff, masked to the subject, normalised, drawn as a red overlay on frame 1.",
+      method: "Absolute grayscale differences between consecutive frames are summed at 640×360, restricted to the subject region, normalised by the peak, and drawn as a red overlay on the first frame.",
       detail: "core/video/metrics.py · motion_map()",
       engine: "Pillow",
       local: true,
@@ -105,7 +105,7 @@ export function outputs(report) {
       kind: "heatmap",
       stepLabel: "Rendered an image",
       how: "A map of the court: red is where you stood the most.",
-      method: "2D histogram of the subject-box centre across frames, gaussian-blurred, drawn as a red overlay on frame 1.",
+      method: "Your position in each frame (the subject box centre) adds to a coarse grid (one cell per 4px at 640×360); the grid is resized, gaussian-blurred, normalised by its peak, and drawn as a red overlay on the first frame.",
       detail: "core/video/metrics.py · position_heatmap()",
       engine: "Pillow",
       local: true,
@@ -122,7 +122,7 @@ export function outputs(report) {
       kind: a.pose_hero ? "pose_hero" : "pose",
       stepLabel: "Detected your body",
       how: "Your body drawn as a stick figure, so you can see your posture at a key moment.",
-      method: "Pose model → 33 body landmarks per frame; join the landmark pairs to draw the skeleton.",
+      method: "A pose model (mediapipe PoseLandmarker, lite) finds 33 body landmarks in each sampled frame; the standard skeleton connections are drawn as lines. The single 'hero' frame is the peak-motion moment; the sheet draws every sampled frame.",
       detail: "integrations/pose.py · overlay()",
       engine: "mediapipe",
       local: true,
@@ -134,7 +134,7 @@ export function outputs(report) {
       label: "Body angles",
       stepLabel: "Detected your body",
       how: "Your knee and elbow angles through the clip — watch for them dipping during a shot.",
-      method: "Three-point joint angles from landmarks (e.g. hip–knee–ankle) computed per frame and plotted over time.",
+      method: "From the 33 landmarks, joint angles are computed per frame from three points (knee = hip–knee–ankle, elbow = shoulder–elbow–wrist), plus stance width and a crouch measure. The chart plots each sampled frame; the summary reports the mean and range.",
       detail: "integrations/pose.py · estimate()",
       engine: "mediapipe",
       local: true,
@@ -146,7 +146,7 @@ export function outputs(report) {
       label: "Body 3D",
       stepLabel: "Detected your body",
       how: "Your body as a 3D model you can spin around. Depth is a best guess from a single camera.",
-      method: "Pose model's world landmarks (metres) projected orthographically; render with rotate controls.",
+      method: "The same pose model also returns world landmarks (3D, in metres). These give 3D joint angles plus torso lean and shoulder/hip twist, and the per-frame 3D points are stored so the skeleton can be drawn in 3D and rotated (orthographic projection). Depth from one camera is approximate.",
       detail: "integrations/pose.py · estimate() (world landmarks)",
       engine: "mediapipe",
       local: true,
@@ -163,11 +163,11 @@ export function outputs(report) {
       kind: "ball",
       stepLabel: "Tracked the ball",
       how: onnx
-        ? "The route the ball took, found automatically and drawn over a frame. A rough guide."
-        : "The route the ball took, drawn over a frame. A rough guide — the ball is hard to track.",
+        ? "The route the ball took across the clip, found automatically and drawn over a frame. A rough guide."
+        : "The route the ball took, drawn over a frame. A rough guide — the ball is hard to track reliably.",
       method: onnx
-        ? "Trained YOLO detector per frame → constant-velocity nearest-neighbour tracker → path overlay."
-        : "Colour/shape blob detector per frame → nearest-neighbour tracker → path overlay.",
+        ? "A trained YOLO detector (ONNX, letterboxed to 640, class-agnostic NMS) finds the ball in each frame; a constant-velocity nearest-neighbour tracker links detections (max jump 0.16, tolerating 2 missed frames, tracks of ≥3 points). The main track is drawn over the middle frame."
+        : "Each frame is masked for bright, round-ish warm/white blobs (small colour+shape criteria, optionally confirmed by OpenCV Hough circles); a constant-velocity nearest-neighbour tracker links them (max jump 0.16, tolerating 2 missed frames, tracks of ≥3 points), and the main track is drawn over the middle frame.",
       detail: onnx ? "integrations/ballmodel.py · detect()" : "core/stages/measure/ball.py · candidates()",
       engine: onnx ? "onnxruntime" : "NumPy",
       local: true,
@@ -179,7 +179,7 @@ export function outputs(report) {
       label: "Ball flight",
       stepLabel: "Tracked the ball",
       how: "The ball's route through the air in 3D. The shape is useful; the exact distances aren't.",
-      method: "Depth z ∝ 1/√(blob area) (monocular size cue) combined with screen (x, y); plot (x, y, z) with rotate controls.",
+      method: "Each tracked point gets a depth estimate z = sqrt(median_blob_area / blob_area) — a bigger blob is nearer (a monocular size cue) — combined with its screen (x, y) to plot a 3D path you can rotate. The direction of depth is meaningful; the absolute distance is not.",
       detail: "core/stages/measure/ball.py · trajectory3d()",
       local: true,
     });
