@@ -17,11 +17,23 @@
   }
 </script>
 
-<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-  <div class="card p-3"><div class="text-xs uppercase text-muted">Model calls</div><div class="text-xl font-bold">{nCalls}</div></div>
-  <div class="card p-3"><div class="text-xs uppercase text-muted">Tokens billed</div><div class="text-xl font-bold">{tokens.toLocaleString()}</div></div>
-  <div class="card p-3"><div class="text-xs uppercase text-muted">Vision calls</div><div class="text-xl font-bold">{usage.vision?.calls ?? 0}</div></div>
-  <div class="card p-3"><div class="text-xs uppercase text-muted">Text calls</div><div class="text-xl font-bold">{usage.text?.calls ?? 0}</div></div>
+<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+  <div class="card p-3">
+    <div class="text-xs uppercase text-muted">Model calls</div>
+    <div class="font-display text-2xl font-bold">{nCalls}</div>
+    <div class="mt-1 text-xs text-muted">
+      <span class="font-mono text-app">{usage.vision?.calls ?? 0}</span> vision ·
+      <span class="font-mono text-app">{usage.text?.calls ?? 0}</span> text
+    </div>
+  </div>
+  <div class="card p-3">
+    <div class="text-xs uppercase text-muted">Tokens billed</div>
+    <div class="font-display text-2xl font-bold">{tokens.toLocaleString()}</div>
+    <div class="mt-1 text-xs text-muted">
+      <span class="font-mono text-app">{(usage.vision?.total_tokens || 0).toLocaleString()}</span> vision ·
+      <span class="font-mono text-app">{(usage.text?.total_tokens || 0).toLocaleString()}</span> text
+    </div>
+  </div>
 </div>
 
 {#if models.text || models.vision}
