@@ -29,24 +29,19 @@
 
 <svelte:window onkeydown={onKey} />
 
-<h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">
-  Moments to review {#if groups.length}<span>· {groups.length}</span>{/if}
-</h3>
-<p class="mt-1 text-xs text-muted">The exact seconds worth rewatching — click one to play just that moment in a pop-up.</p>
-
 {#if !groups.length}
-  <p class="mt-3 text-sm text-muted">No timestamped issues in this report.</p>
+  <p class="text-sm text-muted">No timestamped issues in this report.</p>
 {:else}
-  <ol class="mt-3 space-y-2">
+  <ol class="space-y-2">
     {#each groups as g, i}
       <li class="rounded-xl border-2 border-line p-3">
         <div class="flex items-start gap-2">
-          <span class="text-sm leading-snug">{g.text}</span>
           {#if g.confidence}
-            <span class="ml-auto shrink-0 text-xs {CONF_TONE[g.confidence] || 'text-muted'}" title={CONF_HELP}>
-              {g.confidence} confidence
+            <span class="mt-0.5 shrink-0 rounded-full border-2 border-line px-2 py-0.5 text-xs {CONF_TONE[g.confidence] || 'text-muted'}" title={CONF_HELP}>
+              {g.confidence}
             </span>
           {/if}
+          <span class="text-sm leading-snug">{g.text}</span>
         </div>
         {#if g.times.length}
           <div class="mt-2 flex flex-wrap gap-1.5">
