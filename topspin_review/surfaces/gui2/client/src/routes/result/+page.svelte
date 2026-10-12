@@ -6,6 +6,7 @@
   import ReadAloud from "$lib/components/ReadAloud.svelte";
   import PoseChart from "$lib/components/PoseChart.svelte";
   import Pose3D from "$lib/components/Pose3D.svelte";
+  import Ball3D from "$lib/components/Ball3D.svelte";
   import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
 
   const stem = $derived($page.url.searchParams.get("stem") || "");
@@ -62,11 +63,13 @@
   });
   const hasPoseAngles = $derived((report?.metrics?.pose || []).some((p) => p && p.l_knee != null));
   const hasPose3D = $derived((report?.metrics?.pose || []).some((p) => p && p.landmarks3d));
+  const hasBall3D = $derived((report?.metrics?.ball?.trajectory3d || []).length > 2);
   const subTabs = $derived([
     "Video",
     ...views.map((v) => v.id),
     ...(hasPoseAngles ? ["Pose angles"] : []),
     ...(hasPose3D ? ["3D pose"] : []),
+    ...(hasBall3D ? ["Ball 3D"] : []),
   ]);
   const hasImages = $derived(subTabs.length > 1);
 
@@ -200,6 +203,8 @@
         <PoseChart {report} />
       {:else if watchView === "3D pose"}
         <Pose3D {report} />
+      {:else if watchView === "Ball 3D"}
+        <Ball3D {report} />
       {:else}
         {@const v = views.find((x) => x.id === watchView)}
         {#if v}

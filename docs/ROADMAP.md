@@ -385,6 +385,11 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Acceptance:** per-frame ball position with confidence; rally segments; shot classification on a
   labeled set with a stated accuracy; graceful fallback to the heuristic.
 - **Risks:** dataset/licensing; CPU speed; generalization across sports.
+- **Shipped (heuristic upgrade, not the trained model):** `core/stages/measure/ball.py` now uses a
+  colour+shape detector with optional OpenCV Hough-circle confirmation, a constant-velocity tracker,
+  richer stats (visibility, speed, hits, bounces), a **ball-path artifact** + Watch sub-tab, and a
+  monocular **depth proxy** producing `trajectory3d` (a *Ball 3D* orbit view). The trained detector above
+  is still the real target.
 
 ### C2. Auto session segmentation
 - **Ref:** SV, HL.
@@ -395,6 +400,9 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Effort:** `L` (after C1).
 - **Acceptance:** a long clip yields N rally reports + an aggregate; user can drill into one rally.
 - **Risks:** segmentation errors; cost (one LLM pass per rally — budget).
+- **Shipped (single-clip):** `ball.phase_segments` labels each active span (*Rally · N contacts* /
+  *Bounce play* / *Movement*) from contacts+bounces into `metrics.ball.segments`, shown as a
+  clickable **segment bar** under the video. Whole-session multi-rally reports remain open.
 
 ### C3. Real-time / live capture with instant feedback
 - **Ref:** HC, SV (live), OF.
