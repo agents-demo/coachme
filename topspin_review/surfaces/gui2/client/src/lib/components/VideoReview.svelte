@@ -266,20 +266,20 @@
 
     {#if !isPhoto && report.has_source}
       {#if series.length}
-        <div class="mt-4">
+        <div class="mt-6">
           <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Movement</h3>
           {#if catalog.movement}<Provenance item={catalog.movement} />{/if}
           <div class="mt-2"><MotionChart {series} playhead={currentTime} onseek={seek} /></div>
         </div>
       {/if}
       {#if (report.metrics?.ball?.segments || []).length}
-        <div class="mt-4">
+        <div class="mt-6">
           <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Rally phases</h3>
           {#if catalog.segments}<Provenance item={catalog.segments} />{/if}
           <div class="mt-2"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
         </div>
       {/if}
-      <div class="mt-4">
+      <div class="mt-6">
         <div class="flex items-center gap-2">
           <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
           <span class="inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-1.5 py-0.5 text-[10px] font-semibold text-accent2">✨ AI agent</span>

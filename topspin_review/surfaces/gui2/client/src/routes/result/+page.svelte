@@ -203,7 +203,7 @@
       {/if}
 
       {#if activeGroup}
-        <div class="space-y-7">
+        <div class="space-y-10">
           {#each activeGroup.items as it (it.id)}
             <section>
               <div class="flex items-start justify-between gap-3">
