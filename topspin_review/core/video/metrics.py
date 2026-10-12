@@ -378,7 +378,15 @@ def text(metrics: dict) -> str:
         )
     ball = metrics.get("ball") or {}
     if ball:
-        lines.append(f"- ball (heuristic): {ball.get('summary', 'n/a')}")
+        stats = ball.get("stats") or {}
+        extra = ""
+        if stats:
+            extra = (
+                f" [visible {stats.get('visible_frames')} frames, max speed {stats.get('max_speed')}/s, "
+                f"x-range {stats.get('x_range')}, y-range {stats.get('y_range')}, "
+                f"{len(stats.get('hits') or [])} hit(s), {len(stats.get('bounces') or [])} bounce(s)]"
+            )
+        lines.append(f"- ball (heuristic): {ball.get('summary', 'n/a')}{extra}")
     pose_summary = metrics.get("pose_summary") or {}
     if pose_summary:
         rendered = ", ".join(f"{k}={v}" for k, v in pose_summary.items())

@@ -1,23 +1,35 @@
-"""Heuristic ball detection, tracking and rally/contact segmentation.
+"""Ball detection, tracking and rally/contact segmentation (heuristic, no trained model).
 
-No trained detector is available, so the ball is found as a small, bright,
-warm/white blob and linked frame-to-frame with a greedy nearest-neighbour
-tracker. Direction changes along the track are reported as candidate
-contacts/bounces. Everything is labelled heuristic and low confidence.
+The ball is found as a small, bright, roundish blob (warm/white colour prior) and
+linked frame-to-frame with a constant-velocity tracker, with optional OpenCV
+Hough-circle confirmation when ``cv2`` is installed. Direction changes along the
+track are reported as candidate contacts/bounces, and apparent blob size gives a
+crude monocular **depth** proxy so a shallow 3D trajectory can be plotted.
+
+Everything here is heuristic and low confidence — it is a signal for the report
+and the UI, not a measurement.
 """
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from topspin_review.core.video import cvutil
+
+try:  # optional accelerator; the module degrades gracefully without it
+    import cv2
+except ImportError:  # pragma: no cover - depends on the environment
+    cv2 = None
 
 _SIZE = (160, 90)
 _MIN_AREA = 2
 _MAX_AREA = 200
 _MAX_STEP = 0.16  # normalized per-frame link distance
 _MAX_MISSED = 2
+_REF_RADIUS = 5.0  # px at analysis size ~ "ball at nominal distance" (for depth)
 
 
 def _rgb(img: Image.Image) -> np.ndarray:
@@ -32,10 +44,26 @@ def _color_mask(img: Image.Image) -> np.ndarray:
     return (warm | white) & (v > 0.6)
 
 
+def _circles(img: Image.Image) -> list[tuple[float, float, float]]:
+    """Hough circles (normalized cx, cy, r) when OpenCV is available."""
+    if cv2 is None:
+        return []
+    gray = np.asarray(img.convert("L").resize(_SIZE), dtype=np.uint8)
+    gray = cv2.medianBlur(gray, 3)
+    found = cv2.HoughCircles(
+        gray, cv2.HOUGH_GRADIENT, dp=1.2, minDist=8, param1=90, param2=12, minRadius=2, maxRadius=14
+    )
+    if found is None:
+        return []
+    w, h = _SIZE
+    return [(float(cx) / w, float(cy) / h, float(r)) for cx, cy, r in found[0]]
+
+
 def candidates(frame: Image.Image) -> list[dict]:
     """Roundish, bright, small blobs that could be the ball."""
+    mask = _color_mask(frame)
     out: list[dict] = []
-    for comp in cvutil.components(_color_mask(frame)):
+    for comp in cvutil.components(mask):
         area = comp["area"]
         if area < _MIN_AREA or area > _MAX_AREA:
             continue
@@ -44,36 +72,57 @@ def candidates(frame: Image.Image) -> list[dict]:
         aspect = bw / max(bh, 1)
         fill = area / max(bw * bh, 1)
         if 0.4 <= aspect <= 2.5 and fill >= 0.4:
-            out.append({"cx": comp["cx"], "cy": comp["cy"], "area": area})
+            out.append({"cx": comp["cx"], "cy": comp["cy"], "area": area, "src": "blob"})
+
+    # A Hough circle only counts if it sits on ball-coloured pixels (fewer false positives).
+    h, w = mask.shape
+    for cx, cy, r in _circles(frame):
+        px = min(w - 1, max(0, int(cx * w)))
+        py = min(h - 1, max(0, int(cy * h)))
+        if not mask[py, px]:
+            continue
+        area = int(math.pi * max(r, 1) ** 2)
+        if _MIN_AREA <= area <= _MAX_AREA:
+            out.append({"cx": round(cx, 3), "cy": round(cy, 3), "area": area, "src": "circle"})
     return out
 
 
+def _predict(track: dict) -> tuple[float, float]:
+    pts = track["points"]
+    if len(pts) >= 2 and track.get("vx") is not None:
+        return pts[-1]["cx"] + track["vx"], pts[-1]["cy"] + track["vy"]
+    return pts[-1]["cx"], pts[-1]["cy"]
+
+
 def track(frames: list[Image.Image], timestamps: list[float]) -> list[dict]:
-    """Greedy nearest-neighbour tracking; returns tracks as time-ordered points."""
+    """Constant-velocity nearest-neighbour tracking; returns tracks as time-ordered points."""
     tracks: list[dict] = []
     for i, frame in enumerate(frames):
         cands = candidates(frame)
         for tr in tracks:
             tr["matched"] = False
-        for cand in cands:
-            best = None
-            best_d = _MAX_STEP
-            for tr in tracks:
-                if tr["matched"]:
+        # Match the closest candidate to each track's predicted next position.
+        for tr in tracks:
+            if tr["matched"]:
+                continue
+            px, py = _predict(tr)
+            best, best_d = None, _MAX_STEP
+            for cand in cands:
+                if cand.get("used"):
                     continue
-                d = ((tr["last"][0] - cand["cx"]) ** 2 + (tr["last"][1] - cand["cy"]) ** 2) ** 0.5
+                d = math.hypot(px - cand["cx"], py - cand["cy"])
                 if d < best_d:
-                    best_d, best = d, tr
+                    best_d, best = d, cand
             if best is not None:
-                best["points"].append({"t": round(float(timestamps[i]), 2), "cx": cand["cx"], "cy": cand["cy"]})
-                best["last"] = (cand["cx"], cand["cy"])
-                best["matched"] = True
-                best["missed"] = 0
-            else:
+                best["used"] = True
+                _append(tr, best, timestamps[i])
+        for cand in cands:
+            if not cand.get("used"):
                 tracks.append(
                     {
-                        "points": [{"t": round(float(timestamps[i]), 2), "cx": cand["cx"], "cy": cand["cy"]}],
-                        "last": (cand["cx"], cand["cy"]),
+                        "points": [{"t": round(float(timestamps[i]), 2), "cx": cand["cx"], "cy": cand["cy"], "area": cand["area"]}],
+                        "vx": None,
+                        "vy": None,
                         "matched": True,
                         "missed": 0,
                     }
@@ -87,21 +136,81 @@ def track(frames: list[Image.Image], timestamps: list[float]) -> list[dict]:
     return tracks
 
 
+def _append(tr: dict, cand: dict, t: float) -> None:
+    prev = tr["points"][-1]
+    vx = cand["cx"] - prev["cx"]
+    vy = cand["cy"] - prev["cy"]
+    # Smooth the velocity a little so one noisy point doesn't throw the prediction.
+    tr["vx"] = vx if tr.get("vx") is None else 0.6 * vx + 0.4 * tr["vx"]
+    tr["vy"] = vy if tr.get("vy") is None else 0.6 * vy + 0.4 * tr["vy"]
+    tr["points"].append({"t": round(float(t), 2), "cx": cand["cx"], "cy": cand["cy"], "area": cand["area"]})
+    tr["matched"] = True
+    tr["missed"] = 0
+
+
+def _speed_profile(points: list[dict]) -> list[float]:
+    out: list[float] = []
+    for i in range(1, len(points)):
+        dt = max(1e-3, points[i]["t"] - points[i - 1]["t"])
+        out.append(math.hypot(points[i]["cx"] - points[i - 1]["cx"], points[i]["cy"] - points[i - 1]["cy"]) / dt)
+    return out
+
+
+def _reversals(points: list[dict], axis: str) -> list[float]:
+    """Times where the track reverses on ``axis`` ('x' hit, 'y' bounce)."""
+    key = "cx" if axis == "x" else "cy"
+    events: list[float] = []
+    for i in range(2, len(points)):
+        v1 = points[i - 1][key] - points[i - 2][key]
+        v2 = points[i][key] - points[i - 1][key]
+        if v1 * v2 < 0 and abs(v1) > 0.005 and abs(v2) > 0.005:
+            events.append(points[i]["t"])
+    return events
+
+
 def contacts(main_track: dict) -> list[float]:
     """Times where the tracked ball reverses direction (hit/bounce proxy)."""
-    pts = main_track["points"]
-    events: list[float] = []
-    for i in range(2, len(pts)):
-        vx1 = pts[i - 1]["cx"] - pts[i - 2]["cx"]
-        vy1 = pts[i - 1]["cy"] - pts[i - 2]["cy"]
-        vx2 = pts[i]["cx"] - pts[i - 1]["cx"]
-        vy2 = pts[i]["cy"] - pts[i - 1]["cy"]
-        speed = (vx2 * vx2 + vy2 * vy2) ** 0.5
-        reverse_x = vx1 * vx2 < 0 and abs(vx1) > 0.005 and abs(vx2) > 0.005
-        reverse_y = vy1 * vy2 < 0 and abs(vy1) > 0.005 and abs(vy2) > 0.005
-        if (reverse_x or reverse_y) and speed > 0.01:
-            events.append(pts[i]["t"])
-    return events
+    return _reversals(main_track["points"], "x")
+
+
+def trajectory3d(main_track: dict) -> list[dict]:
+    """Shallow 3D path: (x, y) as seen plus a depth ``z`` from apparent blob size.
+
+    Depth is *relative* (monocular): bigger blob = nearer. ``z`` is normalized so
+    the median sits at 1.0. Heuristic — direction of depth change is meaningful,
+    absolute distance is not.
+    """
+    pts = [p for p in main_track["points"] if p.get("area")]
+    if len(pts) < 3:
+        return []
+    areas = sorted(p["area"] for p in pts)
+    ref = areas[len(areas) // 2] or 1.0
+    out: list[dict] = []
+    for p in pts:
+        z = round(math.sqrt(ref / max(p["area"], 1)), 3)
+        out.append({"t": p["t"], "x": p["cx"], "y": p["cy"], "z": z})
+    return out
+
+
+def overlay(frames: list[Image.Image], info: dict) -> Image.Image | None:
+    """Draw the main ball path over the middle frame of the track."""
+    tracks = info.get("tracks") or []
+    if not frames or not tracks:
+        return None
+    main = tracks[0].get("points") or []
+    if len(main) < 2:
+        return None
+    base = frames[min(range(len(frames)), key=lambda i: abs(i - len(frames) // 2))].convert("RGB").copy()
+    w, h = base.size
+    draw = ImageDraw.Draw(base)
+    xy = [(int(p["cx"] * w), int(p["cy"] * h)) for p in main]
+    if len(xy) >= 2:
+        draw.line(xy, fill=(56, 189, 248), width=max(2, w // 320))
+    for i, (x, y) in enumerate(xy):
+        r = max(3, w // 160)
+        colour = (249, 115, 22) if i == len(xy) - 1 else (56, 189, 248)
+        draw.ellipse((x - r, y - r, x + r, y + r), outline=colour, width=max(2, w // 480))
+    return base
 
 
 def rally_segments(activity: list[dict], timestamps: list[float]) -> list[dict]:
@@ -131,23 +240,46 @@ def detect(frames: list[Image.Image], timestamps: list[float], activity: list[di
     tracks = track(frames, timestamps)
     main = tracks[0] if tracks else None
     contact_times = contacts(main) if main else []
+    bounce_times = _reversals(main["points"], "y") if main else []
     rallies = rally_segments(activity, timestamps)
     visible = len({p["t"] for p in (main["points"] if main else [])})
+    speeds = _speed_profile(main["points"]) if main and len(main["points"]) > 1 else []
+    traj = trajectory3d(main) if main else []
+
+    stats = {
+        "visible_frames": visible,
+        "max_speed": round(max(speeds), 4) if speeds else 0.0,
+        "mean_speed": round(sum(speeds) / len(speeds), 4) if speeds else 0.0,
+        "hits": [round(t, 2) for t in contact_times],
+        "bounces": [round(t, 2) for t in bounce_times],
+    }
+    if main and main["points"]:
+        xs = [p["cx"] for p in main["points"]]
+        ys = [p["cy"] for p in main["points"]]
+        stats["x_range"] = round(max(xs) - min(xs), 3)
+        stats["y_range"] = round(max(ys) - min(ys), 3)
 
     if not main and not rallies:
         summary = "no ball-like object or rally segments detected (heuristic, low confidence)"
     else:
-        rally_txt = ", ".join(f"{r['start']}-{r['end']}s" for r in rallies) or "none"
-        bits = [f"rally segment(s) {rally_txt}"]
+        bits = []
         if main:
-            bits.append(f"ball tracked in {visible} frames")
+            bits.append(f"ball tracked in {visible} frames (max speed {stats['max_speed']}/s)")
         if contact_times:
-            bits.append(f"~{len(contact_times)} direction change(s) at {', '.join(f'{t}s' for t in contact_times[:6])}")
+            bits.append(f"~{len(contact_times)} hit reversal(s)")
+        if bounce_times:
+            bits.append(f"~{len(bounce_times)} bounce reversal(s)")
+        if rallies:
+            bits.append("rally segment(s) " + ", ".join(f"{r['start']}-{r['end']}s" for r in rallies))
         summary = "; ".join(bits) + " (heuristic, low confidence)"
 
     return {
         "summary": summary,
+        "detector": "cv2+hough" if cv2 is not None else "blob",
         "tracks": [{"points": t["points"]} for t in tracks[:3]],
         "contacts": contact_times,
+        "bounces": bounce_times,
         "rallies": rallies,
+        "stats": stats,
+        "trajectory3d": traj,
     }

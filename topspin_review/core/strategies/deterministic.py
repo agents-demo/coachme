@@ -18,7 +18,7 @@ from topspin_review.core.progress import Progress, tick
 from topspin_review.core.stages import observe
 from topspin_review.core.stages.coach import retrieve_reports, verify_issues
 from topspin_review.core.stages.coach.prompts import rubric_text
-from topspin_review.core.stages.measure import quality, sampling
+from topspin_review.core.stages.measure import ball, quality, sampling
 from topspin_review.core.strategies.base import Strategy
 from topspin_review.core.video import imaging, metrics
 from topspin_review.domain import report as report_schema
@@ -86,6 +86,13 @@ def _save_artifacts(video_path: str, frames, timestamps, measured: dict, region_
         heat_path = runtime.ARTIFACTS_DIR / f"{stem}_heatmap.png"
         imaging.save_png(heat, heat_path)
         paths["heatmap"] = str(heat_path)
+
+    # Ball path overlay (heuristic) — where the tracked ball moved.
+    ball_img = ball.overlay(frames, measured.get("ball") or {})
+    if ball_img is not None:
+        ball_path = runtime.ARTIFACTS_DIR / f"{stem}_ball.png"
+        imaging.save_png(ball_img, ball_path)
+        paths["ball"] = str(ball_path)
 
     if measured.get("pose"):
         annotated = pose.overlay(frames, measured["pose"])

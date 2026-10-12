@@ -52,6 +52,7 @@
     if (a.motion) out.push({ id: "Motion map", kind: "motion", caption: "Motion map — red = where you moved most." });
     if (a.heatmap) out.push({ id: "Footwork map", kind: "heatmap", caption: "Footwork heat map — red = where you spent the most time." });
     if (a.frames) out.push({ id: "Sampled frames", kind: "frames", caption: "Sampled frames the model read." });
+    if (a.ball) out.push({ id: "Ball path", kind: "ball", caption: "Traced ball path (heuristic tracker — a signal, not a measurement)." });
     if (a.pose_hero) {
       out.push({ id: "Pose", kind: "pose_hero", caption: "Body-pose skeleton on a full frame (peak-motion moment)." });
     } else if (a.pose) {
