@@ -62,6 +62,7 @@
       <p class="mt-1 line-clamp-2 text-xs text-muted">{report.summary || report.focus || "—"}</p>
       <div class="mt-2 flex items-center gap-2 text-xs text-muted">
         <span class="rounded-full border border-line px-2 py-0.5">{report.issue_count} issue{report.issue_count === 1 ? "" : "s"}</span>
+        {#if report.has_pose}<span class="rounded-full border border-line px-2 py-0.5" title="A body-pose skeleton overlay is available">pose</span>{/if}
         {#if report.focus}<span class="truncate">{report.focus}</span>{/if}
       </div>
     </div>

@@ -51,6 +51,7 @@ def _summary(report: dict) -> dict[str, Any]:
         "has_source": _exists(source),
         "has_frames": _exists((report.get("artifacts") or {}).get("frames")),
         "has_motion": _exists((report.get("artifacts") or {}).get("motion")),
+        "has_pose": _exists((report.get("artifacts") or {}).get("pose")),
         "lower_range": returns.get("lower_lateral_range"),
     }
 
