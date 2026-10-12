@@ -67,7 +67,94 @@ new endpoints go in a `routes/*.py` and are registered in `surfaces/gui2/server/
 
 ---
 
-## 3. Phase A — Demo quick wins (ship first)
+## 3. Phase 0 — Foundations (do first)
+
+Quality, trust, and reliability — cheap items that de-risk every feature above and make the
+demos believable. These are **not** user-visible features but they decide whether the visible ones
+are worth anything.
+
+### 0.1 Evaluation & prompt regression
+- **Goal:** a labeled benchmark + regression tests so issue quality and tokens don't silently drift.
+- **Where:** extend `tests/eval/expected.json`; a new `tests/integration/evaluate_reports.py`
+  already scores saved reports — add a **graded** suite (per-clip expected issues/metrics) and a
+  `pytest` marker that runs it offline on shipped reports.
+- **Acceptance:** `pytest -m eval` prints per-clip issue precision/recall vs labels; CI fails on
+  regression below thresholds; a golden report snapshot test for the prompt.
+- **Effort:** `M`. **Risks:** label authoring (needs a coach or careful build).
+
+### 0.2 Calibration & normalization
+- **Goal:** make metrics **comparable across sessions** (camera distance/angle/zoom change the
+  pixel-relative numbers today — so "progress" can be an artifact).
+- **Where:** `core/video/metrics.py` — add a normalization step; options: (a) table/court detection
+  as a scale reference, (b) subject-height normalization (pose shoulder→ankle), (c) an explicit user
+  "distance/height" input stored in the profile (`core/config.py` + profile store).
+- **Data:** store `calibration` in the report; re-state metrics in calibrated units where possible.
+- **Acceptance:** two clips of the same player at different distances produce comparable ranges
+  (within a stated tolerance); report notes the calibration basis; `compare` warns when uncalibrated.
+- **Effort:** `L`. **Risks:** detection robustness; may need a calibration UI (B/) later.
+
+### 0.3 Feedback loop (thumbs / corrections)
+- **Goal:** capture 👍/👎 and "this is wrong" per issue; store it; use it to improve prompts.
+- **Where:** report gains `feedback[]`; route `POST /reports/{stem}/feedback`; small UI on each issue.
+- **Acceptance:** feedback persists; a `tools/` view lists disagreements per prompt version; prompt
+  changes reference the feedback.
+- **Effort:** `S`. **Risks:** building the loop is easy; acting on it is the real work.
+
+### 0.4 UX fundamentals
+- **Goal:** first-run onboarding, empty states, a **session library** (search / filter / tags /
+  rename / notes / bulk delete), and **token streaming** so the report appears as it's written.
+- **Where:** gui2 (`routes`, `read.py`, a new `tags` field) + streaming via SSE on the analyze path.
+- **Acceptance:** tag/rename/search sessions; report streams progressively; clear loading/empty/error
+  states everywhere.
+- **Effort:** `M` (search/tags) + `M` (streaming). **Risks:** SSE plumbing with the job manager.
+
+### 0.5 i18n / localization
+- **Goal:** localize the UI and the report (the prompts already carry Chinese safety text).
+- **Where:** `domain/` gets a message catalog; gui2 a `locale` param; report rendered in the chosen
+  language; label the language in the report.
+- **Acceptance:** EN + ZH end-to-end (UI + generated report); switch without code changes.
+- **Effort:** `M`. **Risks:** prompt quality per language.
+
+### 0.6 Model portability & offline
+- **Goal:** run against any provider (OpenAI / Anthropic / vLLM / Ollama) and, ideally, **fully
+  offline** with a local model.
+- **Where:** `integrations/agents/settings.py` (provider, per-stage model names) — there is already
+  a `MODEL_PROVIDER`; verify all three model clients work; add per-**stage** model choice
+  (cheap model for verification, strong for the report).
+- **Acceptance:** switch provider via `.env`; an offline/local run produces a report with no network.
+- **Effort:** `M`. **Risks:** provider quirks (tool-calling, vision).
+
+### 0.7 Privacy & compliance
+- **Goal:** video of a person is sensitive — be explicit.
+- **Where:** a short data-handling doc; consent line on the Analyze screen; retention setting
+  (`core/config.py`, e.g. `RETENTION_DAYS`, auto-prune on `runtime.setup()`); a "delete everything"
+  action; keep local-first as the default and share opt-in.
+- **Acceptance:** retention prunes old data; consent recorded; no frames leave the machine unless
+  sharing is on.
+- **Effort:** `S`–`M`. **Risks:** none technical; policy.
+
+### 0.8 Deployment & ops
+- **Goal:** make gui2 safely hostable.
+- **Where:** optional **auth** + HTTPS behind a reverse proxy; a `Dockerfile`; CORS tightening;
+  structured logs + error tracking; a health/ready endpoint (exists) for orchestration.
+- **Acceptance:** one-command container run; auth-gated when exposed; errors surfaced with run ids.
+- **Effort:** `M`. **Risks:** auth scope creep — keep it minimal or behind a flag.
+
+---
+
+## 4. Phase A — Demo quick wins (ship first)
+
+### A0. Deterministic demo fallback (highest demo value — do before A1)
+- **Ref:** our own taketwo shipped-timeline pattern.
+- **Goal:** a live model/prompt hiccup must never break a demo. Ship a **fallback**: for the sample
+  clips, bundle recorded metrics + a pre-validated report; if the run errors or overruns, use the
+  fallback and label it ("recorded run").
+- **Where:** `core/strategies/base.py` (catch → fallback), stored fixtures under
+  `runtime/data/demos/` or `tests/` shipped sidecars; the UI shows a small "demo" badge.
+- **Acceptance:** with the network off, "Use the sample clip" still yields a full report + proof viz;
+  the badge makes clear it's the shipped fallback.
+- **Effort:** `S`. **Risks:** none; keep the fallback clearly labelled (never fake a live result).
+
 
 ### A1. A/B video compare slider
 - **Ref:** CE, OF, V1. Most persuasive "look, I improved" visual.
@@ -144,7 +231,7 @@ new endpoints go in a `routes/*.py` and are registered in `surfaces/gui2/server/
 
 ---
 
-## 4. Phase B — Core review experience (make it feel pro)
+## 5. Phase B — Core review experience (make it feel pro)
 
 ### B1. 3D biomechanics from pose world-landmarks
 - **Ref:** SB, Uplift. Our biggest credible leap.
@@ -217,7 +304,7 @@ new endpoints go in a `routes/*.py` and are registered in `surfaces/gui2/server/
 
 ---
 
-## 5. Phase C — Analysis depth (the hard moat)
+## 6. Phase C — Analysis depth (the hard moat)
 
 ### C1. Trained ball tracking → shot/rally model
 - **Ref:** SV (its whole product is this).
@@ -269,7 +356,7 @@ new endpoints go in a `routes/*.py` and are registered in `surfaces/gui2/server/
 
 ---
 
-## 6. Phase D — Product, platform & growth
+## 7. Phase D — Product, platform & growth
 
 ### D1. Mobile app (capture-first)
 - **Ref:** all.
@@ -339,7 +426,7 @@ new endpoints go in a `routes/*.py` and are registered in `surfaces/gui2/server/
 
 ---
 
-## 7. Cross-cutting work
+## 8. Cross-cutting work
 
 - **Data model:** add optional blocks to the report without breaking the schema:
   `pose3d`, `ball2`, `rallies[]`, `players[]`, `annotations[]`, `skills{}`, `plan`, `reel`.
@@ -355,10 +442,12 @@ new endpoints go in a `routes/*.py` and are registered in `surfaces/gui2/server/
 
 ---
 
-## 8. Prioritization (recommended sequence)
+## 9. Prioritization (recommended sequence)
 
 | # | Feature | Ref | Effort | Demo? | Impact |
 |---|---|---|---|---|---|
+| A0 | Deterministic demo fallback | — | S | ✅✅ | High |
+| 0.* | Foundations: eval, calibration, feedback, UX, i18n, offline, privacy, ops | — | M–L | — | High |
 | A1 | A/B video compare slider | CE/OF/V1 | M | ✅✅ | High |
 | A2 | Voice-over summary | OF | S | ✅ | Medium |
 | A3 | Auto highlight reel | SV/HC | M | ✅ | High |
@@ -376,9 +465,11 @@ new endpoints go in a `routes/*.py` and are registered in `surfaces/gui2/server/
 | D2 | Coach/team | HL | XL | — | High (B2B) |
 | D1 | Mobile app | all | XL | — | High |
 
-**Build order:** A6 → A5 → A2 → A1 → A3 → A4 → B1 → B2 → B3 → B5 → D3 → C1 → C2 → D1/D2 → C3/D5/D6.
+**Build order:** A0 → 0.2 (calibration) → 0.1 (eval) → 0.3 (feedback) → A6 → A5 → A2 → A1 → A3 → A4 → B1 → B2 → B3 → B5 → D3 → C1 → C2 → D1/D2 → C3/D5/D6. (0.4–0.8 run alongside.)
 
 **Milestones**
+- **M0 (foundations):** A0 + 0.1–0.8. Demo fallback, eval harness, calibration, feedback, session
+  library + streaming, i18n, offline/provider portability, privacy, deploy/ops.
 - **M1 (demo-ready):** A1–A7. One polished, shareable result with compare, voice, reel, pose charts.
 - **M2 (pro review):** B1, B2, B3, B5, B6, B7. Telestration + 3D metrics + a real review timeline.
 - **M3 (depth):** C1, C2, C5. Ball tracking + auto segmentation + thorough mode.
@@ -386,7 +477,23 @@ new endpoints go in a `routes/*.py` and are registered in `surfaces/gui2/server/
 
 ---
 
-## 9. Non-goals / guardrails
+## 10. Metrics of success
+
+How we know it's working (not vanity features):
+
+- **Report usefulness** — % of sessions with a 👍 on the focus/top issue (from 0.3). Target ≥ 70%.
+- **Issue precision / recall** — vs the labeled benchmark (0.1); tracked per release.
+- **Trust** — hallucination-flag rate must stay **0**; **100%** of issues must cite evidence
+  (`domain/evaluate.py` already enforces the pieces).
+- **Adherence** — % of sessions where a drill was checked off and the athlete returned within 7 days.
+- **Retention** — sessions per user per week; week-2 return rate.
+- **Time-to-insight** — median analyze time (target ≲ 90 s for a ~10 s clip on a warm run).
+- **Demo reliability** — % of demo runs that complete or fall back cleanly (A0). Target **100%**.
+- **Cost** — median tokens + $ per session, and cache-hit ratio (Diagnostics already shows these).
+
+---
+
+## 11. Non-goals / guardrails
 
 - **Not medical.** D6 stays non-diagnostic and disclaimed.
 - **No fabricated measurements.** Keep the "measured-only" stance (`domain/evaluate.py` flags
