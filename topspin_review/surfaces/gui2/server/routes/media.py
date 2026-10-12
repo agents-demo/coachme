@@ -11,7 +11,7 @@ from topspin_review.surfaces.gui2.server import read
 router = APIRouter()
 
 _NO_STORE = {"Cache-Control": "no-store, max-age=0"}
-_ARTIFACTS = ("frames", "motion", "pose", "pose_hero", "metrics", "observability")
+_ARTIFACTS = ("frames", "motion", "heatmap", "pose", "pose_hero", "metrics", "observability")
 
 
 @router.get("/source/{stem}")

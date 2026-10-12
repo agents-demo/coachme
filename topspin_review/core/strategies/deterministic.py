@@ -80,6 +80,13 @@ def _save_artifacts(video_path: str, frames, timestamps, measured: dict, region_
         imaging.save_png(motion_map, motion_path)
         paths["motion"] = str(motion_path)
 
+    # Footwork heat map: where the subject spent the most time (from the subject track).
+    heat = metrics.position_heatmap(frames, measured.get("track") or [])
+    if heat is not None:
+        heat_path = runtime.ARTIFACTS_DIR / f"{stem}_heatmap.png"
+        imaging.save_png(heat, heat_path)
+        paths["heatmap"] = str(heat_path)
+
     if measured.get("pose"):
         annotated = pose.overlay(frames, measured["pose"])
         if annotated:

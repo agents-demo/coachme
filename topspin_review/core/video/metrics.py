@@ -12,7 +12,7 @@ it the region/box metrics below are the pose proxy.
 from __future__ import annotations
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from topspin_review.core.video import cvutil
 from topspin_review.integrations import pose
@@ -217,6 +217,34 @@ def posture(track: list[dict | None]) -> dict:
 def pose_estimate(frames: list[Image.Image]) -> list | None:
     """Optional real pose (joints). Returns ``None`` unless ``mediapipe`` is installed."""
     return pose.estimate(frames)
+
+
+def position_heatmap(
+    frames: list[Image.Image], track: list[dict | None], size: tuple[int, int] = (640, 360)
+) -> Image.Image | None:
+    """Heatmap of where the subject stood (from the subject track), on a faded first frame."""
+    pts = [(t["cx"], t["cy"]) for t in track if t]
+    if len(pts) < 3 or not frames:
+        return None
+    w, h = size
+    grid = Image.new("L", (w // 4, h // 4), 0)
+    px = grid.load()
+    for cx, cy in pts:
+        x = min(grid.width - 1, max(0, int(cx * grid.width)))
+        y = min(grid.height - 1, max(0, int(cy * grid.height)))
+        px[x, y] = min(255, px[x, y] + 60)
+    grid = grid.resize((w, h), Image.BILINEAR).filter(ImageFilter.GaussianBlur(w / 60))
+    heat = np.asarray(grid, dtype=np.float32) / 255.0
+    peak = float(heat.max())
+    if peak <= 0:
+        return None
+    heat /= peak
+    base = np.asarray(frames[0].convert("RGB").resize(size), dtype=np.float32)
+    out = base.copy()
+    out[..., 0] = np.clip(base[..., 0] + heat * 200.0, 0, 255)
+    out[..., 1] = np.clip(base[..., 1] * (1.0 - 0.7 * heat), 0, 255)
+    out[..., 2] = np.clip(base[..., 2] * (1.0 - 0.7 * heat), 0, 255)
+    return Image.fromarray(out.astype(np.uint8))
 
 
 def region_from_box(box: tuple[float, float, float, float], size: tuple[int, int] = _ANALYSIS_SIZE) -> np.ndarray:
