@@ -26,7 +26,7 @@
   const issuesItem = {
     how: "The moments the coach flagged in the written report — each mark is one issue's timestamp (colour = confidence). Click to jump; hover to read.",
     method: "The AI coach reads the sampled frames plus the measured metrics and writes issues, each pinned to a timestamp with a confidence; a verification pass then removes any it can't support.",
-    detail: "the report — core/stages/observe + core/stages/coach (AI model)",
+    detail: "the report — core/stages/observe + core/stages/coach (AI agent)",
     local: false,
   };
   const momentsItem = {
