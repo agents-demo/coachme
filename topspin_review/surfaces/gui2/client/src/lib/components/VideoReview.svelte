@@ -319,6 +319,7 @@
         <MotionChart {series} playhead={currentTime} onseek={seek} />
         <p class="mt-1 text-xs text-muted">
           Movement over time — a spike is a step or a swing. Click the chart to jump the video.
+          <span class="font-mono">metrics.activity()</span> · step <span>measuring motion</span> · <span class="font-mono">report → metrics.activity</span>
         </p>
       </div>
     {/if}

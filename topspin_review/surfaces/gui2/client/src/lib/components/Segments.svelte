@@ -14,6 +14,9 @@
         ><span class="block truncate">{s.label}</span></button>
       {/each}
     </div>
-    <p class="mt-1 text-xs text-muted">Auto-segmented phases — click a block to jump (heuristic).</p>
+    <p class="mt-1 text-xs text-muted">
+      Auto-segmented phases — click a block to jump (heuristic).
+      <span class="font-mono">ball.phase_segments()</span> · step <span>tracking ball</span> · <span class="font-mono">report → metrics.ball.segments</span>
+    </p>
   </div>
 {/if}

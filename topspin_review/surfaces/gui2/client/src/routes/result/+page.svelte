@@ -182,9 +182,10 @@
     {#if tab === "Watch"}
       <div class="mb-4 rounded-xl border-2 border-line bg-surface/40 p-4">
         <div class="flex items-center justify-between gap-3">
-          <h2 class="font-display font-bold">What this session produced</h2>
+          <h2 class="font-display font-bold">What this session produced <span class="text-xs font-normal text-muted">— and how</span></h2>
           <button onclick={openTour} class="shrink-0 text-xs font-semibold text-accent">What is all this?</button>
         </div>
+        <p class="mt-1 text-xs text-muted">Each item shows the code that produced it, the pipeline step, and where it lands.</p>
         <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {#each outputGroups as g}
             <div>
@@ -199,7 +200,7 @@
                       class:border-line={watchView !== it.id}
                     >
                       <span class="text-sm font-semibold">{it.label}</span>
-                      <span class="block text-xs text-muted">{it.what}</span>
+                      <span class="block font-mono text-[11px] text-muted">{it.producer} · {it.step}</span>
                     </button>
                   </li>
                 {/each}
@@ -217,7 +218,7 @@
               {#each g.items as it}
                 <button
                   onclick={() => (watchView = it.id)}
-                  title={it.what}
+                  title={`${it.producer} · ${it.step} · ${it.where}`}
                   class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
                   class:border-accent={watchView === it.id}
                   class:text-app={watchView === it.id}
@@ -230,7 +231,7 @@
         </div>
       {/if}
 
-      {#if current?.id === "video" || !current}
+      {#if !current || ["video", "movement", "segments", "clips"].includes(current.id)}
         <VideoReview {report} />
       {:else if current.id === "pose_angles"}
         <PoseChart {report} />
@@ -244,8 +245,13 @@
         </figure>
       {/if}
 
-      {#if current && current.id !== "video"}
-        <p class="mt-2 text-xs text-muted"><b class="text-app">{current.what}</b> {current.why}</p>
+      {#if current}
+        <p class="mt-2 text-xs text-muted">
+          made by <span class="font-mono text-app">{current.producer}</span>
+          · step <span class="text-app">{current.step}</span>
+          · <span class="font-mono">{current.where}</span>
+          {#if current.local}<span class="ml-1 rounded border-2 border-line px-1.5 py-0.5 text-[10px]">on-device · no tokens</span>{/if}
+        </p>
       {/if}
     {:else if tab === "Coaching"}
       <div class="mb-3 flex justify-end">
@@ -401,8 +407,9 @@
           <button onclick={closeTour} title="Close" class="rounded-lg border-2 border-line px-2 py-0.5 text-sm font-semibold">✕</button>
         </div>
         <p class="mt-1 text-sm text-muted">
-          Each analysis turns your clip into a few things, grouped like this. Open any of them from the
-          <b class="text-app">Watch</b> tab; the numbers behind them are on <b class="text-app">Diagnostics</b>.
+          For each item: the <b class="text-app">code</b> that produced it, the pipeline <b class="text-app">step</b>
+          it ran in, and <b class="text-app">where</b> it lands. Everything here is computed on-device (no tokens);
+          only the written report uses the model.
         </p>
         <div class="mt-4 space-y-3">
           {#each outputGroups as g}
@@ -410,7 +417,10 @@
               <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{g.group}</div>
               <ul class="mt-1 space-y-1 text-sm">
                 {#each g.items as it}
-                  <li><b class="text-app">{it.label}</b> — <span class="text-muted">{it.what}</span></li>
+                  <li>
+                    <b class="text-app">{it.label}</b> — <span class="font-mono text-muted">{it.producer}</span>,
+                    step <span class="text-muted">{it.step}</span> → <span class="font-mono text-muted">{it.where}</span>
+                  </li>
                 {/each}
               </ul>
             </div>
