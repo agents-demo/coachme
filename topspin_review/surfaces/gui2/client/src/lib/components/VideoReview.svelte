@@ -1,5 +1,5 @@
 <script>
-  import { source, saveAnnotations } from "$lib/api";
+  import { source, saveAnnotations, trimUrl } from "$lib/api";
   import { issueGroups, movementSeries, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
   import MotionChart from "./MotionChart.svelte";
   import Timeline from "./Timeline.svelte";
@@ -59,6 +59,19 @@
   function onLoaded() {
     if (video) video.playbackRate = rate;
   }
+
+  // B8 trim & export.
+  let tStart = $state(0);
+  let tEnd = $state(0);
+  let tFmt = $state("mp4");
+  let tVert = $state(false);
+  $effect(() => {
+    if (report) {
+      tStart = 0;
+      tEnd = Math.round(duration * 10) / 10;
+    }
+  });
+  const trimHref = $derived(trimUrl(report.stem, tStart, tEnd, tFmt, tVert));
 
   // B2 telestration: draw arrow / circle / pen on the frozen frame (normalized 0..1).
   const COLOR = "#f97316";
@@ -207,10 +220,31 @@
       {/if}
     </div>
 
+    {#if report.has_source && !isPhoto}
+      <details class="mt-2 text-sm">
+        <summary class="cursor-pointer font-semibold text-muted">Trim &amp; export</summary>
+        <div class="mt-2 flex flex-wrap items-end gap-3 text-xs">
+          <label class="text-muted">Start <span class="font-mono">{tStart.toFixed(1)}s</span>
+            <input type="range" min="0" max={duration} step="0.1" bind:value={tStart} class="mt-1 block w-36" />
+          </label>
+          <label class="text-muted">End <span class="font-mono">{tEnd.toFixed(1)}s</span>
+            <input type="range" min="0" max={duration} step="0.1" bind:value={tEnd} class="mt-1 block w-36" />
+          </label>
+          <label class="text-muted">Format
+            <select bind:value={tFmt} class="mt-1 block rounded border-2 border-line bg-surface px-2 py-1">
+              <option value="mp4">mp4</option>
+              <option value="gif">gif</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-1 text-muted"><input type="checkbox" bind:checked={tVert} /> vertical 9:16</label>
+          <a href={trimHref} download class="rounded-lg bg-accent px-3 py-1.5 font-semibold text-white">Export clip</a>
+        </div>
+      </details>
+    {/if}
+
     {#if !isPhoto && report.has_source}
       <div class="mt-3">
-        <Timeline {markers} {duration} playhead={currentTime} onseek={seek} />
-        <p class="mt-1 text-xs text-muted">
+        <Timeline {markers} {duration} playhead={currentTime} onseek={seek} />        <p class="mt-1 text-xs text-muted">
           Issue timeline — each mark is a flagged moment (red = high, amber = medium, grey = low confidence). Click to jump.
         </p>
       </div>

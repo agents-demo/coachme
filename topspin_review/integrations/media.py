@@ -97,3 +97,42 @@ def make_reel(clip_paths: list[str], out_path: Path, width: int = 1280, height: 
                 os.unlink(list_file)
             except Exception:
                 pass
+
+
+def export_clip(
+    video: str, start: float, end: float, out_path: Path, fmt: str = "mp4", vertical: bool = False, width: int = 720
+) -> bool:
+    """Trim ``[start, end]`` and export as mp4 or gif; optional 9:16 vertical crop."""
+    import subprocess
+
+    start = max(0.0, float(start))
+    end = max(start + 0.1, float(end))
+    try:
+        exe = _ffmpeg()
+        if fmt == "gif":
+            vf = []
+            if vertical:
+                vf.append("crop=ih*9/16:ih:(iw-ih*9/16)/2:0")
+            vf += ["fps=12", f"scale={width}:-1:flags=lanczos"]
+            graph = ",".join(vf) + ",split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
+            subprocess.run(
+                [exe, "-y", "-ss", str(start), "-to", str(end), "-i", str(video), "-vf", graph, str(out_path)],
+                capture_output=True,
+            )
+        else:
+            vf = []
+            if vertical:
+                vf.append("crop=ih*9/16:ih:(iw-ih*9/16)/2:0")
+                vf.append("scale=720:1280")
+            vf.append("setsar=1")
+            subprocess.run(
+                [
+                    exe, "-y", "-ss", str(start), "-to", str(end), "-i", str(video),
+                    "-vf", ",".join(vf), "-c:v", "libx264", "-preset", "veryfast",
+                    "-pix_fmt", "yuv420p", "-an", str(out_path),
+                ],
+                capture_output=True,
+            )
+        return out_path.exists() and out_path.stat().st_size > 0
+    except Exception:
+        return False

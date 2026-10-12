@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, Response
 
@@ -71,6 +73,25 @@ def reel(stem: str) -> FileResponse:
         if not media.make_reel(paths, out):
             raise HTTPException(status_code=500, detail="could not build the reel")
     return FileResponse(out, media_type="video/mp4", headers=_NO_STORE)
+
+
+@router.get("/trim/{stem}")
+def trim(stem: str, start: float, end: float, fmt: str = "mp4", vertical: bool = False) -> FileResponse:
+    """Export a trimmed clip (mp4 or gif), optionally cropped 9:16 for socials."""
+    if fmt not in ("mp4", "gif"):
+        raise HTTPException(status_code=400, detail="fmt must be mp4 or gif")
+    report = store.find_report(stem)
+    src = (report or {}).get("source")
+    if not src or not Path(src).exists():
+        raise HTTPException(status_code=404, detail="source not found")
+    tag = f"{round(start, 1)}_{round(end, 1)}{'_v' if vertical else ''}"
+    out = runtime.ARTIFACTS_DIR / f"{stem}_trim_{tag}.{fmt}"
+    if not out.exists():
+        from topspin_review.integrations import media
+
+        if not media.export_clip(src, start, end, out, fmt=fmt, vertical=vertical):
+            raise HTTPException(status_code=500, detail="could not export the clip")
+    return FileResponse(out, media_type=("image/gif" if fmt == "gif" else "video/mp4"), headers=_NO_STORE)
 
 
 @router.get("/cards/{stem}")
