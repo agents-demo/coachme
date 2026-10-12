@@ -67,12 +67,12 @@
             style={`width:${totalSeconds ? Math.max(1.5, (secs / totalSeconds) * 100) : 0}%`}
           ></div>
         </div>
-        <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(1)}s</span>
+        <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(2)}s</span>
       </li>
     {/each}
   </ol>
   <p class="mt-3 text-xs text-muted">
-    Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(1)}s</span>
+    Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(2)}s</span>
     &nbsp;·&nbsp;bar length and numbers are <b>durations</b> (how long each step took), not timestamps.
   </p>
 {/if}

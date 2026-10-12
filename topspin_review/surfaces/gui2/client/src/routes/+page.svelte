@@ -49,7 +49,7 @@
   <h2 class="mt-8 font-display text-lg font-bold">Sessions</h2>
   <div class="mt-4 grid gap-4 sm:grid-cols-2">
     {#each reports as r (r.stem)}
-      <ReportCard report={r} />
+      <ReportCard report={r} ondeleted={load} />
     {/each}
   </div>
 {/if}

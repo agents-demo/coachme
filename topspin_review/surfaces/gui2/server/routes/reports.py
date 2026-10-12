@@ -27,6 +27,14 @@ def report(stem: str) -> dict:
     return found
 
 
+@router.delete("/reports/{stem}")
+def delete_report(stem: str) -> dict:
+    """Delete a session's report and its artifacts/exports/cache."""
+    if read.get_report(stem) is None:
+        raise HTTPException(status_code=404, detail="unknown report")
+    return {"deleted": store.delete_report(stem)}
+
+
 @router.get("/reports/{stem}/ask")
 def ask(stem: str, q: str) -> dict:
     if not q.strip():

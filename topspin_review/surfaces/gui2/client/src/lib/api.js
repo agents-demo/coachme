@@ -8,6 +8,7 @@ export async function api(path, opts) {
 
 export const getReports = () => api("/reports");
 export const getReport = (stem) => api(`/reports/${encodeURIComponent(stem)}`);
+export const deleteReport = (stem) => api(`/reports/${encodeURIComponent(stem)}`, { method: "DELETE" });
 export const ask = (stem, q) => api(`/reports/${encodeURIComponent(stem)}/ask?q=${encodeURIComponent(q)}`);
 export const compare = (a, b) => api(`/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
 
