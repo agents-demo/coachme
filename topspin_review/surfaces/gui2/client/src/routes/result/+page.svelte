@@ -36,11 +36,14 @@
   const clipWarnings = $derived(report?.quality?.warnings || []);
   const caveats = $derived((report?.limitations || []).filter((l) => !clipWarnings.includes(l)));
 
-  // Everything this run produced, grouped in plain language (see lib/outputs.js).
+  // Everything this run produced (see lib/outputs.js).
   const outputGroups = $derived(outputs(report));
   const outputItems = $derived(outputGroups.flatMap((g) => g.items));
-  const current = $derived(outputItems.find((i) => i.id === watchView) || outputItems[0]);
-  const hasImages = $derived(outputItems.length > 1);
+  // Charts shown inside the Video view (and clips) are not separate tabs.
+  const INLINE = ["movement", "segments", "clips"];
+  const tabItems = $derived(outputItems.filter((i) => !INLINE.includes(i.id)));
+  const current = $derived(tabItems.find((i) => i.id === watchView) || tabItems[0]);
+  const hasImages = $derived(tabItems.length > 1);
 
   // Spoken summary: focus + the top few issues + the summary paragraph.
   const summaryText = $derived.by(() => {
@@ -180,53 +183,18 @@
 
   <div class="mt-3">
     {#if tab === "Watch"}
-      <div class="mb-4 rounded-xl border-2 border-line bg-surface/40 p-4">
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="font-display font-bold">What this session produced <span class="text-xs font-normal text-muted">— and how</span></h2>
-          <button onclick={openTour} class="shrink-0 text-xs font-semibold text-accent">What is all this?</button>
-        </div>
-        <p class="mt-1 text-xs text-muted">Each item shows the code that produced it, the pipeline step, and where it lands.</p>
-        <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {#each outputGroups as g}
-            <div>
-              <div class="text-[11px] font-semibold uppercase tracking-wide text-muted">{g.group}</div>
-              <ul class="mt-1.5 space-y-1.5">
-                {#each g.items as it}
-                  <li>
-                    <button
-                      onclick={() => (watchView = it.id)}
-                      class="block w-full rounded-lg border-2 px-2.5 py-1.5 text-left transition"
-                      class:border-accent2={watchView === it.id}
-                      class:border-line={watchView !== it.id}
-                    >
-                      <span class="text-sm font-semibold">{it.label}</span>
-                      <span class="block font-mono text-[11px] text-muted">{it.producer} · {it.step}</span>
-                    </button>
-                  </li>
-                {/each}
-              </ul>
-            </div>
-          {/each}
-        </div>
-      </div>
-
       {#if hasImages}
-        <div class="mb-3 space-y-2">
-          {#each outputGroups as g}
-            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span class="w-28 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted">{g.group}</span>
-              {#each g.items as it}
-                <button
-                  onclick={() => (watchView = it.id)}
-                  title={`${it.producer} · ${it.step} · ${it.where}`}
-                  class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
-                  class:border-accent={watchView === it.id}
-                  class:text-app={watchView === it.id}
-                  class:border-transparent={watchView !== it.id}
-                  class:text-muted={watchView !== it.id}
-                >{it.label}</button>
-              {/each}
-            </div>
+        <div class="mb-3 flex flex-wrap gap-x-4 gap-y-1">
+          {#each tabItems as it}
+            <button
+              onclick={() => (watchView = it.id)}
+              title={`${it.producer} · ${it.step} · ${it.where}`}
+              class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
+              class:border-accent={watchView === it.id}
+              class:text-app={watchView === it.id}
+              class:border-transparent={watchView !== it.id}
+              class:text-muted={watchView !== it.id}
+            >{it.label}</button>
           {/each}
         </div>
       {/if}
