@@ -14,8 +14,5 @@
         ><span class="block truncate">{s.label}</span></button>
       {/each}
     </div>
-    <p class="mt-1 text-xs text-muted">
-      The clip split into rally / movement phases, found from the ball changing direction. Click a block to jump.
-    </p>
   </div>
 {/if}
