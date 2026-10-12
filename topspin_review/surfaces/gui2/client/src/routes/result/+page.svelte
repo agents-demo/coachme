@@ -186,6 +186,7 @@
 
   <div class="mt-3">
     {#if tab === "Review"}
+      <p class="mb-5 text-xs text-muted">🖥 Everything on this tab is computed on your device — no AI tokens. Only the written report uses the model.</p>
       {#if visibleGroups.length > 1}
         <div class="mb-5 flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-line pb-2">
           {#each visibleGroups as g}
@@ -202,7 +203,6 @@
       {/if}
 
       {#if activeGroup}
-        <p class="mb-4 text-xs text-muted">🖥 Everything on this tab is computed on your device — no AI tokens. Only the written report uses the model.</p>
         <div class="space-y-7">
           {#each activeGroup.items as it (it.id)}
             <section>
