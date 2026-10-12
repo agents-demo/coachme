@@ -23,6 +23,25 @@ def next_seq() -> int:
         return next(_SEQ)
 
 
+# Optional provider returning the current pipeline stage (set by the strategy from the
+# progress object), so every model/tool event can be attributed to the step it ran in.
+_STAGE_PROVIDER: Any = None
+
+
+def set_stage_provider(provider: Any) -> None:
+    global _STAGE_PROVIDER
+    _STAGE_PROVIDER = provider
+
+
+def current_stage() -> str:
+    if _STAGE_PROVIDER is None:
+        return ""
+    try:
+        return str(_STAGE_PROVIDER() or "")
+    except Exception:
+        return ""
+
+
 def _clip(text: Any, limit: int | None = 8000) -> str:
     text = str(text or "")
     if limit is None or len(text) <= limit:
@@ -197,6 +216,7 @@ class CallTrace:
             entry = {
                 "label": label,
                 "model": model,
+                "stage": current_stage(),
                 "started": started,
                 "seq": seq,
                 "input": sanitize_messages(messages, limit=None) if self.record_io else [],
@@ -238,6 +258,7 @@ class ToolTrace:
             self._open[key] = {
                 "name": str(kwargs.get("tool_name") or ""),
                 "arguments": _tool_arguments(kwargs.get("inputs")),
+                "stage": current_stage(),
                 "started": time.monotonic(),
                 "seq": next_seq(),
             }
@@ -247,6 +268,7 @@ class ToolTrace:
             rec = self._open.pop(key, None) or {
                 "name": str(kwargs.get("tool_name") or ""),
                 "arguments": "",
+                "stage": current_stage(),
                 "started": time.monotonic(),
                 "seq": next_seq(),
             }

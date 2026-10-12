@@ -65,6 +65,11 @@ class Strategy:
 
         params.session = start_session(params.video_path)
 
+        # Attribute every model/tool event to the step (progress stage) it runs in.
+        from topspin_review.integrations.agents.telemetry import traces
+
+        traces.set_stage_provider(params.progress.stage if params.progress else None)
+
     # -- shared report steps ---------------------------------------------- #
     def _build_report_agent(
         self,

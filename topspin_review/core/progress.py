@@ -59,6 +59,11 @@ class Progress:
                 "timings": list(self._timings),
             }
 
+    def stage(self) -> str:
+        """The stage currently running (for attributing telemetry to a step)."""
+        with self._lock:
+            return self._stage
+
 
 def tick(progress: Progress | None, stage: str, pct: float, detail: str = "") -> None:
     """Update ``progress`` if present; never raises."""

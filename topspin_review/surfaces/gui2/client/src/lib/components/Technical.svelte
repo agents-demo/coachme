@@ -97,6 +97,25 @@
 
   let view = $state("Stages");
   const TABS = ["Stages", "Calls & tools"];
+
+  // Merge model calls + tool calls into one sequence, then group by the step (stage) each ran in.
+  const events = $derived.by(() => {
+    const evs = [];
+    for (const c of calls) evs.push({ kind: "model", seq: c.seq ?? 0, data: c });
+    for (const t of tools) evs.push({ kind: "tool", seq: t.seq ?? 0, data: t });
+    return evs.sort((a, b) => (a.seq || 0) - (b.seq || 0));
+  });
+  const byStage = $derived.by(() => {
+    const map = new Map();
+    for (const e of events) {
+      const key = e.data.stage || "—";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(e);
+    }
+    return [...map.entries()]
+      .map(([stage, items]) => ({ stage, items, first: Math.min(...items.map((i) => i.seq || 0)) }))
+      .sort((a, b) => a.first - b.first);
+  });
 </script>
 
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -184,55 +203,72 @@
       <p class="text-sm text-muted">No stage timings saved.</p>
     {/if}
   {:else}
-    {#if calls.length || tools.length}
-      <div class="space-y-2">
-        {#each calls as c}
-          <details class="card p-3 text-sm">
-            <summary class="cursor-pointer font-semibold">
-              {#if c.probe}
-                🔍 image-support probe
-              {:else}
-                ↳ Model call {c.model ? `· ${c.model}` : ""} {c.label ? `· ${c.label}` : ""}
-              {/if}
-              <span class="ml-2 text-xs text-muted">
-                {c.prompt_tokens ?? 0} in / {c.completion_tokens ?? 0} out{#if c.cached_tokens} · {c.cached_tokens} cached{/if}{#if c.seconds} · {Number(c.seconds).toFixed(2)}s{/if}
-              </span>
-            </summary>
-            {#if c.probe}
-              <p class="mt-2 text-xs text-muted">
-                A one-word self-check that the model can read images
-                (“What color is this image?” → “{c.output}”). Not part of the analysis.
-              </p>
-            {/if}
-            <div class="mt-2 space-y-2">
-              {#each c.input || [] as m}
-                <div>
-                  <div class="text-xs uppercase text-muted">{m.role}</div>
-                  <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
+    {#if events.length}
+      {#each byStage as g}
+        <h4 class="mt-4 flex items-baseline gap-2 text-sm font-semibold first:mt-0">
+          <span class="text-accent">{g.stage && g.stage !== "—" ? shortLabel(g.stage) : "Other"}</span>
+          {#if g.stage && g.stage !== "—" && STEP_GROUP[g.stage]}
+            <span class="text-[11px] font-normal uppercase tracking-wide text-muted">{STEP_GROUP[g.stage]}</span>
+          {/if}
+          <span class="ml-auto text-[11px] font-normal text-muted">
+            {g.items.length} event{g.items.length === 1 ? "" : "s"}
+          </span>
+        </h4>
+        <div class="mt-1 space-y-2">
+          {#each g.items as e}
+            {#if e.kind === "model"}
+              {@const c = e.data}
+              <details class="card p-3 text-sm">
+                <summary class="cursor-pointer font-semibold">
+                  {#if c.probe}
+                    🔍 image-support probe
+                  {:else}
+                    ↳ Model call {c.model ? `· ${c.model}` : ""}
+                  {/if}
+                  <span class="ml-2 text-xs text-muted">
+                    {c.prompt_tokens ?? 0} in / {c.completion_tokens ?? 0} out{#if c.cached_tokens} · {c.cached_tokens} cached{/if}{#if c.seconds} · {Number(c.seconds).toFixed(2)}s{/if}
+                  </span>
+                </summary>
+                {#if c.probe}
+                  <p class="mt-2 text-xs text-muted">
+                    A one-word self-check that the model can read images
+                    (“What color is this image?” → “{c.output}”). Not part of the analysis.
+                  </p>
+                {/if}
+                <div class="mt-2 space-y-2">
+                  {#each c.input || [] as m}
+                    <div>
+                      <div class="text-xs uppercase text-muted">{m.role}</div>
+                      <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
+                    </div>
+                  {/each}
+                  {#if c.output}
+                    <div class="text-xs uppercase text-muted">output</div>
+                    <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{c.output}</pre>
+                  {/if}
                 </div>
-              {/each}
-              {#if c.output}
-                <div class="text-xs uppercase text-muted">output</div>
-                <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{c.output}</pre>
-              {/if}
-            </div>
-          </details>
-        {/each}
-        {#each tools as t}
-          <details class="card p-3 text-sm">
-            <summary class="cursor-pointer font-semibold">
-              🔧 Tool · {t.name || "tool"}{#if t.seconds}<span class="ml-2 text-xs text-muted">{Number(t.seconds).toFixed(2)}s</span>{/if}
-            </summary>
-            <div class="mt-2 text-xs uppercase text-muted">arguments</div>
-            <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{pretty(t.arguments) || "{}"}</pre>
-            {#if t.result}
-              <div class="mt-2 text-xs uppercase text-muted">result</div>
-              <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{t.result}</pre>
+              </details>
+            {:else}
+              {@const t = e.data}
+              <details class="card p-3 text-sm">
+                <summary class="cursor-pointer font-semibold">
+                  🔧 Tool · {t.name || "tool"}{#if t.seconds}<span class="ml-2 text-xs text-muted">{Number(t.seconds).toFixed(2)}s</span>{/if}
+                </summary>
+                <div class="mt-2 text-xs uppercase text-muted">arguments</div>
+                <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{pretty(t.arguments) || "{}"}</pre>
+                {#if t.result}
+                  <div class="mt-2 text-xs uppercase text-muted">result</div>
+                  <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{t.result}</pre>
+                {/if}
+                {#if t.error}<p class="mt-2 text-xs text-bad">{t.error}</p>{/if}
+              </details>
             {/if}
-            {#if t.error}<p class="mt-2 text-xs text-bad">{t.error}</p>{/if}
-          </details>
-        {/each}
-      </div>
+          {/each}
+        </div>
+      {/each}
+      <p class="mt-4 text-xs text-muted">
+        Merged model + tool events, grouped under the step they ran in and ordered by sequence.
+      </p>
     {:else}
       <p class="text-sm text-muted">No call detail saved (SAVE_CALL_IO may be off).</p>
     {/if}
