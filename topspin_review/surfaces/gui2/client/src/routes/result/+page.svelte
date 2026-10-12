@@ -62,8 +62,14 @@
   <div class="flex items-baseline gap-3">
     <h1 class="font-display text-2xl font-bold">{report.stem}</h1>
     <span class="text-sm text-muted">{report.sport} · {report.date}</span>
-    <span class="ml-auto font-display text-xl font-bold {scoreTone(report.score?.score ?? 0)}">
-      {report.score?.score ?? 0}/100
+    <span
+      class="ml-auto text-right"
+      title="How trustworthy the report is (evidence coverage, confidence, no unsupported spin/speed claims) — not how well you played."
+    >
+      <span class="font-display text-xl font-bold {scoreTone(report.score?.score ?? 0)}">
+        {report.score?.score ?? 0}<span class="text-sm text-muted">/100</span>
+      </span>
+      <span class="block text-[11px] uppercase tracking-wide text-muted">report quality</span>
     </span>
   </div>
 
@@ -137,7 +143,15 @@
         <h3 class="font-display font-bold">Keep in mind</h3>
         <ul class="mt-1 list-disc pl-5 text-sm">{#each report.limitations as l}<li>{l}</li>{/each}</ul>
       {/if}
-      <p class="mt-3 text-sm">Report confidence score: <b>{report.score?.score ?? 0}/100</b></p>
+      <p class="mt-3 text-sm">
+        <b class={scoreTone(report.score?.score ?? 0)}>{report.score?.score ?? 0}/100</b> —
+        how trustworthy the report is, not how well you played. Built from
+        evidence coverage ({Math.round((report.score?.evidence_coverage || 0) * 100)}% of issues cite a timestamp),
+        the confidence mix, and a check for unsupported claims (spin / ball speed / exact angles).
+      </p>
+      {#if report.score?.hallucination_flags?.length}
+        <p class="mt-1 text-xs text-bad">Unsupported claims flagged: {report.score.hallucination_flags.join(", ")}</p>
+      {/if}
       <div class="mt-3 flex gap-3 text-sm">
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "md")} download>Download Markdown</a>
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "html")} target="_blank" rel="noreferrer">Open HTML</a>
