@@ -42,6 +42,9 @@ topspin-review = "topspin_review.surfaces.cli:main"
 where = ["."]
 include = ["topspin_review*"]
 
+[tool.setuptools.package-data]
+"topspin_review.surfaces.gui2" = ["client/build/**", "client/build/*"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py311"

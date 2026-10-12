@@ -1,0 +1,4 @@
+node_modules/
+.svelte-kit/
+.DS_Store
+# build/ is committed so the server can serve /gui2 without a Node toolchain at runtime.

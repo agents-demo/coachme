@@ -53,11 +53,15 @@ surfaces  ->  core  ->  integrations  ->  domain
 - New **config knob**: application behaviour in `core/config.py`; endpoint/credentials in
   `integrations/agents/settings.py`.
 
-## The Streamlit UI (`surfaces/gui/`)
+## The GUIs (`surfaces/gui/` and `surfaces/gui2/`)
 
-- `ui.py` (entry) builds the pages → `nav.py` holds the `PAGE_OBJS` registry + `go()`/`open_report()`
-  → `app_pages/` (one module per page) → `components/` (reusable renderers) → `job.py` (worker +
-  prelude) → `data.py`, `style.py`, `config.py`, `timeline.py`.
+- **`surfaces/gui/`** — the Streamlit UI. `ui.py` (entry) builds the pages → `nav.py` holds the
+  `PAGE_OBJS` registry + `go()`/`open_report()` → `app_pages/` (one module per page) →
+  `components/` (reusable renderers) → `job.py` (worker + prelude) → `data.py`, `style.py`,
+  `config.py`, `timeline.py`.
+- **`surfaces/gui2/`** — the web app: `server/` (FastAPI `app.py` + read model `read.py` + `jobs.py`
+  + `routes/`) serving `client/` (the SvelteKit SPA, built into `client/build/`) at `/gui2/`. Edit
+  `client/src/` and rebuild with `npm run build` inside `client/`.
 
 ## Commits & PRs
 

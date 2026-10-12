@@ -93,6 +93,19 @@ One engine, several inbound adapters. All expose the same analysis.
 - **Progress** — the trend across sessions and a compare tool.
 - **You** — your profile (sport, level, dominant hand, goal).
 
+**Web app (gui2)** → http://127.0.0.1:8000/gui2/:
+
+```powershell
+cd topspin_review\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
+& $PY -m uvicorn topspin_review.surfaces.gui2:app --port 8000
+```
+
+A FastAPI server (`server/`) serving a SvelteKit SPA (`client/`). Same engine, built for the
+**video** experience: scrub the source clip, tap a **moment** to jump to it, the **movement chart**
+follows the playhead (click it to seek), **Report / Movement / Details / Technical** tabs, an **Ask**
+box, a live stage feed with **Cancel/Retry**, and a **Progress** page that compares two sessions.
+The server also exposes the JSON API (§6).
+
 **CLI** — see §5.
 
 **HTTP API** — a minimal API over the same service (`uvicorn topspin_review.surfaces.api:app`), §6.
@@ -144,6 +157,24 @@ Start with `uvicorn topspin_review.surfaces.api:app`. Routes:
 | GET | `/reports/{stem}` | one full report |
 | POST | `/analyze` | analyze a `{video_path, region_box?}` and return the report |
 
+The gui2 server (`uvicorn topspin_review.surfaces.gui2:app`) is a richer API and also serves the SPA:
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/health`, `/ready` | liveness · readiness checks |
+| GET | `/reports`, `/reports/{stem}` | list · one report (with `calls`/`tools`/`timeline`/`score`) |
+| GET | `/reports/{stem}/ask?q=…` | ask about a report |
+| GET | `/compare?a=&b=` | diff two sessions |
+| POST | `/analyze` | synchronous analysis |
+| POST | `/analyze/async` | enqueue → `{job_id}` (poll `/jobs/{id}`) |
+| GET | `/jobs`, `/jobs/{id}` | jobs · status+progress |
+| POST | `/jobs/{id}/cancel`, `/jobs/{id}/retry` | cancel · retry |
+| POST | `/upload` | upload a clip/photo → `{path}` |
+| GET | `/samples` | local clips (sample + uploads) |
+| GET | `/source/{stem}`, `/artifact/{stem}/{kind}`, `/clip/{stem}/{key}` | media (video, artifacts, clips) |
+| GET | `/export/{stem}/{md|html}` | downloadable report |
+| — | `/gui2/` | the SvelteKit SPA |
+
 ---
 
 ## 7. Dev scripts
@@ -151,6 +182,13 @@ Start with `uvicorn topspin_review.surfaces.api:app`. Routes:
 ```powershell
 & $PY tests\integration\make_sample.py        # synthetic table-tennis clip → runtime/data/sample.mp4
 & $PY tests\integration\evaluate_reports.py   # quality gate against tests/eval/expected.json (CI-safe)
+```
+
+Rebuild the gui2 web app after editing its client:
+
+```powershell
+cd topspin_review\surfaces\gui2\client
+npm run build          # writes client/build/ which the server serves at /gui2/
 ```
 
 The full-pipeline integration tests (`tests/integration/`) need a configured model endpoint and

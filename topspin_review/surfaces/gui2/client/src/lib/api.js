@@ -1,0 +1,37 @@
+// Same-origin when served by FastAPI; CORS is enabled for the Vite dev server.
+// The API lives at the server root; the SPA is mounted under /gui2.
+export async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok) throw new Error(`${res.status} ${path}`);
+  return res.json();
+}
+
+export const getReports = () => api("/reports");
+export const getReport = (stem) => api(`/reports/${encodeURIComponent(stem)}`);
+export const ask = (stem, q) => api(`/reports/${encodeURIComponent(stem)}/ask?q=${encodeURIComponent(q)}`);
+export const compare = (a, b) => api(`/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
+
+export const analyzeAsync = (body) =>
+  api("/analyze/async", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+export const jobStatus = (id) => api(`/jobs/${encodeURIComponent(id)}`);
+export const cancel = (id) => api(`/jobs/${encodeURIComponent(id)}/cancel`, { method: "POST" });
+export const retry = (id) => api(`/jobs/${encodeURIComponent(id)}/retry`, { method: "POST" });
+export const jobs = () => api("/jobs");
+export const readiness = () => api("/ready");
+export const samples = () => api("/samples");
+
+export const source = (stem) => `/source/${encodeURIComponent(stem)}`;
+export const artifact = (stem, kind) => `/artifact/${encodeURIComponent(stem)}/${kind}`;
+export const clip = (stem, key) => `/clip/${encodeURIComponent(stem)}/${encodeURIComponent(key)}`;
+export const exportUrl = (stem, fmt) => `/export/${encodeURIComponent(stem)}/${fmt}`;
+
+export async function upload(file) {
+  const form = new FormData();
+  form.append("file", file);
+  return api("/upload", { method: "POST", body: form });
+}

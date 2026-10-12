@@ -91,38 +91,50 @@ sessions and compares any two. **Sessions** is the history; **You** holds your p
 
 ---
 
-## Option B — command line
+## Option B — Web app (gui2)
 
-Set your profile once, then analyze:
+The web app is a FastAPI server that serves a SvelteKit single-page app. It gives a smoother
+video experience: scrub the video, tap a moment to jump to it, sync the movement chart, compare
+sessions. Build it once (needs Node), then run the server:
 
 ```powershell
-# sport, level, hand, goal
-& $PY -m topspin_review.surfaces.cli profile
-
-# analyze a video (defaults to runtime/data/sample.mp4)
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4
-
-# see past reports
-& $PY -m topspin_review.surfaces.cli history
+cd topspin_review\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
+& $PY -m uvicorn topspin_review.surfaces.gui2:app --port 8000
 ```
 
-Useful extras:
+Then open:
+
+```
+http://127.0.0.1:8000/gui2/
+```
+
+On the **Analyze** page: use the sample clip, upload a video/photo, or paste a path; then click
+**Analyze**. A live feed shows each stage; when it finishes it opens the **Result** — video on the
+left, **moments to review** on the right (tap one to jump the video), the movement chart under the
+video (click it to seek), and **Report / Movement / Details / Technical** tabs.
+
+---
+
+## Option C — command line
+
+Start the app in one window:
 
 ```powershell
-# restrict analysis to a player region: left,top,right,bottom (0..1)
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4 --box 0.2,0.1,0.8,0.9
+& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4
+```
 
-# let the model drive the analysis
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4 --agentic
+Other commands:
 
-# export / compare
+```powershell
+& $PY -m topspin_review.surfaces.cli profile   # set your profile
+& $PY -m topspin_review.surfaces.cli history   # past reports
 & $PY -m topspin_review.surfaces.cli export runtime/data/sample.mp4
-& $PY -m topspin_review.surfaces.cli compare session1.mp4 session2.mp4
+& $PY -m topspin_review.surfaces.cli compare a.mp4 b.mp4
 ```
 
 ---
 
-## Option C — programmatic / HTTP / MCP
+## Option D — programmatic / HTTP / MCP
 
 ```python
 from topspin_review.core.service import analyze_video_sync

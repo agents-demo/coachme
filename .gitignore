@@ -8,4 +8,6 @@ __pycache__/
 .idea/
 .pytest_cache/
 .ruff_cache/
+node_modules/
+.svelte-kit/
 .DS_Store

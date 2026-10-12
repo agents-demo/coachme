@@ -65,10 +65,18 @@ Run from the `topspin-review` folder.
 & $PY -m topspin_review.surfaces.cli history
 ```
 
-Web UI:
+Web UI (Streamlit):
 
 ```powershell
 & $PY -m streamlit run topspin_review/surfaces/gui/ui.py
+```
+
+Web app (gui2 — FastAPI + SvelteKit SPA). Build once, then run:
+
+```powershell
+cd topspin_review\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
+& $PY -m uvicorn topspin_review.surfaces.gui2:app --port 8000
+# then open http://127.0.0.1:8000/gui2/
 ```
 
 Make a synthetic sample video (no recording needed):
@@ -119,7 +127,7 @@ topspin-review/
 │   │   ├── stages/           #   measure → observe → coach
 │   │   ├── strategies/       #   deterministic / agentic
 │   │   └── video/            #   shared video primitives (metrics, imaging, pose, cvutil)
-│   └── surfaces/             # inbound adapters: cli/, gui/, api.py, mcp/, readiness.py
+│   └── surfaces/             # inbound adapters: cli/, gui/ (Streamlit), gui2/ (web app), api.py, mcp/, readiness.py
 ├── tests/
 │   ├── unit/                 # pipeline + architecture tests
 │   ├── integration/          # full-pipeline checks (need a model endpoint)

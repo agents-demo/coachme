@@ -13,7 +13,7 @@ surfaces  ──▶  core  ──▶  integrations  ──▶  domain
 | Domain | `domain/` | Pure rules: report schema, progress, comparison, scoring, text rendering. No I/O, no third-party libs. | stdlib only |
 | Integrations | `integrations/` | Outbound adapters: the openjiuwen agentic machinery (`agents/`: settings, models, agent builder, rails, tools, runner, logs, telemetry), `storage/`, `reporting`, `media`. | stdlib, openjiuwen |
 | Core | `core/` | The pipeline: stages (`measure`, `observe`, `coach`), the strategies that run them, the shared video primitives (`video/`), the run machinery, jobs, config and the service facade. | integrations, domain |
-| Surfaces | `surfaces/` | Inbound adapters: CLI, MCP, HTTP API, Streamlit UI, readiness checks. | anything |
+| Surfaces | `surfaces/` | Inbound adapters: CLI, Streamlit UI, web app (gui2), HTTP API, MCP, readiness checks. | anything |
 
 The rules are enforced by `tests/unit/test_architecture.py` (import direction,
 "domain is pure", "openjiuwen only in `integrations/agents`", and the `STAGES`
@@ -43,7 +43,8 @@ topspin_review/
 │   └── video/             # shared video primitives: metrics, imaging, pose, cvutil
 └── surfaces/              # inbound adapters
     ├── cli/               # command-line interface
-    ├── gui/              # the Streamlit UI
+    ├── gui/               # the Streamlit UI
+    ├── gui2/              # the web app: server/ (FastAPI) + client/ (SvelteKit SPA)
     ├── api.py             # minimal HTTP API
     ├── mcp/               # MCP server + tools
     └── readiness.py       # environment readiness checks

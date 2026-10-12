@@ -22,10 +22,17 @@ $PY = "C:\Workspace\openjiuwen\jiuwenswarm\.venv\Scripts\python.exe"
 
 ## 2. Run
 
-**Web UI (recommended)** — opens http://localhost:8501:
+**Web UI (Streamlit)** — opens http://localhost:8501:
 
 ```powershell
 & $PY -m streamlit run topspin_review/surfaces/gui/ui.py
+```
+
+**Web app (gui2)** — FastAPI + SvelteKit SPA at http://127.0.0.1:8000/gui2/:
+
+```powershell
+cd topspin_review\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
+& $PY -m uvicorn topspin_review.surfaces.gui2:app --port 8000
 ```
 
 **CLI** — set your profile, then analyze a video:
