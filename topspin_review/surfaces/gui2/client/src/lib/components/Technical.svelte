@@ -112,8 +112,9 @@
       {/each}
       <p class="mt-3 text-xs text-muted">
         Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(2)}s</span>
-        &nbsp;·&nbsp;bar length and numbers are <b>durations</b>. Grouped by the pipeline stage
-        (<b>measure → observe → coach</b>, plus setup/finalize).
+        &nbsp;·&nbsp;bars and numbers are <b>durations</b>. Each row is a <b>step</b>; steps are grouped
+        under the <b>stage</b> they run in — the pipeline's three stages are
+        <b>measure → observe → coach</b> (plus setup before and finalize after).
       </p>
     {:else}
       <p class="text-sm text-muted">No stage timings saved.</p>
