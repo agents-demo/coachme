@@ -276,7 +276,7 @@
         <div class="mt-8">
           <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Rally phases</h3>
           {#if catalog.segments}<Provenance item={catalog.segments} />{/if}
-          <div class="mt-2"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
+          <div class="mt-2"><Segments segments={report.metrics?.ball?.segments || []} {duration} playhead={currentTime} onseek={seek} /></div>
         </div>
       {/if}
       <div class="mt-8">
