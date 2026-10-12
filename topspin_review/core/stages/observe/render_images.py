@@ -6,7 +6,8 @@ from pathlib import Path
 
 from PIL import Image
 
-from topspin_review.core.video import imaging, metrics, pose
+from topspin_review.core.video import imaging, metrics
+from topspin_review.integrations import pose
 
 
 def save(image: Image.Image, media_dir: Path, name: str) -> str:

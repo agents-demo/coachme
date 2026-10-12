@@ -20,9 +20,9 @@ from topspin_review.core.stages.coach import retrieve_reports, verify_issues
 from topspin_review.core.stages.coach.prompts import rubric_text
 from topspin_review.core.stages.measure import quality, sampling
 from topspin_review.core.strategies.base import Strategy
-from topspin_review.core.video import imaging, metrics, pose
+from topspin_review.core.video import imaging, metrics
 from topspin_review.domain import report as report_schema
-from topspin_review.integrations import media
+from topspin_review.integrations import media, pose
 from topspin_review.integrations.storage import runtime, store
 
 

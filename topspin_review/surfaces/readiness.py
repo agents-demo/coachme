@@ -31,7 +31,7 @@ def checks() -> list[dict]:
     pose_ok = False
     if mp_installed:
         try:
-            from topspin_review.core.video import pose as pose_mod
+            from topspin_review.integrations import pose as pose_mod
 
             pose_ok = pose_mod.available()
         except Exception:

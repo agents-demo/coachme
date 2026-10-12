@@ -208,7 +208,7 @@ def test_mcp_server_module_imports():
 
 
 def test_pose_graceful_without_mediapipe():
-    from topspin_review.core.video import pose
+    from topspin_review.integrations import pose
 
     assert pose.summarize(None) == {}
     assert pose.overlay([], None) == []
