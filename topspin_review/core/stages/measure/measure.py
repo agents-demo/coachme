@@ -42,13 +42,17 @@ def measure(
     if not frames:
         raise ValueError("No frames could be extracted from the input.")
 
-    tick(progress, "measuring motion", 22)
+    tick(progress, "measuring motion", 20)
     steps = metrics.activity(frames, timestamps)
+
+    # Ball tracking is its own step: with the ONNX detector it's per-frame inference
+    # (the slowest CV pass after pose) and can be toggled off.
+    tick(progress, "tracking ball", 26)
     ball_info = ball.detect(frames, timestamps, steps)
     measured = metrics.analyze(frames, timestamps, ball=ball_info, region_box=region_box, with_pose=False)
 
     # Pose is its own step: it's the slowest part (mediapipe) and can be skipped.
-    tick(progress, "estimating pose", 30)
+    tick(progress, "estimating pose", 32)
     pose_seq = pose.estimate(frames)
     measured["pose"] = pose_seq
     measured["pose_summary"] = pose.summarize(pose_seq)
