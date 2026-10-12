@@ -1,6 +1,6 @@
 // Everything an analysis produces, grouped in plain language by what the user
 // cares about, with technical provenance (which step produced it, which code,
-// where it lands, whether it needs tokens). Shared by the Watch tabs and the
+// where it lands, whether it needs tokens). Shared by the Review tabs and the
 // first-run tour. `kind` maps to an artifact image route; items without a `kind`
 // render via a dedicated component (video, charts, 3D). Items whose id is in
 // INLINE (in result/+page.svelte) live inside the Video view, not as tabs.

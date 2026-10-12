@@ -14,7 +14,7 @@
   let report = $state(null);
   let loading = $state(true);
   let error = $state("");
-  let tab = $state("Watch");
+  let tab = $state("Review");
   let watchView = $state("video");
   let question = $state("");
   let answers = $state([]);
@@ -24,7 +24,7 @@
 
   // User-facing tabs on the left; the raw execution detail is a separate "utility" tab on the right.
   const MAIN_TABS = [
-    { id: "Watch", hint: "See everything this session produced — the clip, how you moved, the ball, your body — plus the moments to look at." },
+    { id: "Review", hint: "Your footage plus what was measured from it — movement, the ball, your body — and the moments to look at." },
     { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
     { id: "Notes", hint: "Caveats about this clip, the report-quality score, and downloads." },
   ];
@@ -186,7 +186,7 @@
   <p class="mt-2 text-xs text-muted">{[...MAIN_TABS, TECH_TAB].find((t) => t.id === tab)?.hint}</p>
 
   <div class="mt-3">
-    {#if tab === "Watch"}
+    {#if tab === "Review"}
       {#if visibleGroups.length > 1}
         <div class="mb-2 flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-line pb-1">
           {#each visibleGroups as g}
