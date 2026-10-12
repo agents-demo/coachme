@@ -1,6 +1,6 @@
 <script>
   import { jobStatus, cancel, retry } from "$lib/api";
-  import { JOB_TONE, shortLabel } from "$lib/format";
+  import { JOB_TONE, shortLabel, STEP_GROUP, GROUP_ORDER } from "$lib/format";
 
   let { jobId, onfinished, ondone } = $props();
 
@@ -19,6 +19,13 @@
     }
     feed = steps;
   }
+
+  // Group the running steps by pipeline stage, like Diagnostics.
+  const grouped = $derived.by(() => {
+    const buckets = new Map(GROUP_ORDER.map((g) => [g, []]));
+    for (const s of feed) buckets.get(STEP_GROUP[s.stage] || "Other").push(s);
+    return GROUP_ORDER.map((g) => ({ name: g, items: buckets.get(g) })).filter((x) => x.items.length);
+  });
 
   function start(id) {
     clearInterval(timer);
@@ -77,16 +84,23 @@
         <div class="h-full rounded-full bg-gradient-to-r from-accent to-accent2" style={`width: ${Math.max(2, Math.round(job.progress.pct))}%`}></div>
       </div>
     {/if}
-    {#if feed.length}
-      <ol class="mt-3 space-y-1">
-        {#each feed as s}
-          <li class="flex items-center gap-2 text-sm">
-            <span class={s.state === "running" ? "text-accent2" : "text-good"}>{s.state === "running" ? "●" : "✓"}</span>
-            <span class="text-app">{shortLabel(s.stage)}</span>
-            {#if s.seconds != null}<span class="ml-auto text-xs text-muted">{Number(s.seconds).toFixed(2)}s</span>{/if}
-          </li>
+    {#if grouped.length}
+      <div class="mt-3 space-y-2">
+        {#each grouped as g}
+          <div>
+            <div class="text-[10px] font-semibold uppercase tracking-wide text-accent">{g.name}</div>
+            <ol class="mt-0.5 space-y-1">
+              {#each g.items as s}
+                <li class="flex items-center gap-2 text-sm">
+                  <span class={s.state === "running" ? "text-accent2" : "text-good"}>{s.state === "running" ? "●" : "✓"}</span>
+                  <span class="text-app">{shortLabel(s.stage)}</span>
+                  {#if s.seconds != null}<span class="ml-auto text-xs text-muted">{Number(s.seconds).toFixed(2)}s</span>{/if}
+                </li>
+              {/each}
+            </ol>
+          </div>
         {/each}
-      </ol>
+      </div>
     {/if}
     {#if job.error}<pre class="mt-2 overflow-auto text-xs text-bad">{job.error}</pre>{/if}
     <div class="mt-3 flex gap-3">
