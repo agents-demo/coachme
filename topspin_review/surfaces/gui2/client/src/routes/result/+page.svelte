@@ -220,7 +220,7 @@
                 {:else if it.id === "ball3d"}
                   <Ball3D {report} />
                 {:else if it.kind}
-                  <figure class="max-w-3xl">
+                  <figure>
                     <img src={artifact(report.stem, it.kind)} alt={it.label} class="w-full rounded-xl border-2 border-line" />
                   </figure>
                 {/if}

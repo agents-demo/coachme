@@ -206,7 +206,7 @@
       {:else}
         <div class="relative" bind:this={stage}>
           <!-- svelte-ignore a11y_media_has_caption -->
-          <video bind:this={video} src={source(report.stem)} controls preload="metadata" ontimeupdate={onTime} onloadedmetadata={onLoaded}></video>
+          <video bind:this={video} class="w-full rounded-[14px] border-2 border-line" src={source(report.stem)} controls preload="metadata" ontimeupdate={onTime} onloadedmetadata={onLoaded}></video>
           <svg
             class="absolute inset-0 h-full w-full {drawMode ? "cursor-crosshair" : "pointer-events-none"}"
             viewBox="0 0 1 1" preserveAspectRatio="none"
