@@ -8,6 +8,7 @@
   import Pose3D from "$lib/components/Pose3D.svelte";
   import Ball3D from "$lib/components/Ball3D.svelte";
   import Moments from "$lib/components/Moments.svelte";
+  import TrimExport from "$lib/components/TrimExport.svelte";
   import Provenance from "$lib/components/Provenance.svelte";
   import { outputs } from "$lib/outputs";
   import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
@@ -206,8 +207,15 @@
         <div class="space-y-7">
           {#each activeGroup.items as it (it.id)}
             <section>
-              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
-              <Provenance item={it} />
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
+                  <Provenance item={it} />
+                </div>
+                {#if it.id === "video"}
+                  <TrimExport {report} />
+                {/if}
+              </div>
               <div class="mt-3">
                 {#if it.id === "video"}
                   <VideoReview {report} />
