@@ -25,10 +25,14 @@
   const catalog = $derived(Object.fromEntries(outputs(report).flatMap((g) => g.items).map((i) => [i.id, i])));
   const issuesItem = {
     how: "The moments the coach flagged in the written report — each mark is one issue's timestamp (colour = confidence). Click to jump; hover to read.",
+    method: "The AI coach reads the sampled frames plus the measured metrics and writes issues, each pinned to a timestamp with a confidence; a verification pass then removes any it can't support.",
+    detail: "the report — core/stages/observe + core/stages/coach (AI model)",
     local: false,
   };
   const momentsItem = {
     how: "The same flagged moments as a list — click a time to play just that moment.",
+    method: "Derived from the report's issues: their evidence timestamps become this clickable list.",
+    detail: "surfaces/gui2 client · Moments.svelte (from the report's issues)",
     local: false,
   };
 
