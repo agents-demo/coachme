@@ -30,8 +30,8 @@
 </script>
 
 <div class="min-h-screen bg-ink text-app">
-  <header class="sticky top-0 z-20 border-b-2 border-line bg-ink/85 backdrop-blur">
-    <div class="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
+  <header class="sticky top-0 z-30 h-14 border-b-2 border-line bg-ink/85 backdrop-blur">
+    <div class="mx-auto flex h-full max-w-5xl items-center gap-4 px-4">
       <a href={`${base}/`} class="flex items-center gap-2 font-display text-lg font-bold">
         <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent to-accent2 text-sm text-white">🏓</span>
         Topspin Review

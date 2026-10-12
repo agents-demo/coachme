@@ -9,10 +9,12 @@
   let report = $state(null);
   let loading = $state(true);
   let error = $state("");
-  let tab = $state("Report");
+  let tab = $state("Review");
   let question = $state("");
   let answers = $state([]);
   let asking = $state(false);
+
+  const TABS = ["Review", "Report", "Movement", "Details", "Technical"];
 
   async function load() {
     if (!stem) {
@@ -48,8 +50,6 @@
       asking = false;
     }
   }
-
-  const tabs = ["Report", "Movement", "Details", "Technical"];
 </script>
 
 {#if loading}
@@ -67,25 +67,26 @@
     </span>
   </div>
 
-  <div class="mt-5">
-    <VideoReview {report} />
-  </div>
-
-  <div class="mt-6 flex gap-1 border-b-2 border-line">
-    {#each tabs as t}
-      <button
-        onclick={() => (tab = t)}
-        class="border-b-2 px-4 py-2 text-sm font-semibold transition"
-        class:border-accent={tab === t}
-        class:text-app={tab === t}
-        class:border-transparent={tab !== t}
-        class:text-muted={tab !== t}
-      >{t}</button>
-    {/each}
+  <!-- Tabs sit right under the header, so they are visible before the tall video block. -->
+  <div class="sticky top-14 z-20 -mx-4 mt-4 border-b-2 border-line bg-ink/90 px-4 backdrop-blur">
+    <div class="flex gap-1 overflow-x-auto">
+      {#each TABS as t}
+        <button
+          onclick={() => (tab = t)}
+          class="whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition"
+          class:border-accent={tab === t}
+          class:text-app={tab === t}
+          class:border-transparent={tab !== t}
+          class:text-muted={tab !== t}
+        >{t}</button>
+      {/each}
+    </div>
   </div>
 
   <div class="mt-4">
-    {#if tab === "Report"}
+    {#if tab === "Review"}
+      <VideoReview {report} />
+    {:else if tab === "Report"}
       {#if report.focus}
         <div class="rounded-lg border-2 border-good/40 bg-good/10 p-3 text-sm"><b>Focus next session:</b> {report.focus}</div>
       {/if}
