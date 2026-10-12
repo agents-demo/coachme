@@ -15,13 +15,17 @@
   let asking = $state(false);
 
   // Each tab is named by what the user does there, with a one-line hint.
-  const TABS = [
+  // User-facing tabs on the left; the raw execution detail is a separate "utility" tab on the right.
+  const MAIN_TABS = [
     { id: "Watch", hint: "Play the video. Tap a moment to jump to it; click the chart to seek." },
     { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
     { id: "Model view", hint: "The frames, motion map, and pose the model looked at — how it reached the findings." },
     { id: "Details", hint: "Limitations, the report-quality score, and downloads." },
-    { id: "Under the hood", hint: "Model calls, tokens, and the run timeline (for the curious)." },
   ];
+  const TECH_TAB = {
+    id: "Diagnostics",
+    hint: "Raw run detail (model calls, tokens, tool calls, stage timeline). For debugging, not coaching.",
+  };
 
   const evidence = $derived(
     Boolean(report?.artifacts?.motion || report?.artifacts?.frames || report?.artifacts?.pose),
@@ -86,7 +90,7 @@
 
   <div class="sticky top-14 z-20 -mx-4 mt-4 border-b-2 border-line bg-ink/90 px-4 backdrop-blur">
     <div class="flex gap-1 overflow-x-auto">
-      {#each TABS as t}
+      {#each MAIN_TABS as t}
         <button
           onclick={() => (tab = t.id)}
           class="whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition"
@@ -96,10 +100,19 @@
           class:text-muted={tab !== t.id}
         >{t.id}</button>
       {/each}
+      <button
+        onclick={() => (tab = TECH_TAB.id)}
+        title={TECH_TAB.hint}
+        class="ml-auto whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition"
+        class:border-accent={tab === TECH_TAB.id}
+        class:text-app={tab === TECH_TAB.id}
+        class:border-transparent={tab !== TECH_TAB.id}
+        class:text-muted={tab !== TECH_TAB.id}
+      >⚙ {TECH_TAB.id}</button>
     </div>
   </div>
 
-  <p class="mt-2 text-xs text-muted">{TABS.find((t) => t.id === tab)?.hint}</p>
+  <p class="mt-2 text-xs text-muted">{[...MAIN_TABS, TECH_TAB].find((t) => t.id === tab)?.hint}</p>
 
   <div class="mt-3">
     {#if tab === "Watch"}
@@ -180,7 +193,7 @@
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "md")} download>Download Markdown</a>
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "html")} target="_blank" rel="noreferrer">Open HTML</a>
       </div>
-    {:else if tab === "Under the hood"}
+    {:else if tab === "Diagnostics"}
       <Technical {report} />
     {/if}
   </div>
