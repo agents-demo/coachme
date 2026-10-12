@@ -115,7 +115,8 @@ topspin-review/
 │   │   │                     #     agent/ (builder, models, rails, tools, runner), telemetry/
 │   │   ├── storage/          #   runtime, cache, json_store, store
 │   │   ├── reporting.py      #   Markdown / HTML / PDF export
-│   │   └── media.py          #   highlight clips (ffmpeg)
+│   │   ├── media.py          #   highlight clips (ffmpeg)
+│   │   └── pose.py           #   pose estimation (mediapipe + model download)
 │   ├── core/                 # the pipeline (this package is the orchestrator)
 │   │   ├── bootstrap.py      #   runtime dirs + logging; called by entry points
 │   │   ├── config.py         #   application settings (sampling, feature toggles)
@@ -126,7 +127,7 @@ topspin-review/
 │   │   ├── jobs/worker.py    #   standalone out-of-process analysis worker
 │   │   ├── stages/           #   measure → observe → coach
 │   │   ├── strategies/       #   deterministic / agentic
-│   │   └── video/            #   shared video primitives (metrics, imaging, pose, cvutil)
+│   │   └── video/            #   shared video primitives (metrics, imaging, cvutil)
 │   └── surfaces/             # inbound adapters: cli/, gui/ (Streamlit), gui2/ (web app), api.py, mcp/, readiness.py
 ├── tests/
 │   ├── unit/                 # pipeline + architecture tests

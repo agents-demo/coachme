@@ -29,7 +29,8 @@ topspin_review/
 │   ├── agents/            # provider access (see below)
 │   ├── storage/           # runtime, cache, json_store, store
 │   ├── reporting.py       # Markdown / HTML / PDF export
-│   └── media.py           # highlight clips (ffmpeg)
+│   ├── media.py           # highlight clips (ffmpeg)
+│   └── pose.py            # pose estimation (mediapipe PoseLandmarker + model download)
 ├── core/                  # the pipeline (this package is the orchestrator)
 │   ├── bootstrap.py       # runtime dirs + logging; called by entry points
 │   ├── config.py          # application settings only (sampling, feature toggles)
@@ -40,7 +41,7 @@ topspin_review/
 │   ├── jobs/worker.py     # standalone out-of-process analysis worker
 │   ├── stages/            # measure → observe → coach
 │   ├── strategies/        # deterministic / agentic
-│   └── video/             # shared video primitives: metrics, imaging, pose, cvutil
+│   └── video/             # shared video primitives: metrics, imaging, cvutil
 └── surfaces/              # inbound adapters
     ├── cli/               # command-line interface
     ├── gui/               # the Streamlit UI
@@ -107,7 +108,7 @@ core/
 ├── service.py               # embedding surface used by the API / MCP / GUI
 ├── jobs/worker.py           # standalone out-of-process worker (progress JSON)
 ├── video/                   # shared video measurement/rendering primitives:
-│                            #   metrics, imaging, pose, cvutil
+│                            #   metrics, imaging, cvutil
 ├── stages/                  # the pipeline stages (STAGES constant lives here)
 │   ├── measure/             #   stage 1: video → frames + measurements
 │   │   ├── measure.py         # measure(): sample frames + compute metrics

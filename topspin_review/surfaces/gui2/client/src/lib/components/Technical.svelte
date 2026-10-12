@@ -73,8 +73,15 @@
 <p class="mt-2 text-xs text-muted">
   Tokens are the model's own counts. <b>in</b> = the whole prompt sent that call (system prompt +
   full history + question), so the same context is billed again on every turn; <b>out</b> = the
-  reply. <b>cached</b> is the discounted subset the provider serves from its prompt cache.
+  reply.   <b>cached</b> is the discounted subset the provider serves from its prompt cache.
 </p>
+
+{#if report.artifacts?.pose}
+  <p class="mt-1 text-xs text-muted">
+    The <b>pose overlay</b> is computed <b>locally</b> by mediapipe (PoseLandmarker) — a small on-device model,
+    not an API call — so it uses no tokens and is not counted above.
+  </p>
+{/if}
 
 <div class="mt-5 flex gap-5">
   {#each TABS as t}
