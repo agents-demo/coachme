@@ -15,7 +15,7 @@ import time
 class Progress:
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._stage = "starting"
+        self._stage = "startup"  # the initial placeholder; its time = pre-run overhead (imports/setup)
         self._pct = 0.0
         self._detail = ""
         self._done = False

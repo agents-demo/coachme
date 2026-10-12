@@ -60,7 +60,12 @@ def get_report(stem: str) -> dict[str, Any] | None:
     obs = obs if isinstance(obs, dict) else {}
     report["calls"] = obs.get("calls") or []
     report["tools"] = obs.get("tools") or []
-    report["timeline"] = report.get("timings") or []
+    # The first timing entry is the pre-run "startup" overhead placeholder; older reports
+    # labelled it "starting" — normalize for display.
+    timeline = report.get("timings") or []
+    report["timeline"] = [
+        {**t, "stage": "startup" if t.get("stage") == "starting" else t.get("stage")} for t in timeline
+    ]
     report["score"] = evaluate.score(report)
     report["has_source"] = _exists(report.get("source"))
     return report
