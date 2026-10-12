@@ -31,22 +31,16 @@
 
   // Watch sub-tabs: "Video", then one tab per available analysis image.
   // Order: the motion map (the readable insight) first, then the raw sampled frames, then the pose.
-  // Pose falls back to the sampled-frames sheet when no full-frame hero exists (older reports).
+  // Pose prefers the full-frame hero; older runs fall back to the sampled-frames sheet.
   const views = $derived.by(() => {
     const a = report?.artifacts || {};
     const out = [];
     if (a.motion) out.push({ id: "Motion map", kind: "motion", caption: "Motion map — red = where you moved most." });
     if (a.frames) out.push({ id: "Sampled frames", kind: "frames", caption: "Sampled frames the model read." });
-    if (a.pose_hero) out.push({ id: "Pose", kind: "pose_hero", caption: "Body-pose skeleton on a full frame (peak-motion moment)." });
-    if (a.pose) {
-      const hasHero = Boolean(a.pose_hero);
-      out.push({
-        id: hasHero ? "Pose over time" : "Pose",
-        kind: "pose",
-        caption: hasHero
-          ? "Body-pose skeleton across the sampled frames."
-          : "Body-pose skeleton across the sampled frames (full-frame hero not available for this run).",
-      });
+    if (a.pose_hero) {
+      out.push({ id: "Pose", kind: "pose_hero", caption: "Body-pose skeleton on a full frame (peak-motion moment)." });
+    } else if (a.pose) {
+      out.push({ id: "Pose", kind: "pose", caption: "Body-pose skeleton across the sampled frames." });
     }
     return out;
   });
