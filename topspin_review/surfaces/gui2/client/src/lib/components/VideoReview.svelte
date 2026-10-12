@@ -152,7 +152,9 @@
   async function save() {
     status = "saving…";
     try {
-      await saveAnnotations(report.stem, shapes);
+      const saved = await saveAnnotations(report.stem, shapes);
+      // Keep the parent report in sync so annotations survive a tab switch/remount.
+      report.annotations = (saved?.annotations || shapes).map((s) => ({ ...s }));
       status = "saved";
       dirty = false;
     } catch (e) {
