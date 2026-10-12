@@ -44,17 +44,32 @@ def extract_usage(result: Any) -> dict:
     if "total_tokens" not in out and ("prompt_tokens" in out or "completion_tokens" in out):
         out["total_tokens"] = int(out.get("prompt_tokens", 0)) + int(out.get("completion_tokens", 0))
 
-    cached = _get(usage, ("prompt_cache_hit_tokens", "cache_read_input_tokens", "cached_tokens"))
+    cached = _get(
+        usage,
+        (
+            # OpenAI-style cache detail, then provider-specific hit counters, then
+            # openjiuwen's normalized names on UsageMetadata (what openjiuwen actually sets).
+            "prompt_cache_hit_tokens",
+            "cache_read_input_tokens",
+            "cached_tokens",
+            "cache_read_tokens",
+            "cached_input_tokens",
+            "cache_hit_tokens",
+            "prompt_cache_tokens",
+            "prompt_cached_tokens",
+            "cache_tokens",
+        ),
+    )
     if cached is None:
         details = _get(usage, ("prompt_tokens_details", "prompt_token_details"))
         if details is not None:
             cached = _get(details, ("cached_tokens",))
     if cached is not None:
         out["cached_tokens"] = int(cached)
-    miss = _get(usage, ("prompt_cache_miss_tokens",))
+    miss = _get(usage, ("prompt_cache_miss_tokens", "cache_miss_tokens", "cache_miss_input_tokens", "uncached_tokens"))
     if miss is not None:
         out["cache_miss_tokens"] = int(miss)
-    created = _get(usage, ("cache_creation_input_tokens",))
+    created = _get(usage, ("cache_creation_input_tokens", "cache_creation_tokens", "cache_write_tokens"))
     if created is not None:
         out["cache_creation_tokens"] = int(created)
 
