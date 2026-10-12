@@ -83,11 +83,21 @@
     {#each calls as c}
       <details class="card p-3 text-sm">
         <summary class="cursor-pointer font-semibold">
-          ↳ Model call {c.model ? `· ${c.model}` : ""} {c.label ? `· ${c.label}` : ""}
+          {#if c.probe}
+            🔍 image-support probe
+          {:else}
+            ↳ Model call {c.model ? `· ${c.model}` : ""} {c.label ? `· ${c.label}` : ""}
+          {/if}
           <span class="ml-2 text-xs text-muted">
             {c.prompt_tokens ?? 0} in / {c.completion_tokens ?? 0} out{#if c.cached_tokens} · {c.cached_tokens} cached{/if}{#if c.seconds} · {c.seconds}s{/if}
           </span>
         </summary>
+        {#if c.probe}
+          <p class="mt-2 text-xs text-muted">
+            A one-word self-check that the model can read images
+            (“What color is this image?” → “{c.output}”). Not part of the analysis.
+          </p>
+        {/if}
         <div class="mt-2 space-y-2">
           {#each c.input || [] as m}
             <div>

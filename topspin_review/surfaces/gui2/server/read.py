@@ -22,6 +22,17 @@ def _exists(path: Any) -> bool:
     return bool(path) and Path(str(path)).exists()
 
 
+def _flag_probes(calls: list[dict]) -> list[dict]:
+    """Mark openjiuwen's image-modality self-check ("What color is this image?") as a probe.
+
+    It is a one-word capability check, not part of the analysis, so the UI can label it.
+    """
+    for call in calls:
+        text = " ".join(str(m.get("content", "")) for m in (call.get("input") or []) if isinstance(m, dict))
+        call["probe"] = "what color is this image" in text.lower()
+    return calls
+
+
 def _summary(report: dict) -> dict[str, Any]:
     """One dict per report for the history list."""
     source = report.get("source", "")
@@ -58,7 +69,7 @@ def get_report(stem: str) -> dict[str, Any] | None:
     artifacts = report.get("artifacts") or {}
     obs = json_store.read_json(artifacts.get("observability") or (runtime.ARTIFACTS_DIR / "x"), {})
     obs = obs if isinstance(obs, dict) else {}
-    report["calls"] = obs.get("calls") or []
+    report["calls"] = _flag_probes(obs.get("calls") or [])
     report["tools"] = obs.get("tools") or []
     # The first timing entry is the pre-run "startup" overhead placeholder; older reports
     # labelled it "starting" — normalize for display.
