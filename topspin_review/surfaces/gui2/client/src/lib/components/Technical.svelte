@@ -62,6 +62,20 @@
   function shortLabel(stage) {
     return STEP_NAME[stage] || stage;
   }
+  // Steps that make a model/agent call — tagged in the list so it's clear where tokens/time go.
+  const MODEL_STEP = {
+    "vision: overview": "vision",
+    "vision: detail": "vision",
+    "vision: reviewing image": "vision",
+    "agent writing report": "text",
+    "agent: analyzing": "text",
+    verifying: "text",
+  };
+  function modelName(stage) {
+    const kind = MODEL_STEP[stage];
+    const name = kind === "vision" ? models.vision : models.text;
+    return `Uses the ${kind} model${name ? ` (${name})` : ""}.`;
+  }
   // Hover tooltip text for each step.
   const STEP_SHORT = {
     startup: "Load the pipeline code (imports) — pre-run overhead.",
@@ -134,10 +148,18 @@
             {#each g.items as t}
               {@const secs = Number(t.seconds) || 0}
               <li class="flex items-center gap-3 text-sm">
-                <span
-                  class="w-44 shrink-0 truncate pl-2 {t.stage === 'startup' ? 'text-muted' : ''}{STEP_SHORT[t.stage] ? ' cursor-help' : ''}"
-                  title={STEP_SHORT[t.stage] || ""}
-                >{shortLabel(t.stage)}</span>
+                <div class="flex w-52 shrink-0 items-center gap-1.5 pl-2">
+                  <span
+                    class="truncate {t.stage === 'startup' ? 'text-muted' : ''}{STEP_SHORT[t.stage] ? ' cursor-help' : ''}"
+                    title={STEP_SHORT[t.stage] || ""}
+                  >{shortLabel(t.stage)}</span>
+                  {#if MODEL_STEP[t.stage]}
+                    <span
+                      class="shrink-0 rounded border border-line px-1 text-[9px] font-semibold uppercase {MODEL_STEP[t.stage] === 'vision' ? 'text-accent2' : 'text-accent'}"
+                      title={modelName(t.stage)}
+                    >{MODEL_STEP[t.stage]}</span>
+                  {/if}
+                </div>
                 <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
                   <div
                     class="h-full rounded-full {t.stage === 'startup' ? 'bg-line' : 'bg-accent'}"
@@ -153,7 +175,10 @@
       <p class="mt-3 text-xs text-muted">
         Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(2)}s</span>
         &nbsp;·&nbsp;bars and numbers are <b>durations</b>. Each row is a <b>step</b>, grouped under the
-        <b>stage</b> it runs in (Measure → Vision → Report). Hover a step for what it does.
+        <b>stage</b> it runs in (Measure → Vision → Report). Steps tagged
+        <span class="rounded border border-line px-1 text-[9px] font-semibold uppercase text-accent2">vision</span> /
+        <span class="rounded border border-line px-1 text-[9px] font-semibold uppercase text-accent">text</span>
+        call a model; hover a step for what it does.
       </p>
     {:else}
       <p class="text-sm text-muted">No stage timings saved.</p>
