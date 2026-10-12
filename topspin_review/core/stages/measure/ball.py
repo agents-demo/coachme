@@ -282,6 +282,7 @@ def detect(frames: list[Image.Image], timestamps: list[float], activity: list[di
     """Aggregate heuristic ball/track/contact/rally information."""
     tracks = track(frames, timestamps)
     main = tracks[0] if tracks else None
+    source = "model" if _model_ready() else "heuristic"
     contact_times = contacts(main) if main else []
     bounce_times = _reversals(main["points"], "y") if main else []
     rallies = rally_segments(activity, timestamps)
@@ -304,7 +305,7 @@ def detect(frames: list[Image.Image], timestamps: list[float], activity: list[di
         stats["y_range"] = round(max(ys) - min(ys), 3)
 
     if not main and not rallies:
-        summary = "no ball-like object or rally segments detected (heuristic, low confidence)"
+        summary = f"no ball-like object or rally segments detected ({source}, low confidence)"
     else:
         bits = []
         if main:
@@ -315,11 +316,11 @@ def detect(frames: list[Image.Image], timestamps: list[float], activity: list[di
             bits.append(f"~{len(bounce_times)} bounce reversal(s)")
         if rallies:
             bits.append("rally segment(s) " + ", ".join(f"{r['start']}-{r['end']}s" for r in rallies))
-        summary = "; ".join(bits) + " (heuristic, low confidence)"
+        summary = "; ".join(bits) + f" ({source}, low confidence)"
 
     return {
         "summary": summary,
-        "detector": "yolov8-onnx" if _model_ready() else ("cv2+hough" if cv2 is not None else "blob"),
+        "detector": "onnx-model" if _model_ready() else ("cv2+hough" if cv2 is not None else "blob"),
         "tracks": [{"points": t["points"]} for t in tracks[:3]],
         "contacts": contact_times,
         "bounces": bounce_times,

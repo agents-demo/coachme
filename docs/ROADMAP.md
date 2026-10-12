@@ -385,11 +385,13 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Acceptance:** per-frame ball position with confidence; rally segments; shot classification on a
   labeled set with a stated accuracy; graceful fallback to the heuristic.
 - **Risks:** dataset/licensing; CPU speed; generalization across sports.
-- **Shipped (heuristic upgrade, not the trained model):** `core/stages/measure/ball.py` now uses a
-  colour+shape detector with optional OpenCV Hough-circle confirmation, a constant-velocity tracker,
-  richer stats (visibility, speed, hits, bounces), a **ball-path artifact** + Watch sub-tab, and a
-  monocular **depth proxy** producing `trajectory3d` (a *Ball 3D* orbit view). The trained detector above
-  is still the real target.
+- **Shipped:** `core/stages/measure/ball.py` keeps the improved heuristic (colour+shape, optional
+  OpenCV Hough-circle, constant-velocity tracker, richer stats, ball-path artifact + Watch sub-tab, and a
+  monocular depth `trajectory3d` shown in a *Ball 3D* orbit view) **and** now uses a **trained ONNX
+  detector** when one is installed (`integrations/ballmodel.py`, `runtime/data/models/ball.onnx`,
+  YOLOv8 *or* YOLOv5 layout auto-detected). Provision the MIT table-tennis model with
+  `scripts/fetch_ball_model.py`, or train your own via `scripts/train_ball.py`. Remaining: shot-type
+  classification and per-frame confidence calibration on a labeled set.
 
 ### C2. Auto session segmentation
 - **Ref:** SV, HL.

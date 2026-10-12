@@ -5,10 +5,10 @@ If a model file exists at ``runtime/data/models/ball.onnx`` (override with
 ball boxes; otherwise :func:`available` is ``False`` and the caller falls back to
 the heuristic in :mod:`topspin_review.core.stages.measure.ball`.
 
-The model is a standard Ultralytics YOLOv8 export (``model.export(format="onnx")``):
-input ``1x3xSxS`` RGB float in 0..1; output ``1x(4+nc)xN`` (or transposed),
-boxes as ``cx, cy, w, h`` in input pixels and class scores (no objectness).
-Export the trained model to that path — see ``scripts/train_ball.py``.
+The model is a standard single-class ball export: YOLOv8 ``1x3xSxS`` → ``1x(D)xN`` or
+YOLOv5 ``1x3xSxS`` → ``1xNx(D)``, boxes as ``cx, cy, w, h`` in input pixels. Both
+layouts are auto-detected (override with ``BALL_MODEL_FAMILY``). Export the trained
+model to that path — see ``scripts/train_ball.py``.
 """
 
 from __future__ import annotations
@@ -99,20 +99,35 @@ def _nms(boxes: np.ndarray, scores: np.ndarray, iou: float) -> list[int]:
     return keep
 
 
-def _decode(out: np.ndarray, conf: float, iou: float) -> tuple[np.ndarray, np.ndarray]:
-    """Parse a YOLOv8 output tensor into ``(boxes_xyxy, scores)`` after conf + NMS."""
+def _decode(out: np.ndarray, conf: float, iou: float, family: str = "auto") -> tuple[np.ndarray, np.ndarray]:
+    """Parse a YOLO output tensor into ``(boxes_xyxy, scores)`` after conf + NMS.
+
+    Handles both export layouts: YOLOv8 ``(1, 4+nc, N)`` (no objectness) and YOLOv5
+    ``(1, N, 5+nc)`` (objectness column). In ``auto`` mode a single-class ball model
+    with ``D >= 6`` channels is read as v5, ``D == 5`` (or fewer) as v8; override with
+    the ``BALL_MODEL_FAMILY`` env var (``yolov5``/``yolov8``).
+    """
     arr = np.asarray(out)
     arr = np.squeeze(arr)
     if arr.ndim != 2:
         return np.zeros((0, 4), dtype=np.float32), np.zeros((0,), dtype=np.float32)
-    # Want shape (N, 4 + nc): the anchor dimension is the long one.
+    # Orient to (N, D): v8 ships (D, N), v5 ships (N, D); D is the small dimension.
     if arr.shape[0] < arr.shape[1]:
         arr = arr.T
+    if family == "auto":
+        family = "yolov5" if arr.shape[1] >= 6 else "yolov8"
+
     boxes_xywh = arr[:, :4]
-    scores = arr[:, 4:]
-    if scores.shape[1] == 0:
-        return np.zeros((0, 4), dtype=np.float32), np.zeros((0,), dtype=np.float32)
-    cls_conf = scores.max(axis=1)
+    if family == "yolov5":
+        obj = arr[:, 4]
+        cls = arr[:, 5:]
+        cls_conf = obj * (cls.max(axis=1) if cls.shape[1] else 1.0)
+    else:
+        cls = arr[:, 4:]
+        if cls.shape[1] == 0:
+            return np.zeros((0, 4), dtype=np.float32), np.zeros((0,), dtype=np.float32)
+        cls_conf = cls.max(axis=1)
+
     mask = cls_conf >= conf
     boxes_xywh = boxes_xywh[mask]
     cls_conf = cls_conf[mask]
@@ -134,7 +149,8 @@ def detect(img: Image.Image, conf: float | None = None, iou: float = 0.45) -> li
     tensor, ratio, (padx, pady) = _letterbox(img, _imgsz())
     input_name = session.get_inputs()[0].name
     outputs = session.run(None, {input_name: tensor})
-    boxes, scores = _decode(outputs[0], conf, iou)
+    family = os.getenv("BALL_MODEL_FAMILY", "auto").strip().lower()
+    boxes, scores = _decode(outputs[0], conf, iou, family)
     out: list[dict] = []
     for (x1, y1, x2, y2), score in zip(boxes, scores):
         nx1 = max(0.0, min(1.0, (float(x1) - padx) / ratio / w))

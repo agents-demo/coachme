@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 from PIL import Image, ImageDraw
 
 from topspin_review.core.stages import observe
@@ -12,6 +13,12 @@ from topspin_review.domain import compare as compare_mod
 from topspin_review.domain import evaluate, progress, report
 from topspin_review.integrations import reporting as export
 from topspin_review.integrations.agents.telemetry import usage
+
+
+@pytest.fixture(autouse=True)
+def _heuristic_ball(monkeypatch):
+    """Keep unit tests hermetic: never load a trained ball model from disk."""
+    monkeypatch.setenv("BALL_MODEL", "off")
 
 
 def moving_frames(n: int = 8, step: int = 8) -> tuple[list[Image.Image], list[float]]:

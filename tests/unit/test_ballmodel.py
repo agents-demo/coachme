@@ -44,3 +44,15 @@ def test_decode_transposed_and_empty():
     assert boxes.shape == (1, 4)
     empty = ballmodel._decode(np.zeros((1, 5, 0), dtype=np.float32), conf=0.25, iou=0.45)
     assert empty[0].shape[0] == 0
+
+
+def test_decode_yolov5_layout():
+    # v5 row = cx, cy, w, h, obj, cls  -> (1, N, 6)
+    rows = np.zeros((_N, 6), dtype=np.float32)
+    rows[0] = [100, 100, 20, 20, 0.9, 0.95]
+    rows[1] = [300, 300, 10, 10, 0.9, 0.1]  # low class -> filtered
+    out = rows[None, ...]
+    boxes, scores = ballmodel._decode(out, conf=0.25, iou=0.45, family="auto")
+    assert boxes.shape[0] == 1
+    assert abs(boxes[0, 0] - 90) < 1e-3
+    assert abs(scores[0] - 0.855) < 1e-3  # obj * cls
