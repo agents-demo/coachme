@@ -57,8 +57,13 @@ def probe_budget() -> int:
 
 # --- analysis behaviour ---------------------------------------------------- #
 def agentic_mode() -> bool:
-    """Run the model-driven analysis strategy instead of the fixed one."""
+    """Run the model-driven strategy instead of the fixed one."""
     return _bool("AGENTIC_MODE", "false")
+
+
+def demo_fallback() -> bool:
+    """On a failed run, fall back to the last recorded report for the same clip."""
+    return _bool("DEMO_FALLBACK", "true")
 
 
 def verify_reports() -> bool:

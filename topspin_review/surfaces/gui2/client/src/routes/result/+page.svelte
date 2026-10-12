@@ -129,6 +129,9 @@
   <div class="flex items-baseline gap-3">
     <h1 class="font-display text-2xl font-bold">{report.stem}</h1>
     <span class="text-sm text-muted">{report.sport} · {report.date}</span>
+    {#if report.fallback}
+      <span class="rounded-full border border-warn px-2 py-0.5 text-[11px] font-semibold text-warn" title="The live run failed; this is the last recorded result for this clip.">recorded run</span>
+    {/if}
     <span
       class="ml-auto text-right"
       title="How trustworthy the report is (evidence coverage, confidence, no unsupported spin/speed claims) — not how well you played."

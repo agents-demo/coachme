@@ -22,7 +22,7 @@ from topspin_review.core.stages.measure import measure
 from topspin_review.domain import progress as domain_progress
 from topspin_review.integrations import reporting
 from topspin_review.integrations.agents import run_agent
-from topspin_review.integrations.storage import store
+from topspin_review.integrations.storage import demo_cache, store
 
 
 class Strategy:
@@ -32,9 +32,29 @@ class Strategy:
     description: str = ""
 
     async def analyze(self, params: Params) -> dict[str, Any]:
-        self._prepare(params)
-        result, extras = await self._run(params, params.progress)
-        return await self._finalize(params, result, extras, params.progress)
+        try:
+            self._prepare(params)
+            result, extras = await self._run(params, params.progress)
+            return await self._finalize(params, result, extras, params.progress)
+        except Exception:
+            fallback = demo_cache.load(Path(params.video_path).stem) if config.demo_fallback() else None
+            if fallback is None:
+                raise
+            # Demo fallback: a recorded report for this clip (labelled so the UI can say so).
+            fallback = dict(fallback)
+            fallback["fallback"] = True
+            store.set_current_video(params.video_path)
+            store.add_report(fallback)
+            return {
+                "result": None,
+                "report": fallback,
+                "report_path": str(store.report_path(params.video_path)),
+                "observations": fallback.get("observations", ""),
+                "frames": len(fallback.get("frame_times") or []),
+                "meta": {},
+                "timings": [],
+                "fallback": True,
+            }
 
     # -- template steps (override only _run / _after_report) -------------- #
     async def _run(self, params: Params, progress: Progress | None) -> tuple[Any, dict]:
@@ -162,6 +182,7 @@ class Strategy:
                 timings = []
         if report:
             report = store.patch_last_report({"timings": timings}) or report
+            demo_cache.save(Path(params.video_path).stem, report)  # cache as a demo fallback
 
         return {
             "result": result,
