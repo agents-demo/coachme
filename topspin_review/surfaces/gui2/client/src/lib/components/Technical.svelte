@@ -150,11 +150,13 @@
       {#each grouped as g}
         {@const gsecs = g.items.reduce((a, t) => a + (Number(t.seconds) || 0), 0)}
         {#if COLLAPSED.has(g.name)}
-          <div class="mt-3 first:mt-0 flex items-center gap-3 text-sm">
-            <span class="w-52 shrink-0 pl-2 font-semibold" title={GROUP_TIP[g.name] || ""}>{g.name}</span>
+          <div class="mt-3 first:mt-0 flex items-center gap-3">
+            <span class="w-40 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-accent" title={GROUP_TIP[g.name] || ""}>
+              {g.name}
+            </span>
             <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
               <div
-                class="h-full rounded-full bg-line"
+                class="h-full rounded-full bg-accent"
                 style={`width:${totalSeconds ? Math.max(1.5, (gsecs / totalSeconds) * 100) : 0}%`}
               ></div>
             </div>
