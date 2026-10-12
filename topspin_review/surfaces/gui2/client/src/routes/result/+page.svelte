@@ -7,6 +7,7 @@
   import PoseChart from "$lib/components/PoseChart.svelte";
   import Pose3D from "$lib/components/Pose3D.svelte";
   import Ball3D from "$lib/components/Ball3D.svelte";
+  import { outputs } from "$lib/outputs";
   import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
 
   const stem = $derived($page.url.searchParams.get("stem") || "");
@@ -14,14 +15,16 @@
   let loading = $state(true);
   let error = $state("");
   let tab = $state("Watch");
-  let watchView = $state("Video"); // sub-tab inside Watch: "Video" | "Frames & map"
+  let watchView = $state("video");
   let question = $state("");
   let answers = $state([]);
   let asking = $state(false);
+  let tourOpen = $state(false);
+  let tourSeen = false;
 
   // User-facing tabs on the left; the raw execution detail is a separate "utility" tab on the right.
   const MAIN_TABS = [
-    { id: "Watch", hint: "Play the video and tap a moment to jump. Sub-tabs below switch to the sampled frames / motion map." },
+    { id: "Watch", hint: "See everything this session produced — the clip, how you moved, the ball, your body — plus the moments to look at." },
     { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
     { id: "Notes", hint: "Caveats about this clip, the report-quality score, and downloads." },
   ];
@@ -33,6 +36,12 @@
   const clipWarnings = $derived(report?.quality?.warnings || []);
   const caveats = $derived((report?.limitations || []).filter((l) => !clipWarnings.includes(l)));
 
+  // Everything this run produced, grouped in plain language (see lib/outputs.js).
+  const outputGroups = $derived(outputs(report));
+  const outputItems = $derived(outputGroups.flatMap((g) => g.items));
+  const current = $derived(outputItems.find((i) => i.id === watchView) || outputItems[0]);
+  const hasImages = $derived(outputItems.length > 1);
+
   // Spoken summary: focus + the top few issues + the summary paragraph.
   const summaryText = $derived.by(() => {
     if (!report) return "";
@@ -43,35 +52,6 @@
     if (report.summary) parts.push(report.summary);
     return parts.join(" ");
   });
-
-  // Watch sub-tabs: "Video", then one tab per available analysis image.
-  // Order: the motion map (the readable insight) first, then the raw sampled frames, then the pose.
-  // Pose prefers the full-frame hero; older runs fall back to the sampled-frames sheet.
-  const views = $derived.by(() => {
-    const a = report?.artifacts || {};
-    const out = [];
-    if (a.motion) out.push({ id: "Motion map", kind: "motion", caption: "Motion map — red = where you moved most." });
-    if (a.heatmap) out.push({ id: "Footwork map", kind: "heatmap", caption: "Footwork heat map — red = where you spent the most time." });
-    if (a.frames) out.push({ id: "Sampled frames", kind: "frames", caption: "Sampled frames the model read." });
-    if (a.ball) out.push({ id: "Ball path", kind: "ball", caption: "Traced ball path (heuristic tracker — a signal, not a measurement)." });
-    if (a.pose_hero) {
-      out.push({ id: "Pose", kind: "pose_hero", caption: "Body-pose skeleton on a full frame (peak-motion moment)." });
-    } else if (a.pose) {
-      out.push({ id: "Pose", kind: "pose", caption: "Body-pose skeleton across the sampled frames." });
-    }
-    return out;
-  });
-  const hasPoseAngles = $derived((report?.metrics?.pose || []).some((p) => p && p.l_knee != null));
-  const hasPose3D = $derived((report?.metrics?.pose || []).some((p) => p && p.landmarks3d));
-  const hasBall3D = $derived((report?.metrics?.ball?.trajectory3d || []).length > 2);
-  const subTabs = $derived([
-    "Video",
-    ...views.map((v) => v.id),
-    ...(hasPoseAngles ? ["Pose angles"] : []),
-    ...(hasPose3D ? ["3D pose"] : []),
-    ...(hasBall3D ? ["Ball 3D"] : []),
-  ]);
-  const hasImages = $derived(subTabs.length > 1);
 
   const issues = $derived(report?.issues || []);
 
@@ -92,6 +72,17 @@
     return [s, ""];
   }
 
+  function openTour() {
+    tourOpen = true;
+  }
+  function closeTour() {
+    tourOpen = false;
+    tourSeen = true;
+    try {
+      localStorage.setItem("topspin_tour_seen", "1");
+    } catch {}
+  }
+
   async function load() {
     if (!stem) {
       loading = false;
@@ -101,8 +92,14 @@
     error = "";
     try {
       report = await getReport(stem);
-      watchView = "Video";
+      watchView = "video";
       doneDrills = {};
+      if (!tourSeen) {
+        try {
+          tourSeen = !!localStorage.getItem("topspin_tour_seen");
+        } catch {}
+        if (!tourSeen) tourOpen = true;
+      }
     } catch (e) {
       error = String(e?.message || e);
       report = null;
@@ -143,6 +140,7 @@
     {#if report.fallback}
       <span class="rounded-full border border-warn px-2 py-0.5 text-[11px] font-semibold text-warn" title="The live run failed; this is the last recorded result for this clip.">recorded run</span>
     {/if}
+    <button onclick={openTour} title="What am I looking at?" class="rounded-full border-2 border-line px-2.5 py-0.5 text-xs font-semibold text-muted">?</button>
     <span
       class="ml-auto text-right"
       title="How trustworthy the report is (evidence coverage, confidence, no unsupported spin/speed claims) — not how well you played."
@@ -182,37 +180,72 @@
 
   <div class="mt-3">
     {#if tab === "Watch"}
+      <div class="mb-4 rounded-xl border-2 border-line bg-surface/40 p-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="font-display font-bold">What this session produced</h2>
+          <button onclick={openTour} class="shrink-0 text-xs font-semibold text-accent">What is all this?</button>
+        </div>
+        <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {#each outputGroups as g}
+            <div>
+              <div class="text-[11px] font-semibold uppercase tracking-wide text-muted">{g.group}</div>
+              <ul class="mt-1.5 space-y-1.5">
+                {#each g.items as it}
+                  <li>
+                    <button
+                      onclick={() => (watchView = it.id)}
+                      class="block w-full rounded-lg border-2 px-2.5 py-1.5 text-left transition"
+                      class:border-accent2={watchView === it.id}
+                      class:border-line={watchView !== it.id}
+                    >
+                      <span class="text-sm font-semibold">{it.label}</span>
+                      <span class="block text-xs text-muted">{it.what}</span>
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/each}
+        </div>
+      </div>
+
       {#if hasImages}
-        <div class="mb-4 flex gap-5">
-          {#each subTabs as t}
-            <button
-              onclick={() => (watchView = t)}
-              class="whitespace-nowrap border-b-2 pb-1 text-sm font-semibold transition"
-              class:border-accent={watchView === t}
-              class:text-app={watchView === t}
-              class:border-transparent={watchView !== t}
-              class:text-muted={watchView !== t}
-            >{t}</button>
+        <div class="mb-3 space-y-2">
+          {#each outputGroups as g}
+            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span class="w-28 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted">{g.group}</span>
+              {#each g.items as it}
+                <button
+                  onclick={() => (watchView = it.id)}
+                  title={it.what}
+                  class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
+                  class:border-accent={watchView === it.id}
+                  class:text-app={watchView === it.id}
+                  class:border-transparent={watchView !== it.id}
+                  class:text-muted={watchView !== it.id}
+                >{it.label}</button>
+              {/each}
+            </div>
           {/each}
         </div>
       {/if}
 
-      {#if watchView === "Video" || !hasImages}
+      {#if current?.id === "video" || !current}
         <VideoReview {report} />
-      {:else if watchView === "Pose angles"}
+      {:else if current.id === "pose_angles"}
         <PoseChart {report} />
-      {:else if watchView === "3D pose"}
+      {:else if current.id === "pose3d"}
         <Pose3D {report} />
-      {:else if watchView === "Ball 3D"}
+      {:else if current.id === "ball3d"}
         <Ball3D {report} />
-      {:else}
-        {@const v = views.find((x) => x.id === watchView)}
-        {#if v}
-          <figure class="max-w-3xl">
-            <img src={artifact(report.stem, v.kind)} alt={watchView} class="w-full rounded-lg border-2 border-line" />
-            <figcaption class="mt-1 text-xs text-muted">{v.caption}</figcaption>
-          </figure>
-        {/if}
+      {:else if current.kind}
+        <figure class="max-w-3xl">
+          <img src={artifact(report.stem, current.kind)} alt={current.label} class="w-full rounded-lg border-2 border-line" />
+        </figure>
+      {/if}
+
+      {#if current && current.id !== "video"}
+        <p class="mt-2 text-xs text-muted"><b class="text-app">{current.what}</b> {current.why}</p>
       {/if}
     {:else if tab === "Coaching"}
       <div class="mb-3 flex justify-end">
@@ -359,4 +392,32 @@
       </button>
     </div>
   </section>
+
+  {#if tourOpen}
+    <div class="fixed inset-0 z-50 grid place-items-center bg-ink/70 p-4" role="presentation">
+      <div class="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-line bg-ink p-5 shadow-xl">
+        <div class="flex items-start justify-between gap-3">
+          <h2 class="font-display text-lg font-bold">What you're looking at</h2>
+          <button onclick={closeTour} title="Close" class="rounded-lg border-2 border-line px-2 py-0.5 text-sm font-semibold">✕</button>
+        </div>
+        <p class="mt-1 text-sm text-muted">
+          Each analysis turns your clip into a few things, grouped like this. Open any of them from the
+          <b class="text-app">Watch</b> tab; the numbers behind them are on <b class="text-app">Diagnostics</b>.
+        </p>
+        <div class="mt-4 space-y-3">
+          {#each outputGroups as g}
+            <div>
+              <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{g.group}</div>
+              <ul class="mt-1 space-y-1 text-sm">
+                {#each g.items as it}
+                  <li><b class="text-app">{it.label}</b> — <span class="text-muted">{it.what}</span></li>
+                {/each}
+              </ul>
+            </div>
+          {/each}
+        </div>
+        <button onclick={closeTour} class="mt-5 w-full rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">Got it</button>
+      </div>
+    </div>
+  {/if}
 {/if}
