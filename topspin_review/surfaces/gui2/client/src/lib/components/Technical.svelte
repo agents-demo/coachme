@@ -12,6 +12,9 @@
 
   const timeline = $derived(report.timeline || []);
   const totalSeconds = $derived(timeline.reduce((a, t) => a + (Number(t.seconds) || 0), 0));
+  const cachedTotal = $derived(
+    usage.cached_tokens ?? (usage.vision?.cached_tokens || 0) + (usage.text?.cached_tokens || 0),
+  );
   function stageLabel(stage) {
     return stage === "startup" ? "startup (imports & setup)" : stage;
   }
@@ -32,9 +35,16 @@
     <div class="mt-1 text-xs text-muted">
       <span class="font-mono text-app">{(usage.vision?.total_tokens || 0).toLocaleString()}</span> vision ·
       <span class="font-mono text-app">{(usage.text?.total_tokens || 0).toLocaleString()}</span> text
+      {#if cachedTotal}<span> · <span class="font-mono text-app">{cachedTotal.toLocaleString()}</span> cached</span>{/if}
     </div>
   </div>
 </div>
+
+<p class="mt-2 text-xs text-muted">
+  Tokens are the model's own counts. <b>in</b> = the whole prompt sent that call (system prompt +
+  full history + question), so the same context is billed again on every turn; <b>out</b> = the
+  reply. <b>cached</b> is the discounted subset the provider serves from its prompt cache.
+</p>
 
 {#if models.text || models.vision}
   <p class="mt-2 text-xs text-muted">
@@ -75,7 +85,7 @@
         <summary class="cursor-pointer font-semibold">
           ↳ Model call {c.model ? `· ${c.model}` : ""} {c.label ? `· ${c.label}` : ""}
           <span class="ml-2 text-xs text-muted">
-            {c.prompt_tokens ?? 0} in / {c.completion_tokens ?? 0} out{#if c.seconds} · {c.seconds}s{/if}
+            {c.prompt_tokens ?? 0} in / {c.completion_tokens ?? 0} out{#if c.cached_tokens} · {c.cached_tokens} cached{/if}{#if c.seconds} · {c.seconds}s{/if}
           </span>
         </summary>
         <div class="mt-2 space-y-2">
