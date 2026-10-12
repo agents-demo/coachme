@@ -1,17 +1,26 @@
-"""Optional real pose estimation via ``mediapipe``.
+"""Real pose estimation via ``mediapipe`` (Tasks API).
 
-Installed via ``requirements.txt`` (``mediapipe``). When available, :func:`estimate`
-returns per-frame joint metrics (knee/elbow angles, stance width); otherwise the
-caller falls back to the dependency-free region proxy in
-:mod:`topspin_review.core.video.metrics`.
+Uses mediapipe's ``PoseLandmarker`` (the modern Tasks API, available in mediapipe
+1.x). The small landmarker model is downloaded on first use into
+``runtime/data/models/`` and cached. When the Tasks API is unavailable, callers fall
+back to the dependency-free region proxy in :mod:`topspin_review.core.video.metrics`.
 """
 
 from __future__ import annotations
 
 import math
+import urllib.request
+from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
+
+from topspin_review.integrations.storage import runtime
+
+_MODEL_URL = (
+    "https://storage.googleapis.com/mediapipe-models/pose_landmarker/"
+    "pose_landmarker_lite/float16/1/pose_landmarker_lite.task"
+)
 
 # mediapipe Pose landmark indices.
 _L = {
@@ -46,25 +55,38 @@ _CONNECTIONS = [
 ]
 
 
-def _pose_solution():
-    """Return mediapipe's Pose solution module, or ``None`` if unavailable.
+def _tasks():
+    """Return ``(mp, BaseOptions, vision)`` for the Tasks API, or ``None`` if unavailable."""
+    try:
+        import mediapipe as mp
+        from mediapipe.tasks import python as mp_python
+        from mediapipe.tasks.python import vision
 
-    Newer mediapipe builds no longer expose ``mediapipe.solutions`` unless the
-    legacy submodule is imported explicitly, so probe several import paths and
-    fall back to ``None`` (the region proxy) instead of raising.
-    """
-    for module_path in ("mediapipe.python.solutions.pose", "mediapipe.solutions.pose"):
-        try:
-            module = __import__(module_path, fromlist=["Pose"])
-        except Exception:
-            continue
-        if hasattr(module, "Pose"):
-            return module
-    return None
+        return mp, mp_python.BaseOptions, vision
+    except Exception:
+        return None
 
 
 def available() -> bool:
-    return _pose_solution() is not None
+    """True when mediapipe's Tasks PoseLandmarker API can be imported."""
+    return _tasks() is not None
+
+
+def _model_path() -> Path:
+    return runtime.DATA_DIR / "models" / "pose_landmarker_lite.task"
+
+
+def _ensure_model() -> str | None:
+    """Return the landmarker model path, downloading it once if needed."""
+    path = _model_path()
+    if path.exists() and path.stat().st_size > 0:
+        return str(path)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(_MODEL_URL, path)
+    except Exception:
+        return None
+    return str(path) if path.exists() and path.stat().st_size > 0 else None
 
 
 def _angle(a, b, c) -> float:
@@ -82,24 +104,42 @@ def _angle(a, b, c) -> float:
 
 
 def estimate(frames: list[Image.Image]) -> list[dict] | None:
-    """Per-frame joint metrics, or ``None`` when mediapipe is unavailable."""
-    pose_solution = _pose_solution()
-    if pose_solution is None:
+    """Per-frame joint metrics, or ``None`` when pose estimation is unavailable."""
+    api = _tasks()
+    if api is None:
+        return None
+    mp, BaseOptions, vision = api
+    model = _ensure_model()
+    if model is None:
         return None
 
     try:
-        estimator = pose_solution.Pose(static_image_mode=True, model_complexity=1, min_detection_confidence=0.5)
+        options = vision.PoseLandmarkerOptions(
+            base_options=BaseOptions(model_asset_path=model),
+            running_mode=vision.RunningMode.IMAGE,
+            num_poses=1,
+            min_pose_detection_confidence=0.5,
+        )
+        landmarker = vision.PoseLandmarker.create_from_options(options)
     except Exception:
         return None
 
     out: list[dict] = []
-    with estimator:
+    with landmarker:
         for frame in frames:
-            result = estimator.process(np.asarray(frame.convert("RGB")))
-            if not result.pose_landmarks:
+            try:
+                mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.asarray(frame.convert("RGB")))
+                result = landmarker.detect(mp_image)
+                poses = getattr(result, "pose_landmarks", None)
+            except Exception:
+                poses = None
+            if not poses:
                 out.append({})
                 continue
-            lm = result.pose_landmarks.landmark
+            lm = poses[0]
+            vis = [float(getattr(p, "visibility", 0.0) or 0.0) or float(getattr(p, "presence", 0.0) or 0.0) for p in lm]
+            if not any(vis):
+                vis = [1.0] * len(lm)  # Tasks model may omit visibility; draw anyway
             pt = {name: (lm[idx].x, lm[idx].y) for name, idx in _L.items()}
             out.append(
                 {
@@ -111,7 +151,7 @@ def estimate(frames: list[Image.Image]) -> list[dict] | None:
                     "crouch": round(
                         (pt["l_hip"][1] + pt["r_hip"][1]) / 2 - (pt["l_ankle"][1] + pt["r_ankle"][1]) / 2, 3
                     ),
-                    "landmarks": [(p.x, p.y, p.visibility) for p in lm],
+                    "landmarks": [(p.x, p.y, v) for p, v in zip(lm, vis)],
                 }
             )
     return out
