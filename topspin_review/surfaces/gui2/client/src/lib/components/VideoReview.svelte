@@ -253,10 +253,10 @@
     </div>
 
     {#if !isPhoto && report.has_source}
-      <div class="mt-4 rounded-xl border-2 border-line p-3">
+      <div class="mt-4">
         <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Timeline</h3>
         <p class="mt-1 text-xs text-muted">All tied to the playhead — watch them move together; click any to jump.</p>
-        <div class="mt-3 space-y-3">
+        <div class="mt-2 space-y-3 rounded-xl border-2 border-line p-3">
           <div>
             <div class="text-xs font-semibold text-muted">Issues</div>
             <div class="mt-1"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
