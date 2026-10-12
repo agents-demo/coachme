@@ -23,17 +23,10 @@
   </div>
   {#if open}
     <div class="mt-1.5 space-y-0.5 rounded-lg border-2 border-line bg-surface/40 px-2.5 py-1.5 text-[11px] text-muted">
-      <div>
-        <span class="font-semibold text-app">How:</span>
-        {item.detail}
-      </div>
+      <div><span class="font-semibold text-app">Source:</span> <span class="font-mono">{item.detail}</span></div>
       {#if item.engine}
-        <div>
-          <span class="font-semibold text-app">Runs on:</span>
-          <span class="font-mono">{item.engine}</span> — a third-party library, bundled locally.
-        </div>
+        <div><span class="font-semibold text-app">Runs on:</span> <span class="font-mono">{item.engine}</span> (bundled locally)</div>
       {/if}
-      <div class="text-[10px] text-muted">"Our code" = this app's own pipeline. "Input" = what you provided.</div>
     </div>
   {/if}
 </div>

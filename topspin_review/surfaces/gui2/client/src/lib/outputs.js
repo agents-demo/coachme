@@ -1,7 +1,9 @@
 // Everything an analysis produces, grouped in plain language by what the user
-// cares about. Each item carries a *friendly* provenance (`stepLabel`, `how`)
-// plus an explicit technical `detail` (our code vs external engine, file, symbol)
-// shown only behind a "details" toggle. Shared by the Review tabs and the tour.
+// cares about. Each item carries:
+//   - how:    a one-line description of the ALGORITHM / method (the interesting part)
+//   - stepLabel: the pipeline step it belongs to (friendly)
+//   - detail: the source location + engine, shown only behind a "details" toggle
+// Shared by the Review tabs and the first-run tour.
 //
 // `kind` maps to an artifact image route; items without a `kind` render via a
 // dedicated component (video, charts, 3D). Items whose id is in INLINE
@@ -22,8 +24,8 @@ export function outputs(report) {
       id: "video",
       label: "Video",
       stepLabel: "Your upload",
-      how: "The clip you analysed, with the flagged moments marked on the timeline.",
-      detail: "Input · the file you uploaded (not produced by the app)",
+      how: "The clip you analysed — nothing is computed for it. The flagged moments are marked on the timeline.",
+      detail: "Input · the file you uploaded",
       local: true,
     },
   ];
@@ -36,8 +38,8 @@ export function outputs(report) {
       id: "clips",
       label: `Moment clips (${clips.length})`,
       stepLabel: "Cut after the report",
-      how: "Short clips cut around each flagged moment so you can watch them back to back.",
-      detail: "Our code · integrations/media.py · make_clips()",
+      how: "For each flagged moment, a short window around its timestamp is cut out and re-encoded to a common size, so they play back to back.",
+      detail: "our code · integrations/media.py · make_clips()",
       engine: "ffmpeg",
       local: true,
     });
@@ -48,8 +50,9 @@ export function outputs(report) {
       label: "Frames read",
       kind: "frames",
       stepLabel: "Rendered an image",
-      how: "A few stills sampled from your clip — these are what the AI coach actually looked at.",
-      detail: "Our code · core/video/imaging.py · contact_sheet()",
+      how: "How the video becomes stills: the clip is probed for movement and the busiest moments are sampled (up to a cap), then tiled into one sheet — these are the stills the AI coach actually reads.",
+      detail: "our code · core/video/imaging.py · contact_sheet()",
+      engine: "Pillow",
       local: true,
     });
   }
@@ -61,8 +64,9 @@ export function outputs(report) {
       id: "movement",
       label: "Movement over time",
       stepLabel: "Measured your movement",
-      how: "How much you moved, frame by frame — a spike is a step or a swing.",
-      detail: "Our code · core/video/metrics.py · activity()",
+      how: "For each pair of sampled frames, the average pixel change (restricted to your body) is measured — that's the movement energy; the global shift comes from phase correlation of the two frames.",
+      detail: "our code · core/video/metrics.py · activity()",
+      engine: "NumPy",
       local: true,
     },
   ];
@@ -71,8 +75,8 @@ export function outputs(report) {
       id: "segments",
       label: "Segmentation phases",
       stepLabel: "Tracked the ball",
-      how: "The clip split into rally / movement phases, found from the ball changing direction.",
-      detail: "Our code · core/stages/measure/ball.py · phase_segments()",
+      how: "The tracked ball's direction changes are found (a horizontal flip = a hit, a vertical flip = a bounce); stretches where movement stays above the pause level are labelled as rally / movement.",
+      detail: "our code · core/stages/measure/ball.py · phase_segments()",
       local: true,
     });
   }
@@ -82,8 +86,9 @@ export function outputs(report) {
       label: "Movement",
       kind: "motion",
       stepLabel: "Rendered an image",
-      how: "A heat map of where the picture changed most — i.e. where your action happened.",
-      detail: "Our code · core/video/metrics.py · motion_map()",
+      how: "Pixel differences between consecutive frames are summed, restricted to your body, normalised, and drawn as a red heat map over the first frame — red = where the picture changed most.",
+      detail: "our code · core/video/metrics.py · motion_map()",
+      engine: "Pillow",
       local: true,
     });
   }
@@ -93,8 +98,9 @@ export function outputs(report) {
       label: "Footwork",
       kind: "heatmap",
       stepLabel: "Rendered an image",
-      how: "A map of where you spent the most time on court, built from your position each frame.",
-      detail: "Our code · core/video/metrics.py · position_heatmap()",
+      how: "Your position in every frame is dropped into a coarse grid, the grid is blurred, and it's drawn as a red heat map over the first frame — red = where you spent the most time.",
+      detail: "our code · core/video/metrics.py · position_heatmap()",
+      engine: "Pillow",
       local: true,
     });
   }
@@ -108,8 +114,8 @@ export function outputs(report) {
       label: "Body pose",
       kind: a.pose_hero ? "pose_hero" : "pose",
       stepLabel: "Detected your body",
-      how: "Your skeleton detected on a frame, drawn over the video at the key moment.",
-      detail: "Our code · integrations/pose.py · overlay() + contact sheet",
+      how: "A pose model finds 33 body points (shoulders, elbows, hips, knees…) in each frame; they're joined with lines to draw your skeleton.",
+      detail: "our code · integrations/pose.py · overlay()",
       engine: "mediapipe",
       local: true,
     });
@@ -119,8 +125,8 @@ export function outputs(report) {
       id: "pose_angles",
       label: "Body angles",
       stepLabel: "Detected your body",
-      how: "How your knee and elbow angles changed through the clip — spot where they dip.",
-      detail: "Our code · integrations/pose.py · estimate()",
+      how: "From the body points, joint angles are computed each frame (e.g. the angle between hip–knee and knee–ankle) and plotted over time.",
+      detail: "our code · integrations/pose.py · estimate()",
       engine: "mediapipe",
       local: true,
     });
@@ -130,8 +136,8 @@ export function outputs(report) {
       id: "pose3d",
       label: "Body 3D",
       stepLabel: "Detected your body",
-      how: "A 3D reconstruction of your skeleton you can rotate. Depth is estimated, not measured.",
-      detail: "Our code · integrations/pose.py · estimate() (world landmarks)",
+      how: "The pose model also estimates each point's 3D position (in metres); the skeleton is drawn in 3D so you can rotate it. Depth is estimated from one camera, so treat it as an indicator.",
+      detail: "our code · integrations/pose.py · estimate() (world landmarks)",
       engine: "mediapipe",
       local: true,
     });
@@ -147,12 +153,10 @@ export function outputs(report) {
       kind: "ball",
       stepLabel: "Tracked the ball",
       how: onnx
-        ? "The ball's path drawn on a frame, detected by a trained AI model."
-        : "The ball's path drawn on a frame, found with a colour/shape heuristic (a rough signal).",
-      detail: onnx
-        ? "Our code · integrations/ballmodel.py · detect() — trained YOLO model"
-        : "Our code · core/stages/measure/ball.py · candidates() — colour/shape heuristic",
-      engine: onnx ? "onnxruntime" : "numpy",
+        ? "A trained detector finds the ball in each frame; a constant-velocity tracker links the detections into a path, which is drawn over a frame."
+        : "Bright, round-ish blobs are found in each frame; a nearest-neighbour tracker links them into a path, which is drawn over a frame (a rough signal).",
+      detail: onnx ? "our code · integrations/ballmodel.py · detect()" : "our code · core/stages/measure/ball.py · candidates()",
+      engine: onnx ? "onnxruntime" : "NumPy",
       local: true,
     });
   }
@@ -161,8 +165,8 @@ export function outputs(report) {
       id: "ball3d",
       label: "Ball flight",
       stepLabel: "Tracked the ball",
-      how: "The ball's path in 3D — drag to rotate. Depth is estimated from the ball's apparent size.",
-      detail: "Our code · core/stages/measure/ball.py · trajectory3d()",
+      how: "Depth is inferred from the ball's apparent size (bigger = nearer) and combined with its screen position to plot a 3D path you can rotate. Direction of depth is meaningful; distance is not.",
+      detail: "our code · core/stages/measure/ball.py · trajectory3d()",
       local: true,
     });
   }
