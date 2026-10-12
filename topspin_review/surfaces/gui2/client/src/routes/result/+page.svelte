@@ -10,17 +10,16 @@
   let loading = $state(true);
   let error = $state("");
   let tab = $state("Watch");
+  let watchView = $state("Video"); // sub-tab inside Watch: "Video" | "Model view"
   let question = $state("");
   let answers = $state([]);
   let asking = $state(false);
 
-  // Each tab is named by what the user does there, with a one-line hint.
   // User-facing tabs on the left; the raw execution detail is a separate "utility" tab on the right.
   const MAIN_TABS = [
-    { id: "Watch", hint: "Play the video. Tap a moment to jump to it; click the chart to seek." },
+    { id: "Watch", hint: "Play the video and tap a moment to jump. Switch to “Model view” for the frames it read." },
     { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
-    { id: "Model view", hint: "The frames, motion map, and pose the model looked at — how it reached the findings." },
-    { id: "Details", hint: "Limitations, the report-quality score, and downloads." },
+    { id: "Details", hint: "The fine print: limitations, the report-quality score, and downloads." },
   ];
   const TECH_TAB = {
     id: "Diagnostics",
@@ -116,15 +115,23 @@
 
   <div class="mt-3">
     {#if tab === "Watch"}
-      <VideoReview {report} />
       {#if evidence}
-        <button
-          onclick={() => (tab = "Model view")}
-          class="mt-4 rounded-lg border-2 border-line px-3 py-2 text-sm font-semibold text-muted transition hover:border-accent2 hover:text-app"
-        >See what the model looked at (frames, motion map, pose) →</button>
+        <div class="mb-3 inline-flex rounded-lg border-2 border-line p-0.5 text-sm">
+          {#each ["Video", "Model view"] as v}
+            <button
+              onclick={() => (watchView = v)}
+              class="rounded-md px-3 py-1 font-semibold transition"
+              class:bg-surface={watchView === v}
+              class:text-app={watchView === v}
+              class:text-muted={watchView !== v}
+            >{v}</button>
+          {/each}
+        </div>
       {/if}
-    {:else if tab === "Model view"}
-      {#if evidence}
+
+      {#if !evidence || watchView === "Video"}
+        <VideoReview {report} />
+      {:else}
         <div class="grid gap-4 sm:grid-cols-2">
           {#if report.artifacts?.frames}
             <figure><img src={artifact(report.stem, "frames")} alt="sampled frames" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Sampled frames the model read.</figcaption></figure>
@@ -136,8 +143,6 @@
             <figure><img src={artifact(report.stem, "pose")} alt="pose overlay" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Body-pose overlay.</figcaption></figure>
           {/if}
         </div>
-      {:else}
-        <p class="text-sm text-muted">No frames saved for this report (single-image inputs have none).</p>
       {/if}
     {:else if tab === "Coaching"}
       {#if report.focus}
