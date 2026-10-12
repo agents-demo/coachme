@@ -46,11 +46,24 @@ def _output_text(result: Any) -> str:
     return getattr(result, "content", None) or str(result)
 
 
-async def run_text(system_prompt: str, user_prompt: str, *, max_iterations: int = 1) -> str:
-    """Run a single-turn, tool-less text agent and return its text output."""
+async def run_text(system_prompt: str, user_prompt: str, *, max_iterations: int = 1, recorder: Any = None) -> str:
+    """Run a single-turn, tool-less text agent and return its text output.
+
+    Pass ``recorder`` (the run's recorder) to record the call into the shared trace
+    and usage totals; otherwise it runs unrecorded.
+    """
     from topspin_review.integrations.agents.agent.builder import TextParams, build
 
-    built = build(TextParams(system_prompt=system_prompt, tools=[], rails=[], max_iterations=max_iterations, record=False))
+    built = build(
+        TextParams(
+            system_prompt=system_prompt,
+            tools=[],
+            rails=[],
+            max_iterations=max_iterations,
+            record=recorder is not None,
+            recorder=recorder,
+        )
+    )
     return _output_text(await run_agent(built.agent, user_prompt))
 
 

@@ -182,7 +182,9 @@ class DeterministicStrategy(Strategy):
         report_schema.calibrate(report, clip_quality)
         if config.verify_reports():
             try:
-                await verify_issues.verify(report, params.state["observations"], metrics.text(params.measured))
+                await verify_issues.verify(
+                    report, params.state["observations"], metrics.text(params.measured), recorder=params.session.recorder
+                )
             except Exception:
                 pass
 

@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from topspin_review.core.stages import observe
 from topspin_review.core.stages.coach.prompts import VERIFY_PROMPT, VERIFY_SYSTEM
 from topspin_review.domain import report as report_schema
 from topspin_review.integrations.agents import run_text
 
 
-async def verify(report: dict, observations: str, measured_text: str) -> dict:
+async def verify(report: dict, observations: str, measured_text: str, recorder: Any = None) -> dict:
     """Drop issues the model cannot ground in the evidence (best-effort)."""
     issues = list(report_schema.issues(report))
     if not issues:
@@ -20,7 +22,7 @@ async def verify(report: dict, observations: str, measured_text: str) -> dict:
     )
     evidence = f"{observations}\n{measured_text}"
     try:
-        text = await run_text(VERIFY_SYSTEM, VERIFY_PROMPT.format(issues=listed, evidence=evidence))
+        text = await run_text(VERIFY_SYSTEM, VERIFY_PROMPT.format(issues=listed, evidence=evidence), recorder=recorder)
         data = observe.extract_json(text)
         keep = data.get("supported")
     except Exception:
