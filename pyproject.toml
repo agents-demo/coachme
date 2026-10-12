@@ -20,6 +20,8 @@ dependencies = [
 
 [project.optional-dependencies]
 pose = ["mediapipe>=0.10"]
+ball = ["onnxruntime>=1.17"]
+train = ["ultralytics>=8.2"]
 pdf = ["reportlab>=4"]
 api = ["fastapi>=0.110", "uvicorn>=0.29"]
 mcp = ["mcp>=1.2"]
@@ -27,6 +29,7 @@ web = ["streamlit>=1.36"]
 dev = ["pytest>=7", "ruff>=0.6"]
 all = [
     "mediapipe>=0.10",
+    "onnxruntime>=1.17",
     "reportlab>=4",
     "fastapi>=0.110",
     "uvicorn>=0.29",

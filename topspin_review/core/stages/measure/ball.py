@@ -17,7 +17,9 @@ import math
 import numpy as np
 from PIL import Image, ImageDraw
 
+from topspin_review.core import config
 from topspin_review.core.video import cvutil
+from topspin_review.integrations import ballmodel
 
 try:  # optional accelerator; the module degrades gracefully without it
     import cv2
@@ -59,8 +61,31 @@ def _circles(img: Image.Image) -> list[tuple[float, float, float]]:
     return [(float(cx) / w, float(cy) / h, float(r)) for cx, cy, r in found[0]]
 
 
+def _model_ready() -> bool:
+    return config.ball_model() != "off" and ballmodel.available()
+
+
 def candidates(frame: Image.Image) -> list[dict]:
-    """Roundish, bright, small blobs that could be the ball."""
+    """Roundish, bright, small blobs that could be the ball.
+
+    Uses the trained ONNX detector when one is installed (``ball.onnx``), else the
+    colour/shape heuristic.
+    """
+    if _model_ready():
+        out = []
+        for d in ballmodel.detect(frame):
+            area = int(((d["x2"] - d["x1"]) * _SIZE[0]) * ((d["y2"] - d["y1"]) * _SIZE[1]))
+            out.append(
+                {
+                    "cx": round((d["x1"] + d["x2"]) / 2, 3),
+                    "cy": round((d["y1"] + d["y2"]) / 2, 3),
+                    "area": max(_MIN_AREA, area),
+                    "src": "model",
+                    "score": d.get("score"),
+                }
+            )
+        return out
+
     mask = _color_mask(frame)
     out: list[dict] = []
     for comp in cvutil.components(mask):
@@ -294,7 +319,7 @@ def detect(frames: list[Image.Image], timestamps: list[float], activity: list[di
 
     return {
         "summary": summary,
-        "detector": "cv2+hough" if cv2 is not None else "blob",
+        "detector": "yolov8-onnx" if _model_ready() else ("cv2+hough" if cv2 is not None else "blob"),
         "tracks": [{"points": t["points"]} for t in tracks[:3]],
         "contacts": contact_times,
         "bounces": bounce_times,

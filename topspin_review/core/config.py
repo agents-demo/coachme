@@ -76,6 +76,11 @@ def clips_enabled() -> bool:
     return _bool("HIGHLIGHT_CLIPS", "true")
 
 
+def ball_model() -> str:
+    """Ball detector mode: ``auto`` (use the ONNX model when present) or ``off``."""
+    return os.getenv("BALL_MODEL", "auto").strip().lower()
+
+
 def retrieval_enabled() -> bool:
     """Add lexically-retrieved past sessions to the report context."""
     return _bool("RETRIEVAL", "true")
