@@ -89,7 +89,18 @@ def recent_reports(n: int = 5) -> list[dict[str, Any]]:
 
 
 def find_report(video_or_stem: str) -> dict[str, Any] | None:
-    """The stored report for a video path or stem, or ``None``."""
+    """The stored report for a video path or stem, or ``None``.
+
+    Accepts either a bare stem (which may itself contain dots, e.g. ``clip.v2``)
+    or a full filename/path with an extension. The bare stem is tried first as a
+    literal ``<stem>_report.json`` file, so dotted names aren't truncated by
+    ``Path.stem``.
+    """
+    direct = DATA_DIR / f"{video_or_stem}{REPORT_SUFFIX}"
+    if direct.exists():
+        report = _read(direct, {})
+        if isinstance(report, dict) and report:
+            return report
     stem = Path(video_or_stem).stem
     matches = [r for r in get_reports() if Path(r.get("source", "")).stem == stem]
     return matches[-1] if matches else None
