@@ -122,10 +122,6 @@ class Strategy:
         extras: dict,
         progress: Progress | None,
     ) -> dict[str, Any]:
-        usage = params.session.usage_summary()
-        if path := params.session.save_details():
-            params.artifact_paths["observability"] = path
-
         report = store.patch_last_report(
             {
                 **extras,
@@ -133,7 +129,6 @@ class Strategy:
                 "source": params.video_path,
                 "frames": len(params.frames),
                 "frame_times": [round(t, 2) for t in params.timestamps],
-                "usage": usage,
                 "artifacts": params.artifact_paths,
                 "region_box": list(params.region_box) if params.region_box else None,
             }
@@ -148,6 +143,13 @@ class Strategy:
             except Exception:
                 exports = {}
             report = store.patch_last_report({**post, "progress_trend": trend, "exports": exports})
+
+        # Snapshot usage + write the observability trace AFTER the post-report pass (verification),
+        # so that call and its tokens are included.
+        usage = params.session.usage_summary()
+        if path := params.session.save_details():
+            params.artifact_paths["observability"] = path
+        report = store.patch_last_report({"usage": usage, "artifacts": params.artifact_paths}) or report
 
         tick(progress, "done", 100)
 
