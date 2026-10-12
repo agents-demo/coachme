@@ -2,12 +2,12 @@
   // A clean, human-readable provenance block: a plain sentence about how the
   // thing was made, with an inline "details" toggle for the technical method,
   // source and engine. Expects an item from lib/outputs.js.
-  let { item } = $props();
+  let { item, hideBadge = false } = $props();
   let open = $state(false);
 </script>
 
 <p class="mt-1 text-xs text-muted">
-  {#if !item.local}
+  {#if !item.local && !hideBadge}
     <span class="mr-1 inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent2">✨ AI agent</span>
   {/if}
   {item.how}

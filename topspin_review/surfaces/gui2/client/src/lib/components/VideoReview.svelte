@@ -280,8 +280,11 @@
         </div>
       {/if}
       <div class="mt-4">
-        <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
-        <Provenance item={keyMomentsItem} />
+        <div class="flex items-center gap-2">
+          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
+          <span class="inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-1.5 py-0.5 text-[10px] font-semibold text-accent2">✨ AI agent</span>
+        </div>
+        <Provenance item={keyMomentsItem} hideBadge />
         <div class="mt-2"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
         <div class="mt-2"><KeyMoments {report} /></div>
       </div>
