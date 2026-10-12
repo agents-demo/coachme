@@ -10,14 +10,14 @@
   let loading = $state(true);
   let error = $state("");
   let tab = $state("Watch");
-  let watchView = $state("Video"); // sub-tab inside Watch: "Video" | "Model view"
+  let watchView = $state("Video"); // sub-tab inside Watch: "Video" | "Frames & map"
   let question = $state("");
   let answers = $state([]);
   let asking = $state(false);
 
   // User-facing tabs on the left; the raw execution detail is a separate "utility" tab on the right.
   const MAIN_TABS = [
-    { id: "Watch", hint: "Play the video and tap a moment to jump. Switch to “Model view” for the frames it read." },
+    { id: "Watch", hint: "Play the video and tap a moment to jump. Switch to “Frames & map” for the sampled frames and motion map." },
     { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
     { id: "Notes", hint: "Caveats about this clip, the report-quality score, and downloads." },
   ];
@@ -119,7 +119,7 @@
     {#if tab === "Watch"}
       {#if evidence}
         <div class="mb-3 inline-flex rounded-lg border-2 border-line p-0.5 text-sm">
-          {#each ["Video", "Model view"] as v}
+          {#each ["Video", "Frames & map"] as v}
             <button
               onclick={() => (watchView = v)}
               class="rounded-md px-3 py-1 font-semibold transition"
