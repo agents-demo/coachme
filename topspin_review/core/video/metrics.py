@@ -261,16 +261,18 @@ def analyze(
     timestamps: list[float],
     ball: dict | None = None,
     region_box: tuple[float, float, float, float] | None = None,
+    with_pose: bool = True,
 ) -> dict:
     """Aggregate all motion/mechanics metrics for one sampled frame sequence.
 
     ``region_box`` (normalized l,t,r,b) overrides the auto primary-subject mask.
+    ``with_pose=False`` skips pose estimation (the caller may run it as its own step).
     """
     mask = region_from_box(region_box) if region_box else subject_region(frames)
     steps = activity(frames, timestamps, mask)
     track = subject_track(frames, mask)
     region_track = regions(frames, mask)
-    pose_seq = pose_estimate(frames)
+    pose_seq = pose_estimate(frames) if with_pose else None
     energies = [s["energy"] for s in steps]
     return {
         "activity": steps,
