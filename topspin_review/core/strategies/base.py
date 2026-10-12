@@ -135,8 +135,8 @@ class Strategy:
         )
 
         if report:
-            tick(progress, "exporting", 97)
             post = await self._after_report(params, report, progress)
+            tick(progress, "exporting", 97)
             trend = domain_progress.summarize(store.get_reports())
             try:
                 exports = reporting.write(report)
