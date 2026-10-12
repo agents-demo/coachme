@@ -9,11 +9,7 @@
 <div class="mt-2">
   <p class="text-xs text-muted">{item.how}</p>
   <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-    {#if item.local}
-      <span class="inline-flex items-center gap-1 rounded-full border-2 border-good/40 bg-good/5 px-2 py-0.5 text-[11px] font-semibold text-good">
-        🖥 Made on your device · no AI tokens
-      </span>
-    {:else}
+    {#if !item.local}
       <span class="inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-2 py-0.5 text-[11px] font-semibold text-accent2">
         ✨ Uses the AI model
       </span>

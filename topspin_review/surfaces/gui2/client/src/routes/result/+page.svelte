@@ -201,6 +201,7 @@
       {/if}
 
       {#if activeGroup}
+        <p class="mb-4 text-xs text-muted">🖥 Everything on this tab is computed on your device — no AI tokens. Only the written report uses the model.</p>
         <div class="space-y-7">
           {#each activeGroup.items as it (it.id)}
             <section>
