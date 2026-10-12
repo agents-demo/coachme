@@ -56,9 +56,11 @@ def measure(
         ball_info = ball.detect(frames, timestamps, steps)
     else:
         duration_s = float(meta.get("duration") or 0.0) or (timestamps[-1] if timestamps else 0.0)
-        ball_frames, ball_times = sampling.sample_burst(
-            video_path, 0.0, duration_s or 1e9, config.ball_sample_fps(), cap=config.ball_max_frames()
-        )
+        # Spread the ball pass across the WHOLE clip (a contiguous burst would only
+        # cover the start of a long clip); target ~ball_sample_fps, capped.
+        wanted = int(duration_s * config.ball_sample_fps()) if duration_s else 0
+        count = max(1, min(config.ball_max_frames(), wanted or config.ball_max_frames()))
+        ball_frames, ball_times = sampling.sample_even(video_path, count)
         if len(ball_frames) >= 3:
             ball_info = ball.detect(ball_frames, ball_times, metrics.activity(ball_frames, ball_times))
         else:

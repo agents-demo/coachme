@@ -132,6 +132,45 @@ def sample_window(video_path: str | Path, start: float, end: float, count: int =
         reader.close()
 
 
+def sample_even(video_path: str | Path, count: int) -> tuple[list[Image.Image], list[float]]:
+    """Up to ``count`` frames spread **evenly across the whole clip** (not a window)."""
+    path = Path(video_path)
+    if not path.exists() or count <= 0:
+        return [], []
+    reader = imageio.get_reader(str(path), format="ffmpeg")
+    try:
+        try:
+            meta = dict(reader.get_meta_data())
+        except Exception:
+            meta = {}
+        fps = float(meta.get("fps") or 30)
+        duration = meta.get("duration")
+        if duration:
+            total = max(1, int(float(duration) * fps))
+        else:
+            try:
+                total = int(reader.count_frames())
+            except Exception:
+                total = 0
+        if total <= 0:
+            return [], []
+        if total <= count:
+            indices = list(range(total))
+        else:
+            indices = sorted({int(round(i * (total - 1) / (count - 1))) for i in range(count)})
+        frames: list[Image.Image] = []
+        times: list[float] = []
+        for idx in indices:
+            try:
+                frames.append(Image.fromarray(reader.get_data(idx)).convert("RGB"))
+                times.append(idx / fps)
+            except Exception:
+                continue
+        return frames, times
+    finally:
+        reader.close()
+
+
 def sample_burst(
     video_path: str | Path, start: float, end: float, target_fps: float = 8.0, cap: int = 20
 ) -> tuple[list[Image.Image], list[float]]:
