@@ -264,28 +264,6 @@
       {/if}
     </div>
 
-    {#if report.has_source && !isPhoto}
-      <details class="mt-3 rounded-xl border-2 border-line bg-surface/40 p-3 text-sm">
-        <summary class="cursor-pointer font-semibold text-app">Trim &amp; export</summary>
-        <div class="mt-3 flex flex-wrap items-end gap-3 text-xs">
-          <label class="text-muted">Start <span class="font-mono">{tStart.toFixed(1)}s</span>
-            <input type="range" min="0" max={duration} step="0.1" bind:value={tStart} class="mt-1 block w-36" />
-          </label>
-          <label class="text-muted">End <span class="font-mono">{tEnd.toFixed(1)}s</span>
-            <input type="range" min="0" max={duration} step="0.1" bind:value={tEnd} class="mt-1 block w-36" />
-          </label>
-          <label class="text-muted">Format
-            <select bind:value={tFmt} class="mt-1 block rounded border-2 border-line bg-surface px-2 py-1">
-              <option value="mp4">mp4</option>
-              <option value="gif">gif</option>
-            </select>
-          </label>
-          <label class="flex items-center gap-1 text-muted"><input type="checkbox" bind:checked={tVert} /> vertical 9:16</label>
-          <a href={trimHref} download class="rounded-lg bg-accent px-3 py-1.5 font-semibold text-white">Export clip</a>
-        </div>
-      </details>
-    {/if}
-
     {#if !isPhoto && report.has_source}
       <div class="mt-4">
         <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Issue timeline</h3>
@@ -317,6 +295,28 @@
           A spike is a step or a swing. Click the chart to jump the video.
         </p>
       </div>
+    {/if}
+
+    {#if report.has_source && !isPhoto}
+      <details class="mt-4 rounded-xl border-2 border-line bg-surface/40 p-3 text-sm">
+        <summary class="cursor-pointer font-semibold text-app">Trim &amp; export</summary>
+        <div class="mt-3 flex flex-wrap items-end gap-3 text-xs">
+          <label class="text-muted">Start <span class="font-mono">{tStart.toFixed(1)}s</span>
+            <input type="range" min="0" max={duration} step="0.1" bind:value={tStart} class="mt-1 block w-36" />
+          </label>
+          <label class="text-muted">End <span class="font-mono">{tEnd.toFixed(1)}s</span>
+            <input type="range" min="0" max={duration} step="0.1" bind:value={tEnd} class="mt-1 block w-36" />
+          </label>
+          <label class="text-muted">Format
+            <select bind:value={tFmt} class="mt-1 block rounded border-2 border-line bg-surface px-2 py-1">
+              <option value="mp4">mp4</option>
+              <option value="gif">gif</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-1 text-muted"><input type="checkbox" bind:checked={tVert} /> vertical 9:16</label>
+          <a href={trimHref} download class="rounded-lg bg-accent px-3 py-1.5 font-semibold text-white">Export clip</a>
+        </div>
+      </details>
     {/if}
   </div>
 </div>
