@@ -123,17 +123,10 @@
             {#each g.items as t}
               {@const secs = Number(t.seconds) || 0}
               <li class="flex items-center gap-3 text-sm">
-                <div class="flex w-44 shrink-0 items-center gap-1.5 pl-2">
-                  <span class="truncate {t.stage === 'startup' ? 'text-muted' : ''}">{shortLabel(t.stage)}</span>
-                  {#if STEP_SHORT[t.stage]}
-                    <span class="group relative grid h-4 w-4 shrink-0 cursor-help place-items-center rounded-full border border-line text-[9px] font-bold text-muted">
-                      i
-                      <span
-                        class="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden w-60 -translate-x-1/2 rounded-lg border-2 border-line bg-ink p-2 text-[11px] font-normal leading-snug text-app shadow-xl group-hover:block"
-                      >{STEP_SHORT[t.stage]}</span>
-                    </span>
-                  {/if}
-                </div>
+                <span
+                  class="w-44 shrink-0 truncate pl-2 {t.stage === 'startup' ? 'text-muted' : ''}{STEP_SHORT[t.stage] ? ' cursor-help' : ''}"
+                  title={STEP_SHORT[t.stage] || ""}
+                >{shortLabel(t.stage)}</span>
                 <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
                   <div
                     class="h-full rounded-full {t.stage === 'startup' ? 'bg-line' : 'bg-accent'}"
