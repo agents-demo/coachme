@@ -15,8 +15,7 @@
       {/each}
     </div>
     <p class="mt-1 text-xs text-muted">
-      Auto-segmented phases — click a block to jump (heuristic).
-      <span class="font-mono">ball.phase_segments()</span> · step <span>tracking ball</span> · <span class="font-mono">report → metrics.ball.segments</span>
+      The clip split into rally / movement phases, found from the ball changing direction. Click a block to jump.
     </p>
   </div>
 {/if}

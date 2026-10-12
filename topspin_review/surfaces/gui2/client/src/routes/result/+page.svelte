@@ -7,6 +7,7 @@
   import PoseChart from "$lib/components/PoseChart.svelte";
   import Pose3D from "$lib/components/Pose3D.svelte";
   import Ball3D from "$lib/components/Ball3D.svelte";
+  import Provenance from "$lib/components/Provenance.svelte";
   import { outputs } from "$lib/outputs";
   import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
 
@@ -219,12 +220,7 @@
                   </figure>
                 {/if}
               </div>
-              <p class="mt-2 text-xs text-muted">
-                made by <span class="font-mono text-app">{it.producer}</span>
-                · step <span class="text-app">{it.step}</span>
-                · <span class="font-mono">{it.where}</span>
-                {#if it.local}<span class="ml-1 rounded border-2 border-line px-1.5 py-0.5 text-[10px]">on-device · no tokens</span>{/if}
-              </p>
+              <Provenance item={it} />
             </section>
           {/each}
         </div>
@@ -383,9 +379,8 @@
           <button onclick={closeTour} title="Close" class="rounded-lg border-2 border-line px-2 py-0.5 text-sm font-semibold">✕</button>
         </div>
         <p class="mt-1 text-sm text-muted">
-          For each item: the <b class="text-app">code</b> that produced it, the pipeline <b class="text-app">step</b>
-          it ran in, and <b class="text-app">where</b> it lands. Everything here is computed on-device (no tokens);
-          only the written report uses the model.
+          Everything below is made on your device (no AI tokens) — the written report is the only part that uses the
+          model. Each item says how it was made; tap <b class="text-app">details</b> for the technical note.
         </p>
         <div class="mt-4 space-y-3">
           {#each outputGroups as g}
@@ -394,8 +389,8 @@
               <ul class="mt-1 space-y-1 text-sm">
                 {#each g.items as it}
                   <li>
-                    <b class="text-app">{it.label}</b> — <span class="font-mono text-muted">{it.producer}</span>,
-                    step <span class="text-muted">{it.step}</span> → <span class="font-mono text-muted">{it.where}</span>
+                    <b class="text-app">{it.label}</b>
+                    <Provenance item={it} />
                   </li>
                 {/each}
               </ul>
