@@ -26,7 +26,7 @@ export function outputs(report) {
       stepLabel: "Your upload",
       how: "Your clip as you uploaded it. The moments worth a look are marked on the timeline.",
       method: "n/a — this is your input file.",
-      detail: "input · the file you uploaded",
+      detail: "your uploaded file",
       local: true,
     },
   ];
@@ -41,7 +41,7 @@ export function outputs(report) {
       stepLabel: "Cut after the report",
       how: "A short clip around each flagged moment, so you can watch the key bits back to back.",
       method: "ffmpeg: trim ±window around each flagged timestamp, re-encode to a uniform size, concatenate.",
-      detail: "our code · integrations/media.py · make_clips()",
+      detail: "integrations/media.py · make_clips()",
       engine: "ffmpeg",
       local: true,
     });
@@ -53,9 +53,9 @@ export function outputs(report) {
       kind: "frames",
       stepLabel: "Rendered an image",
       how: "The few stills taken from your clip — the exact pictures the AI coach looked at. It picks the moments where the most happened.",
-      method: "Motion-weighted sampling: per-frame grayscale abs-diff energy → keep the top frames up to a cap → tile into a contact sheet.",
-      detail: "our code · core/video/imaging.py · contact_sheet()",
-      engine: "Pillow",
+      method: "ffmpeg decodes the video; frames are ranked by motion-weighted grayscale abs-diff energy, the top ones (up to a cap) kept, then tiled into a contact sheet with Pillow.",
+      detail: "core/stages/measure/sampling.py + core/video/imaging.py · contact_sheet()",
+      engine: "ffmpeg (decode) + Pillow",
       local: true,
     });
   }
@@ -69,7 +69,7 @@ export function outputs(report) {
       stepLabel: "Measured your movement",
       how: "How much you moved through the clip. Higher bar = more movement (a step or a swing).",
       method: "Per frame-pair: mean abs grayscale diff inside the subject mask (energy); inter-frame shift via FFT phase correlation.",
-      detail: "our code · core/video/metrics.py · activity()",
+      detail: "core/video/metrics.py · activity()",
       engine: "NumPy",
       local: true,
     },
@@ -81,7 +81,7 @@ export function outputs(report) {
       stepLabel: "Tracked the ball",
       how: "The clip split into parts where you were rallying vs. just moving, based on when the ball changed direction.",
       method: "Reverse points along the ball track (x-flip = hit, y-flip = bounce); label contiguous spans above a noise threshold.",
-      detail: "our code · core/stages/measure/ball.py · phase_segments()",
+      detail: "core/stages/measure/ball.py · phase_segments()",
       local: true,
     });
   }
@@ -93,7 +93,7 @@ export function outputs(report) {
       stepLabel: "Rendered an image",
       how: "A heat map of where the picture changed most — red is where your action happened.",
       method: "Sum consecutive-frame abs grayscale diff, masked to the subject, normalised, drawn as a red overlay on frame 1.",
-      detail: "our code · core/video/metrics.py · motion_map()",
+      detail: "core/video/metrics.py · motion_map()",
       engine: "Pillow",
       local: true,
     });
@@ -106,7 +106,7 @@ export function outputs(report) {
       stepLabel: "Rendered an image",
       how: "A map of the court: red is where you stood the most.",
       method: "2D histogram of the subject-box centre across frames, gaussian-blurred, drawn as a red overlay on frame 1.",
-      detail: "our code · core/video/metrics.py · position_heatmap()",
+      detail: "core/video/metrics.py · position_heatmap()",
       engine: "Pillow",
       local: true,
     });
@@ -123,7 +123,7 @@ export function outputs(report) {
       stepLabel: "Detected your body",
       how: "Your body drawn as a stick figure, so you can see your posture at a key moment.",
       method: "Pose model → 33 body landmarks per frame; join the landmark pairs to draw the skeleton.",
-      detail: "our code · integrations/pose.py · overlay()",
+      detail: "integrations/pose.py · overlay()",
       engine: "mediapipe",
       local: true,
     });
@@ -135,7 +135,7 @@ export function outputs(report) {
       stepLabel: "Detected your body",
       how: "Your knee and elbow angles through the clip — watch for them dipping during a shot.",
       method: "Three-point joint angles from landmarks (e.g. hip–knee–ankle) computed per frame and plotted over time.",
-      detail: "our code · integrations/pose.py · estimate()",
+      detail: "integrations/pose.py · estimate()",
       engine: "mediapipe",
       local: true,
     });
@@ -147,7 +147,7 @@ export function outputs(report) {
       stepLabel: "Detected your body",
       how: "Your body as a 3D model you can spin around. Depth is a best guess from a single camera.",
       method: "Pose model's world landmarks (metres) projected orthographically; render with rotate controls.",
-      detail: "our code · integrations/pose.py · estimate() (world landmarks)",
+      detail: "integrations/pose.py · estimate() (world landmarks)",
       engine: "mediapipe",
       local: true,
     });
@@ -168,7 +168,7 @@ export function outputs(report) {
       method: onnx
         ? "Trained YOLO detector per frame → constant-velocity nearest-neighbour tracker → path overlay."
         : "Colour/shape blob detector per frame → nearest-neighbour tracker → path overlay.",
-      detail: onnx ? "our code · integrations/ballmodel.py · detect()" : "our code · core/stages/measure/ball.py · candidates()",
+      detail: onnx ? "integrations/ballmodel.py · detect()" : "core/stages/measure/ball.py · candidates()",
       engine: onnx ? "onnxruntime" : "NumPy",
       local: true,
     });
@@ -180,7 +180,7 @@ export function outputs(report) {
       stepLabel: "Tracked the ball",
       how: "The ball's route through the air in 3D. The shape is useful; the exact distances aren't.",
       method: "Depth z ∝ 1/√(blob area) (monocular size cue) combined with screen (x, y); plot (x, y, z) with rotate controls.",
-      detail: "our code · core/stages/measure/ball.py · trajectory3d()",
+      detail: "core/stages/measure/ball.py · trajectory3d()",
       local: true,
     });
   }
