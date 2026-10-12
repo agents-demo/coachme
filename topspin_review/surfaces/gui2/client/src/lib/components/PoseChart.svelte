@@ -5,6 +5,7 @@
 
   const times = $derived(report.frame_times || []);
   const pose = $derived(report.metrics?.pose || []);
+  const p3 = $derived(report.metrics?.pose3d_summary || {});
 
   const SERIES = [
     { key: "l_knee", label: "Left knee", color: "#4f46e5" },
@@ -56,6 +57,18 @@
       Joint angles over the clip (from the sampled frames). Useful for spotting a knee/elbow dip during the
       stroke. Values are pose estimates, not clinical measurements.
     </p>
+
+    {#if Object.keys(p3).length}
+      <div class="mt-3 rounded-xl border-2 border-line p-3">
+        <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">3D biomechanics (world-landmark mean)</div>
+        <div class="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted sm:grid-cols-4">
+          {#each [["L knee", p3.l_knee_3d_mean], ["R knee", p3.r_knee_3d_mean], ["L elbow", p3.l_elbow_3d_mean], ["R elbow", p3.r_elbow_3d_mean], ["Torso lean", p3.torso_lean_mean], ["Shoulder twist", p3.shoulder_twist_mean], ["Hip twist", p3.hip_twist_mean]] as [label, val]}
+            {#if val != null}<div><span class="font-semibold text-app">{val}°</span> {label}</div>{/if}
+          {/each}
+        </div>
+        <p class="mt-1.5 text-[11px] text-muted">Approximate 3D from a single camera — treat as an indicator, not a precise measurement.</p>
+      </div>
+    {/if}
   </div>
 {:else}
   <p class="text-sm text-muted">No pose angles for this run (pose unavailable or no person detected).</p>
