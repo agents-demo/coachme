@@ -127,4 +127,17 @@
     disabled={busy}
     class="mt-4 rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
   >{busy ? "Starting…" : "Analyze"}</button>
+
+  <details class="mt-4 text-sm">
+    <summary class="cursor-pointer font-semibold text-muted">How to film for the best report</summary>
+    <ul class="mt-2 list-disc space-y-1 pl-5 text-xs text-muted">
+      <li><b>Angle:</b> side-on to the player, so footwork and the swing plane are visible.</li>
+      <li><b>Framing:</b> full body in frame, including the feet (a wide shot beats a close-up).</li>
+      <li><b>Frame rate:</b> 60 fps if you can — it captures footwork and contact far better than 30.</li>
+      <li><b>Distance:</b> far enough to see the whole base, close enough that the player isn't tiny.</li>
+      <li><b>Steady:</b> a tripod or a propped phone; shakes confuse the motion metrics.</li>
+      <li><b>Length:</b> a few rallies (~10–30s) is plenty; lighting even, no heavy backlight.</li>
+      <li><b>Bonus:</b> keep the camera distance consistent between sessions so progress is comparable.</li>
+    </ul>
+  </details>
 </section>
