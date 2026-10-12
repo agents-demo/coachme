@@ -86,7 +86,7 @@ export function outputs(report) {
   if (a.motion) {
     movement.push({
       id: "motion",
-      label: "Movement",
+      label: "Movement map",
       kind: "motion",
       stepLabel: "Drew the picture",
       how: "A heat map of where the picture changed most — red is where your action happened.",
@@ -99,7 +99,7 @@ export function outputs(report) {
   if (a.heatmap) {
     movement.push({
       id: "heatmap",
-      label: "Footwork",
+      label: "Footwork map",
       kind: "heatmap",
       stepLabel: "Drew the picture",
       how: "A map of the court: red is where you stood the most.",

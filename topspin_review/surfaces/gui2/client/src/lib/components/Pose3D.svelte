@@ -60,21 +60,15 @@
   }
 </script>
 
-<div class="max-w-2xl">
-  <h3 class="font-semibold">3D pose</h3>
-  <p class="mt-1 text-xs text-muted">
-    Skeleton reconstructed from a single camera's world landmarks. Drag to rotate; step to any frame.
-    Approximate — depth is estimated, not measured.
-  </p>
-
+<div>
   {#if !frames.length}
-    <p class="mt-3 rounded-xl border-2 border-line p-4 text-sm text-muted">
+    <p class="rounded-xl border-2 border-line p-4 text-sm text-muted">
       No 3D pose in this report. Re-run the analysis to capture it.
     </p>
   {:else}
-    <div class="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
+    <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
       <div
-        class="relative aspect-square overflow-hidden rounded-[14px] border-2 border-line bg-surface"
+        class="relative h-72 overflow-hidden rounded-[14px] border-2 border-line bg-surface"
         class:cursor-grabbing={dragging}
         class:cursor-grab={!dragging}
         onpointerdown={down} onpointermove={move} onpointerup={up} onpointerleave={up}

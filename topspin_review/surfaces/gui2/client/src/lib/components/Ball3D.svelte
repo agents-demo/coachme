@@ -41,21 +41,15 @@
   function up() { dragging = false; }
 </script>
 
-<div class="max-w-2xl">
-  <h3 class="font-semibold">Ball trajectory (3D)</h3>
-  <p class="mt-1 text-xs text-muted">
-    Shallow 3D path from the heuristic ball tracker. Depth is inferred from apparent ball size
-    (monocular) — the direction of depth is meaningful, the absolute distance is not. Drag to rotate.
-  </p>
-
+<div>
   {#if projected.length < 2}
-    <p class="mt-3 rounded-xl border-2 border-line p-4 text-sm text-muted">
+    <p class="rounded-xl border-2 border-line p-4 text-sm text-muted">
       Not enough tracked ball points in this report to plot a trajectory.
     </p>
   {:else}
-    <div class="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
+    <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
       <div
-        class="relative aspect-square overflow-hidden rounded-[14px] border-2 border-line bg-surface"
+        class="relative h-72 overflow-hidden rounded-[14px] border-2 border-line bg-surface"
         class:cursor-grabbing={dragging} class:cursor-grab={!dragging}
         onpointerdown={down} onpointermove={move} onpointerup={up} onpointerleave={up}
       >
