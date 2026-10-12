@@ -32,6 +32,9 @@ export function outputs(report) {
       local: true,
     });
   }
+  if (a.frames) {
+    clipItems.push({ id: "frames", label: "Frames read", kind: "frames", producer: "imaging.contact_sheet()", step: "writing artifacts", where: a.frames.replace(/^.*[\\/]/, ""), local: true });
+  }
   groups.push({ id: "clip", group: "Your clip", items: clipItems });
 
   // --- Your movement ----------------------------------------------------------
@@ -74,13 +77,6 @@ export function outputs(report) {
     body.push({ id: "pose3d", label: "Body 3D", producer: "pose.estimate() (world landmarks)", step: "estimating pose", where: "report → metrics.pose[].landmarks3d", local: true });
   }
   if (body.length) groups.push({ id: "body", group: "Your body", items: body });
-
-  // --- What the coach saw -----------------------------------------------------
-  const seen = [];
-  if (a.frames) {
-    seen.push({ id: "frames", label: "Frames read", kind: "frames", producer: "imaging.contact_sheet()", step: "writing artifacts", where: a.frames.replace(/^.*[\\/]/, ""), local: true });
-  }
-  if (seen.length) groups.push({ id: "seen", group: "What the coach saw", items: seen });
 
   return groups;
 }
