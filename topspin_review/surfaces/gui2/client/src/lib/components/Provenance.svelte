@@ -14,9 +14,6 @@
         ✨ Uses the AI model
       </span>
     {/if}
-    <span class="rounded-full border-2 border-line px-2 py-0.5 text-[11px] font-semibold text-muted" title="The pipeline step that produced this">
-      Step · {item.stepLabel}
-    </span>
     <button
       onclick={() => (open = !open)}
       class="text-[11px] font-semibold text-muted underline decoration-dotted underline-offset-2 hover:text-app"
