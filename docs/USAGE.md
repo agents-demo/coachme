@@ -218,7 +218,9 @@ Typical first run:
 
 **Ball detector** — `BALL_MODEL` (`auto` uses the ONNX model when installed, `off` forces the
 heuristic), `BALL_MODEL_PATH` (default `runtime/data/models/ball.onnx`), `BALL_MODEL_IMGSZ` (640),
-`BALL_MODEL_CONF` (0.25), `BALL_MODEL_FAMILY` (`auto`/`yolov5`/`yolov8`). Provision the MIT table-tennis
+`BALL_MODEL_CONF` (0.25), `BALL_MODEL_FAMILY` (`auto`/`yolov5`/`yolov8`),
+`BALL_SAMPLE_FPS` (10), `BALL_MAX_FRAMES` (400) — the last two control the dedicated dense
+ball-tracking pass. Provision the MIT table-tennis
 model with `scripts/fetch_ball_model.py`, or train your own via `scripts/train_ball.py` (needs
 `pip install ultralytics`); without a model the heuristic tracker runs unchanged.
 

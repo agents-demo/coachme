@@ -121,8 +121,9 @@ def _predict(track: dict) -> tuple[float, float]:
 
 
 def track(frames: list[Image.Image], timestamps: list[float]) -> list[dict]:
-    """Constant-velocity nearest-neighbour tracking; returns tracks as time-ordered points."""
+    """Constant-velocity nearest-neighbour tracking; returns time-ordered tracks."""
     tracks: list[dict] = []
+    finished: list[dict] = []
     for i, frame in enumerate(frames):
         cands = candidates(frame)
         for tr in tracks:
@@ -156,11 +157,19 @@ def track(frames: list[Image.Image], timestamps: list[float]) -> list[dict]:
         for tr in tracks:
             if not tr["matched"]:
                 tr["missed"] += 1
-        tracks = [tr for tr in tracks if tr["missed"] <= _MAX_MISSED]
-    tracks = [tr for tr in tracks if len(tr["points"]) >= 3]
-    tracks = [tr for tr in tracks if _travel(tr) >= _MIN_TRAVEL]
-    tracks.sort(key=lambda tr: len(tr["points"]), reverse=True)
-    return tracks
+        # Once a track has been missing too long, finalize it (don't discard the
+        # evidence) — the ball often leaves the frame between rallies.
+        still: list[dict] = []
+        for tr in tracks:
+            if tr["missed"] > _MAX_MISSED:
+                finished.append(tr)
+            else:
+                still.append(tr)
+        tracks = still
+    finished.extend(tracks)
+    finished = [tr for tr in finished if len(tr["points"]) >= 3 and _travel(tr) >= _MIN_TRAVEL]
+    finished.sort(key=lambda tr: len(tr["points"]), reverse=True)
+    return finished
 
 
 def _travel(tr: dict) -> float:

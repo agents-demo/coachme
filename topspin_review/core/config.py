@@ -83,12 +83,12 @@ def ball_model() -> str:
 
 def ball_sample_fps() -> float:
     """Target fps for the dedicated ball-tracking pass (the ball is on screen briefly)."""
-    return float(os.getenv("BALL_SAMPLE_FPS", "5"))
+    return float(os.getenv("BALL_SAMPLE_FPS", "10"))
 
 
 def ball_max_frames() -> int:
     """Upper bound on frames in the dedicated ball pass."""
-    return int(os.getenv("BALL_MAX_FRAMES", "200"))
+    return int(os.getenv("BALL_MAX_FRAMES", "400"))
 
 
 def retrieval_enabled() -> bool:

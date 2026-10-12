@@ -158,7 +158,8 @@ def sample_burst(
             hi = min(max(hi, lo + 1), total)
 
         step = max(1, int(round(fps / max(float(target_fps), 0.5))))
-        indices = list(range(lo, hi + 1, step))[:cap]
+        count = min(cap, max(0, (hi - lo) // step + 1))
+        indices = [lo + k * step for k in range(count)]
 
         frames: list[Image.Image] = []
         times: list[float] = []
