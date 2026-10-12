@@ -1,4 +1,5 @@
 <script>
+  import { callImage } from "$lib/api";
   import { pretty, shortLabel, STEP_SHORT, STEP_GROUP, GROUP_ORDER, MODEL_STEP } from "$lib/format";
 
   let { report } = $props();
@@ -176,20 +177,39 @@
                 {/if}
                 <div class="mt-2 space-y-2">
                   <div>
-                    <div class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">Input — everything sent to the model</div>
+                    <div class="mb-1 inline-block rounded-md bg-accent2/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-accent2">
+                      Input — everything sent to the model
+                    </div>
                     {#if c.input?.length}
                       {#each c.input as m}
                         <div class="mt-1">
-                          <div class="text-xs uppercase text-muted">{m.role}</div>
-                          <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
+                          <span class="rounded border border-line px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">{m.role}</span>
+                          <pre class="mt-1 overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
                         </div>
                       {/each}
                     {:else}
                       <p class="text-xs text-muted">Input not saved (SAVE_CALL_IO is off) or unavailable.</p>
                     {/if}
+                    {#if c.images?.length}
+                      <div class="mt-2">
+                        <div class="text-[11px] text-muted">Images sent to the model ({c.images.length})</div>
+                        <div class="mt-1 flex flex-wrap gap-2">
+                          {#each c.images as p}
+                            <img
+                              src={callImage(report.stem, p.split(/[\\/]/).pop())}
+                              alt=""
+                              loading="lazy"
+                              class="max-h-72 rounded border-2 border-line"
+                            />
+                          {/each}
+                        </div>
+                      </div>
+                    {/if}
                   </div>
-                  <div>
-                    <div class="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-muted">Output — what the model produced</div>
+                  <div class="border-t-2 border-line pt-3">
+                    <div class="mb-1 inline-block rounded-md bg-good/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-good">
+                      Output — what the model produced
+                    </div>
                     {#if c.requested?.length}
                       {#each c.requested as tc}
                         <div class="mt-1 text-xs">↳ requested tool <code class="text-accent2">{tc.name}</code> with:</div>
@@ -214,11 +234,15 @@
                 </summary>
                 <div class="mt-2 space-y-2">
                   <div>
-                    <div class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">Input — arguments passed to the tool</div>
+                    <div class="mb-1 inline-block rounded-md bg-accent2/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-accent2">
+                      Input — arguments passed to the tool
+                    </div>
                     <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{pretty(t.arguments) || "{}"}</pre>
                   </div>
-                  <div>
-                    <div class="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-muted">Output — result the tool returned</div>
+                  <div class="border-t-2 border-line pt-3">
+                    <div class="mb-1 inline-block rounded-md bg-good/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-good">
+                      Output — result the tool returned
+                    </div>
                     {#if t.error}<p class="text-xs text-bad">{t.error}</p>{/if}
                     <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{t.result || "(empty)"}</pre>
                   </div>

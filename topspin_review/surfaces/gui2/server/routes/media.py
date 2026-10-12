@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
+from topspin_review.integrations.storage import runtime
 from topspin_review.surfaces.gui2.server import read
 
 router = APIRouter()
@@ -41,4 +42,15 @@ def clip(stem: str, key: str) -> FileResponse:
     path = read.clip_path(stem, key)
     if path is None:
         raise HTTPException(status_code=404, detail="clip not found")
+    return FileResponse(path, headers=_NO_STORE)
+
+
+@router.get("/callmedia/{stem}/{name}")
+def callmedia(stem: str, name: str) -> FileResponse:
+    """Serve an image that was sent to the model during a run (saved under <stem>_media/)."""
+    if not name or "/" in name or "\\" in name or name in (".", ".."):
+        raise HTTPException(status_code=400, detail="invalid name")
+    path = runtime.ARTIFACTS_DIR / f"{stem}_media" / name
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="not found")
     return FileResponse(path, headers=_NO_STORE)
