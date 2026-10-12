@@ -15,7 +15,6 @@
   let loading = $state(true);
   let error = $state("");
   let tab = $state("Review");
-  let watchView = $state("video");
   let question = $state("");
   let answers = $state([]);
   let asking = $state(false);
@@ -46,7 +45,6 @@
     outputGroups.map((g) => ({ ...g, items: g.items.filter((i) => !INLINE.includes(i.id)) })).filter((g) => g.items.length),
   );
   const activeGroup = $derived(visibleGroups.find((g) => g.id === watchGroup) || visibleGroups[0]);
-  const current = $derived(activeGroup?.items.find((i) => i.id === watchView) || activeGroup?.items[0]);
 
   // Spoken summary: focus + the top few issues + the summary paragraph.
   const summaryText = $derived.by(() => {
@@ -98,7 +96,6 @@
     error = "";
     try {
       report = await getReport(stem);
-      watchView = "video";
       watchGroup = "clip";
       doneDrills = {};
       if (!tourSeen) {
@@ -188,13 +185,10 @@
   <div class="mt-3">
     {#if tab === "Review"}
       {#if visibleGroups.length > 1}
-        <div class="mb-2 flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-line pb-1">
+        <div class="mb-5 flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-line pb-2">
           {#each visibleGroups as g}
             <button
-              onclick={() => {
-                watchGroup = g.id;
-                watchView = g.items[0].id;
-              }}
+              onclick={() => (watchGroup = g.id)}
               class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
               class:border-accent={activeGroup?.id === g.id}
               class:text-app={activeGroup?.id === g.id}
@@ -204,42 +198,36 @@
           {/each}
         </div>
       {/if}
-      {#if activeGroup && activeGroup.items.length > 1}
-        <div class="mb-3 inline-flex overflow-hidden rounded-lg border-2 border-line">
-          {#each activeGroup.items as it}
-            <button
-              onclick={() => (watchView = it.id)}
-              title={`${it.producer} · ${it.step} · ${it.where}`}
-              class="px-3 py-1 text-xs font-semibold transition"
-              class:bg-accent={watchView === it.id}
-              class:text-white={watchView === it.id}
-              class:text-muted={watchView !== it.id}
-            >{it.label}</button>
+
+      {#if activeGroup}
+        <div class="space-y-7">
+          {#each activeGroup.items as it (it.id)}
+            <section>
+              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
+              <div class="mt-2">
+                {#if it.id === "video"}
+                  <VideoReview {report} />
+                {:else if it.id === "pose_angles"}
+                  <PoseChart {report} />
+                {:else if it.id === "pose3d"}
+                  <Pose3D {report} />
+                {:else if it.id === "ball3d"}
+                  <Ball3D {report} />
+                {:else if it.kind}
+                  <figure class="max-w-3xl">
+                    <img src={artifact(report.stem, it.kind)} alt={it.label} class="w-full rounded-xl border-2 border-line" />
+                  </figure>
+                {/if}
+              </div>
+              <p class="mt-2 text-xs text-muted">
+                made by <span class="font-mono text-app">{it.producer}</span>
+                · step <span class="text-app">{it.step}</span>
+                · <span class="font-mono">{it.where}</span>
+                {#if it.local}<span class="ml-1 rounded border-2 border-line px-1.5 py-0.5 text-[10px]">on-device · no tokens</span>{/if}
+              </p>
+            </section>
           {/each}
         </div>
-      {/if}
-
-      {#if !current || ["video", "movement", "segments", "clips"].includes(current.id)}
-        <VideoReview {report} />
-      {:else if current.id === "pose_angles"}
-        <PoseChart {report} />
-      {:else if current.id === "pose3d"}
-        <Pose3D {report} />
-      {:else if current.id === "ball3d"}
-        <Ball3D {report} />
-      {:else if current.kind}
-        <figure class="max-w-3xl">
-          <img src={artifact(report.stem, current.kind)} alt={current.label} class="w-full rounded-lg border-2 border-line" />
-        </figure>
-      {/if}
-
-      {#if current}
-        <p class="mt-2 text-xs text-muted">
-          made by <span class="font-mono text-app">{current.producer}</span>
-          · step <span class="text-app">{current.step}</span>
-          · <span class="font-mono">{current.where}</span>
-          {#if current.local}<span class="ml-1 rounded border-2 border-line px-1.5 py-0.5 text-[10px]">on-device · no tokens</span>{/if}
-        </p>
       {/if}
     {:else if tab === "Coaching"}
       <div class="mb-3 flex justify-end">
