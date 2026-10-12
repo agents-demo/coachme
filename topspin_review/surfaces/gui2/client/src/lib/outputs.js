@@ -103,9 +103,33 @@ export function outputs(report) {
       kind: "heatmap",
       stepLabel: "Drew the picture",
       how: "A map of the court: red is where you stood the most.",
-      method: "Your position in each frame (the subject box centre) adds to a coarse grid (one cell per 4px at 640×360); the grid is resized, gaussian-blurred, normalised by its peak, and drawn as a red overlay on the first frame.",
+      method: "2D histogram of the subject-box centre across frames, gaussian-blurred, drawn as a red overlay on frame 1.",
       detail: "core/video/metrics.py · position_heatmap()",
       engine: "Pillow",
+      local: true,
+    });
+  }
+  if ((m.flow || []).length) {
+    movement.push({
+      id: "flow",
+      label: "Optical flow",
+      stepLabel: "Measured flow",
+      how: "Direction-aware motion between frames — steadier than raw pixel change.",
+      method: "Dense Farneback optical flow between consecutive sampled frames (OpenCV); the per-step mean flow magnitude is plotted over time.",
+      detail: "integrations/flow.py · magnitude()",
+      engine: "OpenCV",
+      local: true,
+    });
+  }
+  if ((m.strokes || []).length) {
+    movement.push({
+      id: "strokes",
+      label: "Strokes",
+      stepLabel: "Estimated pose",
+      how: "Candidate strokes, found where a wrist moved fastest — click one to jump there.",
+      method: "Track both pose wrists (landmarks 15/16) across frames, take the faster wrist per step, pick local maxima above a relative threshold, merge within 0.4s, and guess the dominant hand.",
+      detail: "core/stages/measure/strokes.py · segment()",
+      engine: "mediapipe",
       local: true,
     });
   }

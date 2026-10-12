@@ -23,6 +23,10 @@
   // Provenance for the timeline rows / key-moments list. Movement + rally come
   // from the catalog (real algorithms); issues + moments come from the model's report.
   const catalog = $derived(Object.fromEntries(outputs(report).flatMap((g) => g.items).map((i) => [i.id, i])));
+  const flowSeries = $derived(
+    (report.metrics?.flow || []).map((e, i) => ({ t: (report.frame_times || [])[i + 1] ?? i, energy: e })),
+  );
+  const strokeList = $derived(report.metrics?.strokes || []);
   const keyMomentsItem = {
     how: "The moments the coach flagged in the report. The strip marks them on the timeline; the list below says what each one is — click a time to play just that moment.",
     method: "The AI coach reads the sampled frames plus the measured metrics and writes issues, each pinned to a timestamp with a confidence; a verification pass then removes any it can't support.",
@@ -272,11 +276,33 @@
           <div class="mt-2"><MotionChart {series} playhead={currentTime} onseek={seek} /></div>
         </div>
       {/if}
+      {#if flowSeries.length}
+        <div class="mt-8">
+          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Optical flow</h3>
+          {#if catalog.flow}<Provenance item={catalog.flow} />{/if}
+          <div class="mt-2"><MotionChart series={flowSeries} playhead={currentTime} onseek={seek} /></div>
+        </div>
+      {/if}
       {#if (report.metrics?.ball?.segments || []).length}
         <div class="mt-8">
           <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Rally phases</h3>
           {#if catalog.segments}<Provenance item={catalog.segments} />{/if}
           <div class="mt-2"><Segments segments={report.metrics?.ball?.segments || []} {duration} playhead={currentTime} onseek={seek} /></div>
+        </div>
+      {/if}
+      {#if strokeList.length}
+        <div class="mt-8">
+          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Strokes</h3>
+          {#if catalog.strokes}<Provenance item={catalog.strokes} />{/if}
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            {#each strokeList as s}
+              <button
+                onclick={() => seek(s.t)}
+                title={`${s.hand} · strength ${s.strength}`}
+                class="rounded-full border-2 border-line px-2.5 py-0.5 font-mono text-xs text-accent2 transition hover:border-accent2"
+              >{s.hand === "left" ? "L" : s.hand === "right" ? "R" : "?"} ▶ {fmtTime(s.t)}</button>
+            {/each}
+          </div>
         </div>
       {/if}
       <div class="mt-8">

@@ -11,9 +11,9 @@ from dataclasses import dataclass
 
 from topspin_review.core import config
 from topspin_review.core.progress import Progress, tick
-from topspin_review.core.stages.measure import ball, sampling
+from topspin_review.core.stages.measure import ball, sampling, strokes
 from topspin_review.core.video import metrics
-from topspin_review.integrations import pose
+from topspin_review.integrations import flow, pose
 
 
 @dataclass
@@ -45,11 +45,16 @@ def measure(
     tick(progress, "measuring motion", 20)
     steps = metrics.activity(frames, timestamps)
 
+    # Direction-aware motion (OpenCV); its own step because it's the slowest CV pass.
+    tick(progress, "measuring flow", 23)
+    flow_series = flow.magnitude(frames)
+
     # Ball tracking is its own step: with the ONNX detector it's per-frame inference
     # (the slowest CV pass after pose) and can be toggled off.
     tick(progress, "tracking ball", 26)
     ball_info = ball.detect(frames, timestamps, steps)
     measured = metrics.analyze(frames, timestamps, ball=ball_info, region_box=region_box, with_pose=False)
+    measured["flow"] = flow_series
 
     # Pose is its own step: it's the slowest part (mediapipe) and can be skipped.
     tick(progress, "estimating pose", 32)
@@ -58,6 +63,7 @@ def measure(
     measured["pose_summary"] = pose.summarize(pose_seq)
     measured["pose3d_summary"] = pose.summarize3d(pose_seq)
     measured["footwork"] = metrics.footwork(pose_seq)
+    measured["strokes"] = strokes.segment(pose_seq, timestamps)
 
     return Measurement(
         meta=meta,
