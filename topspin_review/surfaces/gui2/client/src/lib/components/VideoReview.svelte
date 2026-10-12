@@ -283,16 +283,17 @@
               <div class="mt-1"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
             </div>
           {/if}
+          <div>
+            <div class="text-xs font-semibold text-muted">Key moments</div>
+            <Provenance item={keyMomentsItem} />
+            <div class="mt-1"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
+          </div>
         </div>
       </div>
 
-      <div class="mt-4">
-        <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
-        <Provenance item={keyMomentsItem} />
+      <div class="mt-3">
+        <div class="text-xs font-semibold text-muted">Each key moment, listed — click a time to play it:</div>
         <div class="mt-2">
-          <Timeline {markers} {duration} playhead={currentTime} onseek={seek} />
-        </div>
-        <div class="mt-3">
           <KeyMoments {report} />
         </div>
       </div>
