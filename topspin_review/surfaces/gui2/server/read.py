@@ -50,6 +50,7 @@ def _summary(report: dict) -> dict[str, Any]:
         "is_photo": Path(source).suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif"},
         "has_source": _exists(source),
         "has_frames": _exists((report.get("artifacts") or {}).get("frames")),
+        "has_motion": _exists((report.get("artifacts") or {}).get("motion")),
         "lower_range": returns.get("lower_lateral_range"),
     }
 
