@@ -25,8 +25,6 @@ export function outputs(report) {
       label: "Video",
       stepLabel: "Your upload",
       how: "Your clip exactly as you uploaded it. The moments worth a look are marked on the timeline underneath.",
-      method: "Nothing is computed here — this is your input file, served unchanged. The timeline markers come from the report's issues and the detected phases.",
-      detail: "your uploaded file",
       local: true,
     },
   ];
@@ -70,9 +68,8 @@ export function outputs(report) {
         {
           id: "moments",
           label: "Key moments",
-          how: "The exact seconds the coach flagged, grouped by issue. Click one to play just that moment.",
-          method: "Built from the report's issues: each issue's evidence timestamps (with its confidence) become a clickable moment; clicking opens a modal player seeked to that second.",
-          detail: "surfaces/gui2 client · Moments.svelte (from report issues)",
+          how: "The seconds the coach flagged in the written report. Click one to play just that moment.",
+          detail: "comes from the written report (the coach's issues) — no separate computation",
           local: true,
         },
       ],

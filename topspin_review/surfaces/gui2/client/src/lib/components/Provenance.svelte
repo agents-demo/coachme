@@ -11,13 +11,15 @@
   {#if !item.local}
     <span class="ml-1 inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent2">✨ AI model</span>
   {/if}
-  <button
-    onclick={() => (open = !open)}
-    class="ml-1 font-semibold text-muted underline decoration-dotted underline-offset-2 hover:text-app"
-    title="Technical detail (for developers)"
-  >{open ? "hide details" : "details"}</button>
+  {#if item.method}
+    <button
+      onclick={() => (open = !open)}
+      class="ml-1 font-semibold text-muted underline decoration-dotted underline-offset-2 hover:text-app"
+      title="Technical detail (for developers)"
+    >{open ? "hide details" : "details"}</button>
+  {/if}
 </p>
-{#if open}
+{#if open && item.method}
   <div class="mt-1.5 space-y-1 rounded-lg border-2 border-line bg-surface/40 px-2.5 py-1.5 text-[11px] text-muted">
     <div><span class="font-semibold text-app">Method:</span> {item.method}</div>
     <div><span class="font-semibold text-app">Source:</span> <span class="font-mono">{item.detail}</span></div>
