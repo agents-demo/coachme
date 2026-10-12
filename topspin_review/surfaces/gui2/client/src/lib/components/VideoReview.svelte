@@ -120,8 +120,13 @@
   function end() {
     if (!drawing) return;
     const done = drawing;
-    shapes = [...shapes, done];
     drawing = null;
+    // Ignore accidental taps (no drag) for the two-point tools.
+    if (done.type !== "pen") {
+      const d = Math.hypot(done.x2 - done.x1, done.y2 - done.y1);
+      if (d < 0.01) return;
+    }
+    shapes = [...shapes, done];
     dirty = true;
   }
   function undo() {
@@ -184,7 +189,7 @@
   {:else}
     <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={s.color || COLOR} stroke-width="2" vector-effect="non-scaling-stroke" />
     {#if s.type === "arrow"}
-      <circle cx={s.x2} cy={s.y2} r="3" fill={s.color || COLOR} vector-effect="non-scaling-stroke" />
+      <circle cx={s.x2} cy={s.y2} r="0.012" fill={s.color || COLOR} />
     {/if}
   {/if}
 {/snippet}
