@@ -265,32 +265,25 @@
     </div>
 
     {#if !isPhoto && report.has_source}
-      <div class="mt-4">
-        <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Timeline</h3>
-        <p class="mt-1 text-xs text-muted">All tied to the playhead — watch them move together; click any to jump.</p>
-        <div class="mt-3 space-y-3">
-          {#if series.length}
-            <div>
-              <div class="text-xs font-semibold text-muted">Movement</div>
-              {#if catalog.movement}<Provenance item={catalog.movement} />{/if}
-              <div class="mt-1"><MotionChart {series} playhead={currentTime} onseek={seek} /></div>
-            </div>
-          {/if}
-          {#if (report.metrics?.ball?.segments || []).length}
-            <div>
-              <div class="text-xs font-semibold text-muted">Rally phases</div>
-              {#if catalog.segments}<Provenance item={catalog.segments} />{/if}
-              <div class="mt-1"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
-            </div>
-          {/if}
+      {#if series.length}
+        <div class="mt-4">
+          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Movement</h3>
+          {#if catalog.movement}<Provenance item={catalog.movement} />{/if}
+          <div class="mt-2"><MotionChart {series} playhead={currentTime} onseek={seek} /></div>
         </div>
-      </div>
-
+      {/if}
+      {#if (report.metrics?.ball?.segments || []).length}
+        <div class="mt-4">
+          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Rally phases</h3>
+          {#if catalog.segments}<Provenance item={catalog.segments} />{/if}
+          <div class="mt-2"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
+        </div>
+      {/if}
       <div class="mt-4">
         <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
         <Provenance item={keyMomentsItem} />
         <div class="mt-2"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
-        <div class="mt-3"><KeyMoments {report} /></div>
+        <div class="mt-2"><KeyMoments {report} /></div>
       </div>
     {/if}
   </div>
