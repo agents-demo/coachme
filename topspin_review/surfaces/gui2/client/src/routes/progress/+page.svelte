@@ -3,6 +3,7 @@
   import { getReports, compare } from "$lib/api";
   import { scoreTone } from "$lib/format";
   import CompareVideos from "$lib/components/CompareVideos.svelte";
+  import TrendChart from "$lib/components/TrendChart.svelte";
 
   let reports = $state([]);
   let loading = $state(true);
@@ -16,6 +17,12 @@
   const canCompareVideos = $derived(
     Boolean(a && b && a !== b && aReport?.has_source && bReport?.has_source && !aReport?.is_photo && !bReport?.is_photo),
   );
+
+  // Chronological (list is newest-first) for trends.
+  const chrono = $derived([...reports].reverse());
+  const scorePts = $derived(chrono.map((r) => ({ value: r.score })));
+  const issuePts = $derived(chrono.map((r) => ({ value: r.issue_count })));
+  const rangePts = $derived(chrono.map((r) => ({ value: r.lower_range ?? 0 })));
 
   onMount(async () => {
     try {
@@ -49,6 +56,11 @@
   <p class="mt-6 text-sm text-muted">Analyze a few sessions to see your progress.</p>
 {:else}
   <h2 class="mt-6 font-display text-lg font-bold">Sessions</h2>
+  <div class="mt-3 grid gap-3 sm:grid-cols-3">
+    <TrendChart points={scorePts} caption="Report quality" color="#34d399" />
+    <TrendChart points={issuePts} caption="Issues per session" color="#fb7185" />
+    <TrendChart points={rangePts} caption="Lower-body range" color="#4f46e5" />
+  </div>
   <div class="mt-3 overflow-hidden rounded-xl border-2 border-line">
     <table class="w-full text-sm">
       <thead class="bg-surface text-left text-xs uppercase text-muted">

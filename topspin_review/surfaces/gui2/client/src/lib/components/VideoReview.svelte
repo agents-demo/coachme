@@ -2,6 +2,7 @@
   import { source } from "$lib/api";
   import { issueGroups, movementSeries, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
   import MotionChart from "./MotionChart.svelte";
+  import Timeline from "./Timeline.svelte";
 
   let { report } = $props();
 
@@ -11,6 +12,8 @@
   const groups = $derived(issueGroups(report));
   const series = $derived(movementSeries(report));
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report.source || ""));
+  const duration = $derived(Math.max(0.001, ...(report.frame_times || [1])));
+  const markers = $derived(groups.flatMap((g) => g.times.map((t) => ({ t, confidence: g.confidence }))));
 
   // The issue whose moment is the most recent at/before the playhead.
   const activeGroup = $derived.by(() => {
@@ -88,6 +91,15 @@
           {/each}
         </div>
         <span class="font-mono text-xs text-muted">{fmtTime(currentTime)}</span>
+      </div>
+    {/if}
+
+    {#if !isPhoto && report.has_source}
+      <div class="mt-3">
+        <Timeline {markers} {duration} playhead={currentTime} onseek={seek} />
+        <p class="mt-1 text-xs text-muted">
+          Issue timeline — each mark is a flagged moment (red = high, amber = medium, grey = low confidence). Click to jump.
+        </p>
       </div>
     {/if}
 
