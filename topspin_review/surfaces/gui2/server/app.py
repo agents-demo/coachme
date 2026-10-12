@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 
 from topspin_review.surfaces.gui2.server import config
 from topspin_review.surfaces.gui2.server.routes import analyze, ingest, jobs, media, reports
@@ -45,6 +45,15 @@ def ready() -> dict:
 @app.get("/")
 def index() -> RedirectResponse:
     return RedirectResponse("/gui2/" if config.CLIENT_BUILD.exists() else "/health")
+
+
+@app.get("/favicon.ico")
+def favicon():
+    """Serve the SPA favicon (browsers request /favicon.ico at the site root)."""
+    svg = config.CLIENT_BUILD / "favicon.svg"
+    if svg.is_file():
+        return FileResponse(svg, media_type="image/svg+xml")
+    return Response(status_code=204)
 
 
 @app.get("/gui2/{path:path}")
