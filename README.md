@@ -6,9 +6,14 @@ Record a session — table tennis, tennis, badminton, squash, padel — and get 
 
 ## Quick start
 
-New here? See **[QUICKSTART.md](QUICKSTART.md)** for copy-paste commands to install, run the
-Web UI / CLI, and run the offline checks. The rest of this file covers what it does, the
-architecture, and the knobs.
+New here? See **[QUICKSTART.md](QUICKSTART.md)** for copy-paste commands to install and run the
+Web UI / CLI.
+
+- **Run a demo step by step:** [docs/RUN_DEMO.md](docs/RUN_DEMO.md).
+- **Full guide:** [docs/USAGE.md](docs/USAGE.md) — setup, surfaces, workflow, API, scripts, settings, troubleshooting.
+- **Design:** [docs/architecture.md](docs/architecture.md).
+
+The rest of this file covers what it does, the architecture, and the knobs.
 
 ## What it does
 
@@ -51,25 +56,25 @@ Run from the `topspin-review` folder.
 
 ```powershell
 # set your profile (sport, level, hand, goal)
-& $PY -m topspin_review.interfaces.cli profile
+& $PY -m topspin_review.surfaces.cli profile
 
 # analyze a video (defaults to runtime/data/sample.mp4)
-& $PY -m topspin_review.interfaces.cli analyze runtime/data/sample.mp4
+& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4
 
 # see past reports
-& $PY -m topspin_review.interfaces.cli history
+& $PY -m topspin_review.surfaces.cli history
 ```
 
 Web UI:
 
 ```powershell
-& $PY -m streamlit run topspin_review/interfaces/web/ui.py
+& $PY -m streamlit run topspin_review/surfaces/gui/ui.py
 ```
 
 Make a synthetic sample video (no recording needed):
 
 ```powershell
-& $PY scripts\make_sample.py
+& $PY tests\integration\make_sample.py
 ```
 
 Offline checks (no model calls):
@@ -85,8 +90,7 @@ Layered (hexagonal) — dependencies point inward only, enforced by
 `tests/unit/test_architecture.py`:
 
 ```
-interfaces → analysis → backend → domain
-        (storage / config are neutral leaves)
+surfaces → core → integrations → domain
 ```
 
 ```
@@ -97,21 +101,30 @@ topspin-review/
 │   └── data/                 # profile, <video>_report.json, cache/, artifacts/, exports/
 ├── topspin_review/
 │   ├── __init__.py           # version only (no side effects)
-│   ├── bootstrap.py          # runtime dirs + logging; called by entry points
-│   ├── config.py             # application settings (sampling, feature toggles)
-│   ├── reporting.py          # Markdown / HTML / PDF export
 │   ├── domain/               # pure: report, progress, compare, evaluate, render
-│   ├── backend/              # all agentic under-the-hood: settings, logs,
-│   │                         #   agent/ (builder, models, rails, tools, runner), telemetry/
-│   ├── analysis/             # stages/ (measure, observe, coach) + video/ (primitives)
-│   │                         #   + pipeline/ (orchestrator + strategies/: deterministic, agentic)
-│   ├── storage/              # runtime, cache, json_store, store
-│   └── interfaces/           # cli, api, service, mcp/, web/
+│   ├── integrations/         # outbound adapters (see below)
+│   │   ├── agents/           #   all agentic under-the-hood: settings, logs,
+│   │   │                     #     agent/ (builder, models, rails, tools, runner), telemetry/
+│   │   ├── storage/          #   runtime, cache, json_store, store
+│   │   ├── reporting.py      #   Markdown / HTML / PDF export
+│   │   └── media.py          #   highlight clips (ffmpeg)
+│   ├── core/                 # the pipeline (this package is the orchestrator)
+│   │   ├── bootstrap.py      #   runtime dirs + logging; called by entry points
+│   │   ├── config.py         #   application settings (sampling, feature toggles)
+│   │   ├── params.py         #   Params: analyze() input + run state
+│   │   ├── progress.py       #   run progress reporting
+│   │   ├── run_session.py    #   run machinery: Runner, recorder, vision agent
+│   │   ├── service.py        #   embedding surface (programmatic use)
+│   │   ├── jobs/worker.py    #   standalone out-of-process analysis worker
+│   │   ├── stages/           #   measure → observe → coach
+│   │   ├── strategies/       #   deterministic / agentic
+│   │   └── video/            #   shared video primitives (metrics, imaging, pose, cvutil)
+│   └── surfaces/             # inbound adapters: cli/, gui/, api.py, mcp/, readiness.py
 ├── tests/
 │   ├── unit/                 # pipeline + architecture tests
-│   ├── integration/          # full-pipeline tests (need a model endpoint)
+│   ├── integration/          # full-pipeline checks (need a model endpoint)
+│   │                         #   + dev tools: make_sample, evaluate_reports
 │   └── eval/expected.json    # labeled expectations for quality checks
-├── scripts/                  # dev tools: make_sample, evaluate_reports
 ├── docs/architecture.md
 ├── .github/workflows/ci.yml
 ├── .env
@@ -119,24 +132,24 @@ topspin-review/
 ```
 
 This project is **self-contained**: it carries its own runtime layout
-(`storage/runtime.py`) and JSON helpers (`storage/json_store.py`) — no shared
-package is required.
+(`integrations/storage/runtime.py`) and JSON helpers (`integrations/storage/json_store.py`) —
+no shared package is required.
 
 ## How it uses openjiuwen
 
-All openjiuwen access is funnelled through `topspin_review.backend/` (the app never imports
-`openjiuwen` directly). Its façade is small: `build`, `TextParams`/`VisionParams`, `run_agent`,
-`run_text`, `ConfigError`, `configure_logging`. Internally:
+All openjiuwen access is funnelled through `topspin_review.integrations.agents/` (the app never
+imports `openjiuwen` directly). Its façade is small: `build`, `TextParams`/`VisionParams`,
+`run_agent`, `run_text`, `ConfigError`, `configure_logging`. Internally:
 
-- `backend/agent/builder/` — model + agent construction (`build`), with `text` and `vision` variants.
-- `backend/agent/models/` — the underlying model-client construction.
-- `backend/agent/tools.py` — the generic openjiuwen `@tool` wrapper (`make_tool` / `make_tools`).
-- `backend/agent/rails.py` — optional openjiuwen rails (token-budget guard; memory).
-- `backend/agent/runner.py` — starts the openjiuwen `Runner`; `run_agent` / `run_text`.
-- `backend/telemetry/` — usage/trace recording (tokens, latency, callbacks).
+- `integrations/agents/agent/builder/` — model + agent construction (`build`), with `text` and `vision` variants.
+- `integrations/agents/agent/models/` — the underlying model-client construction.
+- `integrations/agents/agent/tools.py` — the generic openjiuwen `@tool` wrapper (`make_tool` / `make_tools`).
+- `integrations/agents/agent/rails.py` — optional openjiuwen rails (token-budget guard; memory).
+- `integrations/agents/agent/runner.py` — starts the openjiuwen `Runner`; `run_agent` / `run_text`.
+- `integrations/agents/telemetry/` — usage/trace recording (tokens, latency, callbacks).
 
 Application tools (`get_profile`, `recent_reports`, `save_report`) live with the stage that uses
-them: `analysis/stages/coach/report_tools.py`.
+them: `core/stages/coach/report_tools.py`.
 
 ## Install
 
@@ -156,16 +169,16 @@ also works — the project is self-contained.
 # deterministic checks (no model calls)
 & $PY -m pytest -q                 # unit + architecture tests
 & $PY -m ruff check .
-& $PY scripts\evaluate_reports.py  # quality gate against tests/eval/expected.json
+& $PY tests\integration\evaluate_reports.py  # quality gate against tests/eval/expected.json
 ```
 
 Compare two analyzed sessions, export, and serve:
 
 ```powershell
-& $PY -m topspin_review.interfaces.cli compare video11.mp4 video12.mp4
-& $PY -m topspin_review.interfaces.cli export video12.mp4
-& $PY -m uvicorn topspin_review.interfaces.api:app
-& $PY -m topspin_review.interfaces.mcp.server
+& $PY -m topspin_review.surfaces.cli compare video11.mp4 video12.mp4
+& $PY -m topspin_review.surfaces.cli export video12.mp4
+& $PY -m uvicorn topspin_review.surfaces.api:app
+& $PY -m topspin_review.surfaces.mcp.server
 ```
 
 CI (`.github/workflows/ci.yml`) runs all three. Analysis requires a model endpoint
@@ -174,11 +187,11 @@ CI (`.github/workflows/ci.yml`) runs all three. Analysis requires a model endpoi
 Programmatic use:
 
 ```python
-from topspin_review.interfaces.service import analyze_video_sync
+from topspin_review.core.service import analyze_video_sync
 result = analyze_video_sync("runtime/data/session.mp4")
 ```
 
-`interfaces/mcp/server.py` exposes the analysis as an MCP tool (`analyze_sport_video`).
+`surfaces/mcp/server.py` exposes the analysis as an MCP tool (`analyze_sport_video`).
 
 ## Knobs (`.env`)
 
@@ -208,7 +221,7 @@ result = analyze_video_sync("runtime/data/session.mp4")
   (`progress.py`): recurring themes, issue counts per session, focus history, and whether last
   session's focus was **achieved**.
 - **Export** a report to Markdown + self-contained HTML: `analyze` does it automatically, or run
-  `python -m topspin_review.interfaces.cli export [video]`. Open the HTML and print to PDF if needed.
+  `python -m topspin_review.surfaces.cli export [video]`. Open the HTML and print to PDF if needed.
 - **Player region:** if the auto primary-subject pick is wrong, pass
   `--box left,top,right,bottom` (0..1) or use the UI sliders to restrict analysis.
 - Real joint pose: `pip install -r requirements.txt` (installs `mediapipe`), then `motion.pose_estimate` returns

@@ -22,6 +22,6 @@ jobs:
       - name: Lint
         run: ruff check .
       - name: Report quality (CI-safe)
-        run: python scripts/evaluate_reports.py
+        run: python tests/integration/evaluate_reports.py
       - name: Tests (unit + architecture)
         run: pytest -q

@@ -25,48 +25,48 @@ $PY = "C:\Workspace\openjiuwen\jiuwenswarm\.venv\Scripts\python.exe"
 **Web UI (recommended)** — opens http://localhost:8501:
 
 ```powershell
-& $PY -m streamlit run topspin_review/interfaces/web/ui.py
+& $PY -m streamlit run topspin_review/surfaces/gui/ui.py
 ```
 
 **CLI** — set your profile, then analyze a video:
 
 ```powershell
 # sport, level, hand, goal
-& $PY -m topspin_review.interfaces.cli profile
+& $PY -m topspin_review.surfaces.cli profile
 
 # analyze a video (defaults to runtime/data/sample.mp4)
-& $PY -m topspin_review.interfaces.cli analyze runtime/data/sample.mp4
+& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4
 
 # past reports
-& $PY -m topspin_review.interfaces.cli history
+& $PY -m topspin_review.surfaces.cli history
 ```
 
 No recording handy? Make a synthetic sample video:
 
 ```powershell
-& $PY scripts\make_sample.py
+& $PY tests\integration\make_sample.py
 ```
 
 ## 3. Useful extras
 
 ```powershell
 # restrict analysis to a player region: left,top,right,bottom (0..1)
-& $PY -m topspin_review.interfaces.cli analyze runtime/data/sample.mp4 --box 0.2,0.1,0.8,0.9
+& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4 --box 0.2,0.1,0.8,0.9
 
 # let the model drive the analysis (agentic mode)
-& $PY -m topspin_review.interfaces.cli analyze runtime/data/sample.mp4 --agentic
+& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4 --agentic
 
 # compare two analyzed sessions, export, serve
-& $PY -m topspin_review.interfaces.cli compare video11.mp4 video12.mp4
-& $PY -m topspin_review.interfaces.cli export video12.mp4
-& $PY -m uvicorn topspin_review.interfaces.api:app
-& $PY -m topspin_review.interfaces.mcp.server
+& $PY -m topspin_review.surfaces.cli compare video11.mp4 video12.mp4
+& $PY -m topspin_review.surfaces.cli export video12.mp4
+& $PY -m uvicorn topspin_review.surfaces.api:app
+& $PY -m topspin_review.surfaces.mcp.server
 ```
 
 Programmatic use:
 
 ```python
-from topspin_review.interfaces.service import analyze_video_sync
+from topspin_review.core.service import analyze_video_sync
 result = analyze_video_sync("runtime/data/session.mp4")
 ```
 
@@ -75,7 +75,9 @@ result = analyze_video_sync("runtime/data/session.mp4")
 ```powershell
 & $PY -m pytest -q                 # unit + architecture tests
 & $PY -m ruff check .              # lint
-& $PY scripts\evaluate_reports.py  # quality gate against tests/eval/expected.json
+& $PY tests\integration\evaluate_reports.py  # quality gate against tests/eval/expected.json
 ```
 
 See [README.md](README.md) for what it does, the architecture, and the `.env` knobs.
+For a step-by-step demo, see [docs/RUN_DEMO.md](docs/RUN_DEMO.md); the full guide is
+[docs/USAGE.md](docs/USAGE.md).

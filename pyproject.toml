@@ -36,7 +36,7 @@ all = [
 ]
 
 [project.scripts]
-topspin-review = "topspin_review.interfaces.cli:main"
+topspin-review = "topspin_review.surfaces.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -53,7 +53,6 @@ ignore = ["E501", "B905"]
 
 [tool.ruff.lint.per-file-ignores]
 "conftest.py" = ["E402"]
-"scripts/*.py" = ["E402"]
 "tests/**/*.py" = ["E402"]
 
 [tool.pytest.ini_options]
