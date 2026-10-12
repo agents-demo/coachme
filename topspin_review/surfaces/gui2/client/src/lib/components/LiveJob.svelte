@@ -1,6 +1,6 @@
 <script>
   import { jobStatus, cancel, retry } from "$lib/api";
-  import { JOB_TONE } from "$lib/format";
+  import { JOB_TONE, shortLabel } from "$lib/format";
 
   let { jobId, onfinished, ondone } = $props();
 
@@ -66,7 +66,7 @@
   <section class="card mt-4 p-4">
     <div class="flex items-center gap-2">
       <span class="text-sm font-semibold {JOB_TONE[job.status] || "text-muted"}">{job.status}</span>
-      <span class="text-xs text-muted">{job.progress?.stage || ""}{job.progress?.detail ? ` · ${job.progress.detail}` : ""}</span>
+      <span class="text-xs text-muted">{shortLabel(job.progress?.stage || "")}{job.progress?.detail ? ` · ${job.progress.detail}` : ""}</span>
       <span class="ml-auto text-xs text-muted">
         {#if job.progress?.elapsed != null}{Number(job.progress.elapsed).toFixed(1)}s total · {/if}
         {job.progress?.pct != null ? `${Math.round(job.progress.pct)}%` : ""}
@@ -82,7 +82,7 @@
         {#each feed as s}
           <li class="flex items-center gap-2 text-sm">
             <span class={s.state === "running" ? "text-accent2" : "text-good"}>{s.state === "running" ? "●" : "✓"}</span>
-            <span class="text-app">{s.stage}</span>
+            <span class="text-app">{shortLabel(s.stage)}</span>
             {#if s.seconds != null}<span class="ml-auto text-xs text-muted">{Number(s.seconds).toFixed(2)}s</span>{/if}
           </li>
         {/each}

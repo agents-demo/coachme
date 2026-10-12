@@ -78,3 +78,75 @@ export function captionFor(report) {
 }
 
 export const JOB_TONE = { done: "text-good", running: "text-accent2", failed: "text-bad", cancelled: "text-muted" };
+
+// --- pipeline step naming (shared by the live progress feed and Diagnostics) ---
+// Plain-English name for each internal step (tick) label.
+export const STEP_NAME = {
+  startup: "Load pipeline",
+  preparing: "Prepare clip",
+  "sampling frames": "Pick frames",
+  "measuring motion": "Measure movement",
+  "writing artifacts": "Render images",
+  "vision: overview": "First look",
+  "vision: zoom": "Zoom in",
+  "vision: detail": "Detailed findings",
+  "vision: reviewing image": "Review image",
+  "agent writing report": "Write report",
+  "agent: analyzing": "Analyze",
+  "saving report": "Save report",
+  verifying: "Double-check",
+  exporting: "Export files",
+  done: "Done",
+};
+export function shortLabel(stage) {
+  return STEP_NAME[stage] || stage || "";
+}
+
+// The pipeline stage each step belongs to (architecture name in parentheses).
+export const STEP_GROUP = {
+  startup: "Setup",
+  preparing: "Setup",
+  "sampling frames": "Measure",
+  "measuring motion": "Measure",
+  "writing artifacts": "Measure",
+  "vision: overview": "Vision (observe)",
+  "vision: zoom": "Vision (observe)",
+  "vision: detail": "Vision (observe)",
+  "vision: reviewing image": "Vision (observe)",
+  "agent writing report": "Report (coach)",
+  "agent: analyzing": "Report (coach)",
+  "saving report": "Report (coach)",
+  verifying: "Report (coach)",
+  exporting: "Finalize",
+  done: "Finalize",
+};
+export const GROUP_ORDER = ["Setup", "Measure", "Vision (observe)", "Report (coach)", "Finalize", "Other"];
+
+// Steps that make a model/agent call.
+export const MODEL_STEP = {
+  "vision: overview": "vision",
+  "vision: detail": "vision",
+  "vision: reviewing image": "vision",
+  "agent writing report": "text",
+  "agent: analyzing": "text",
+  verifying: "text",
+};
+
+// Hover tooltip text for each step.
+export const STEP_SHORT = {
+  startup: "Load the pipeline code (imports) — pre-run overhead.",
+  preparing: "Validate the clip and load your profile.",
+  "sampling frames": "Choose the frames to analyze (motion-weighted).",
+  "measuring motion": "Compute the objective metrics from the frames.",
+  "writing artifacts": "Render the frames + motion map the vision model reads.",
+  "vision: overview": "Vision pass 1 — read the frames and pick the moments to zoom.",
+  "vision: zoom": "Sample more frames inside those moments.",
+  "vision: detail": "Vision pass 2 — findings with timestamps + confidence.",
+  "vision: reviewing image": "One vision pass on the still image (posture only).",
+  "agent writing report": "The text model writes the coaching report.",
+  "agent: analyzing": "Agentic mode — the model drives the analysis.",
+  "saving report": "Save the report file.",
+  verifying: "A second model pass that prunes unsupported findings.",
+  exporting: "Wrap-up: collect token usage, save the run's details, then write the export files (Markdown / HTML / PDF).",
+  done: "Run complete.",
+};

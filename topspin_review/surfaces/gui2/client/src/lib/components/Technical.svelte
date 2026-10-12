@@ -1,5 +1,5 @@
 <script>
-  import { pretty } from "$lib/format";
+  import { pretty, shortLabel, STEP_SHORT, STEP_GROUP, GROUP_ORDER, MODEL_STEP } from "$lib/format";
 
   let { report } = $props();
 
@@ -15,85 +15,17 @@
   const cachedTotal = $derived(
     usage.cached_tokens ?? (usage.vision?.cached_tokens || 0) + (usage.text?.cached_tokens || 0),
   );
-  // Each progress tick belongs to a pipeline stage. The header names are plain-English, with the
-  // architecture name in parentheses (measure / observe / coach) so the two levels still line up.
-  const STEP_GROUP = {
-    startup: "Setup",
-    preparing: "Setup",
-    "sampling frames": "Measure",
-    "measuring motion": "Measure",
-    "writing artifacts": "Measure",
-    "vision: overview": "Vision (observe)",
-    "vision: zoom": "Vision (observe)",
-    "vision: detail": "Vision (observe)",
-    "vision: reviewing image": "Vision (observe)",
-    "agent writing report": "Report (coach)",
-    "agent: analyzing": "Report (coach)",
-    "saving report": "Report (coach)",
-    verifying: "Report (coach)",
-    exporting: "Finalize",
-    done: "Finalize",
-  };
-  const GROUP_ORDER = ["Setup", "Measure", "Vision (observe)", "Report (coach)", "Finalize", "Other"];
+  // Steps grouped under their pipeline stage; names/maps live in $lib/format (shared with the live feed).
   const grouped = $derived.by(() => {
     const buckets = new Map(GROUP_ORDER.map((g) => [g, []]));
     for (const t of timeline) buckets.get(STEP_GROUP[t.stage] || "Other").push(t);
     return GROUP_ORDER.map((g) => ({ name: g, items: buckets.get(g) })).filter((x) => x.items.length);
   });
-
-  // Plain-English name for each step (no "vision:"/"agent" jargon).
-  const STEP_NAME = {
-    startup: "Load pipeline",
-    preparing: "Prepare clip",
-    "sampling frames": "Pick frames",
-    "measuring motion": "Measure movement",
-    "writing artifacts": "Render images",
-    "vision: overview": "First look",
-    "vision: zoom": "Zoom in",
-    "vision: detail": "Detailed findings",
-    "vision: reviewing image": "Review image",
-    "agent writing report": "Write report",
-    "agent: analyzing": "Analyze",
-    "saving report": "Save report",
-    verifying: "Double-check",
-    exporting: "Export files",
-    done: "Done",
-  };
-  function shortLabel(stage) {
-    return STEP_NAME[stage] || stage;
-  }
-  // Steps that make a model/agent call — tagged in the list so it's clear where tokens/time go.
-  const MODEL_STEP = {
-    "vision: overview": "vision",
-    "vision: detail": "vision",
-    "vision: reviewing image": "vision",
-    "agent writing report": "text",
-    "agent: analyzing": "text",
-    verifying: "text",
-  };
   function modelName(stage) {
     const kind = MODEL_STEP[stage];
     const name = kind === "vision" ? models.vision : models.text;
     return `Uses the ${kind} model${name ? ` (${name})` : ""}.`;
   }
-  // Hover tooltip text for each step.
-  const STEP_SHORT = {
-    startup: "Load the pipeline code (imports) — pre-run overhead.",
-    preparing: "Validate the clip and load your profile.",
-    "sampling frames": "Choose the frames to analyze (motion-weighted).",
-    "measuring motion": "Compute the objective metrics from the frames.",
-    "writing artifacts": "Render the frames + motion map the vision model reads.",
-    "vision: overview": "Vision pass 1 — read the frames and pick the moments to zoom.",
-    "vision: zoom": "Sample more frames inside those moments.",
-    "vision: detail": "Vision pass 2 — findings with timestamps + confidence.",
-    "vision: reviewing image": "One vision pass on the still image (posture only).",
-    "agent writing report": "The text model writes the coaching report.",
-    "agent: analyzing": "Agentic mode — the model drives the analysis.",
-    "saving report": "Save the report file.",
-    verifying: "A second model pass that prunes unsupported findings.",
-    exporting: "Wrap-up: collect token usage, save the run's details, then write the export files (Markdown / HTML / PDF).",
-    done: "Run complete.",
-  };
 
   let view = $state("Stages");
   const TABS = ["Stages", "Calls & tools"];
