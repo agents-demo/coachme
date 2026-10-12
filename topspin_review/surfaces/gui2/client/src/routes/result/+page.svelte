@@ -18,9 +18,14 @@
   const TABS = [
     { id: "Watch", hint: "Play the video. Tap a moment to jump to it; click the chart to seek." },
     { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
+    { id: "Model view", hint: "The frames, motion map, and pose the model looked at — how it reached the findings." },
     { id: "Details", hint: "Limitations, the report-quality score, and downloads." },
     { id: "Under the hood", hint: "Model calls, tokens, and the run timeline (for the curious)." },
   ];
+
+  const evidence = $derived(
+    Boolean(report?.artifacts?.motion || report?.artifacts?.frames || report?.artifacts?.pose),
+  );
 
   async function load() {
     if (!stem) {
@@ -99,21 +104,27 @@
   <div class="mt-3">
     {#if tab === "Watch"}
       <VideoReview {report} />
-      {#if report.artifacts?.motion || report.artifacts?.frames || report.artifacts?.pose}
-        <details class="mt-5 text-sm">
-          <summary class="cursor-pointer font-semibold text-muted">What the model looked at (frames, motion map, pose)</summary>
-          <div class="mt-3 grid gap-4 sm:grid-cols-2">
-            {#if report.artifacts?.motion}
-              <figure><img src={artifact(report.stem, "motion")} alt="motion map" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Motion map — red = where you moved most.</figcaption></figure>
-            {/if}
-            {#if report.artifacts?.frames}
-              <figure><img src={artifact(report.stem, "frames")} alt="sampled frames" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Sampled frames the model read.</figcaption></figure>
-            {/if}
-            {#if report.artifacts?.pose}
-              <figure><img src={artifact(report.stem, "pose")} alt="pose overlay" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Body-pose overlay.</figcaption></figure>
-            {/if}
-          </div>
-        </details>
+      {#if evidence}
+        <button
+          onclick={() => (tab = "Model view")}
+          class="mt-4 rounded-lg border-2 border-line px-3 py-2 text-sm font-semibold text-muted transition hover:border-accent2 hover:text-app"
+        >See what the model looked at (frames, motion map, pose) →</button>
+      {/if}
+    {:else if tab === "Model view"}
+      {#if evidence}
+        <div class="grid gap-4 sm:grid-cols-2">
+          {#if report.artifacts?.frames}
+            <figure><img src={artifact(report.stem, "frames")} alt="sampled frames" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Sampled frames the model read.</figcaption></figure>
+          {/if}
+          {#if report.artifacts?.motion}
+            <figure><img src={artifact(report.stem, "motion")} alt="motion map" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Motion map — red = where you moved most.</figcaption></figure>
+          {/if}
+          {#if report.artifacts?.pose}
+            <figure><img src={artifact(report.stem, "pose")} alt="pose overlay" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Body-pose overlay.</figcaption></figure>
+          {/if}
+        </div>
+      {:else}
+        <p class="text-sm text-muted">No frames saved for this report (single-image inputs have none).</p>
       {/if}
     {:else if tab === "Coaching"}
       {#if report.focus}
