@@ -3,6 +3,7 @@
   import { getReport, ask, artifact, exportUrl } from "$lib/api";
   import VideoReview from "$lib/components/VideoReview.svelte";
   import Technical from "$lib/components/Technical.svelte";
+  import ReadAloud from "$lib/components/ReadAloud.svelte";
   import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
 
   const stem = $derived($page.url.searchParams.get("stem") || "");
@@ -28,6 +29,17 @@
 
   const clipWarnings = $derived(report?.quality?.warnings || []);
   const caveats = $derived((report?.limitations || []).filter((l) => !clipWarnings.includes(l)));
+
+  // Spoken summary: focus + the top few issues + the summary paragraph.
+  const summaryText = $derived.by(() => {
+    if (!report) return "";
+    const parts = [`${report.sport || "Session"} on ${report.date || "an unknown date"}.`];
+    if (report.focus) parts.push(`Focus next session: ${report.focus}.`);
+    const issues = (report.issues || []).slice(0, 3).map((i) => issueText(i)).filter(Boolean);
+    if (issues.length) parts.push(`What to fix: ${issues.join(". ")}.`);
+    if (report.summary) parts.push(report.summary);
+    return parts.join(" ");
+  });
 
   // Watch sub-tabs: "Video", then one tab per available analysis image.
   // Order: the motion map (the readable insight) first, then the raw sampled frames, then the pose.
@@ -180,6 +192,9 @@
         {/if}
       {/if}
     {:else if tab === "Coaching"}
+      <div class="mb-3 flex justify-end">
+        <ReadAloud text={summaryText} />
+      </div>
       {#if report.focus}
         <div class="rounded-xl border-2 border-good/40 bg-good/10 p-4 text-sm">
           <span class="font-display font-bold text-good">Focus next session · </span>{report.focus}
