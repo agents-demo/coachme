@@ -19,6 +19,31 @@
     return stage === "startup" ? "startup (imports & setup)" : stage;
   }
 
+  // The architectural stages (core.stages) are measure → observe → coach; each progress tick
+  // below is a sub-step inside one of them (plus a setup prologue and a finalize epilogue).
+  const STAGE_GROUP = {
+    startup: "setup",
+    preparing: "setup",
+    "sampling frames": "measure",
+    "measuring motion": "measure",
+    "writing artifacts": "measure",
+    "vision: overview": "observe",
+    "vision: zoom": "observe",
+    "vision: detail": "observe",
+    "vision: reviewing image": "observe",
+    "agent writing report": "coach",
+    "saving report": "coach",
+    verifying: "coach",
+    exporting: "finalize",
+    done: "finalize",
+  };
+  const GROUP_ORDER = ["setup", "measure", "observe", "coach", "finalize", "other"];
+  const grouped = $derived.by(() => {
+    const buckets = new Map(GROUP_ORDER.map((g) => [g, []]));
+    for (const t of timeline) buckets.get(STAGE_GROUP[t.stage] || "other").push(t);
+    return GROUP_ORDER.map((g) => ({ name: g, items: buckets.get(g) })).filter((x) => x.items.length);
+  });
+
   let view = $state("Stages");
   const TABS = ["Stages", "Calls & tools"];
 </script>
@@ -65,24 +90,30 @@
 <div class="mt-3">
   {#if view === "Stages"}
     {#if timeline.length}
-      <ol class="space-y-1.5">
-        {#each timeline as t}
-          {@const secs = Number(t.seconds) || 0}
-          <li class="flex items-center gap-3 text-sm">
-            <span class="w-44 shrink-0 truncate {t.stage === 'startup' ? 'text-muted' : ''}">{stageLabel(t.stage)}</span>
-            <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
-              <div
-                class="h-full rounded-full {t.stage === 'startup' ? 'bg-line' : 'bg-accent'}"
-                style={`width:${totalSeconds ? Math.max(1.5, (secs / totalSeconds) * 100) : 0}%`}
-              ></div>
-            </div>
-            <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(2)}s</span>
-          </li>
-        {/each}
-      </ol>
+      {#each grouped as g}
+        <div class="mt-3 first:mt-0">
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{g.name}</div>
+          <ol class="mt-1 space-y-1.5">
+            {#each g.items as t}
+              {@const secs = Number(t.seconds) || 0}
+              <li class="flex items-center gap-3 text-sm">
+                <span class="w-44 shrink-0 truncate pl-2 {t.stage === 'startup' ? 'text-muted' : ''}">{stageLabel(t.stage)}</span>
+                <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
+                  <div
+                    class="h-full rounded-full {t.stage === 'startup' ? 'bg-line' : 'bg-accent'}"
+                    style={`width:${totalSeconds ? Math.max(1.5, (secs / totalSeconds) * 100) : 0}%`}
+                  ></div>
+                </div>
+                <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(2)}s</span>
+              </li>
+            {/each}
+          </ol>
+        </div>
+      {/each}
       <p class="mt-3 text-xs text-muted">
         Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(2)}s</span>
-        &nbsp;·&nbsp;bar length and numbers are <b>durations</b> (how long each step took), not timestamps.
+        &nbsp;·&nbsp;bar length and numbers are <b>durations</b>. Grouped by the pipeline stage
+        (<b>measure → observe → coach</b>, plus setup/finalize).
       </p>
     {:else}
       <p class="text-sm text-muted">No stage timings saved.</p>
