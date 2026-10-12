@@ -17,7 +17,7 @@
 
   // User-facing tabs on the left; the raw execution detail is a separate "utility" tab on the right.
   const MAIN_TABS = [
-    { id: "Watch", hint: "Play the video and tap a moment to jump. Switch to “Frames & map” for the sampled frames and motion map." },
+    { id: "Watch", hint: "Play the video and tap a moment to jump. Sub-tabs below switch to the sampled frames / motion map." },
     { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
     { id: "Notes", hint: "Caveats about this clip, the report-quality score, and downloads." },
   ];
@@ -26,11 +26,20 @@
     hint: "Raw run detail (model calls, tokens, tool calls, stage timeline). For debugging, not coaching.",
   };
 
-  const evidence = $derived(
-    Boolean(report?.artifacts?.motion || report?.artifacts?.frames || report?.artifacts?.pose),
-  );
   const clipWarnings = $derived(report?.quality?.warnings || []);
   const caveats = $derived((report?.limitations || []).filter((l) => !clipWarnings.includes(l)));
+
+  // Watch sub-tabs: "Video", then one tab per available analysis image.
+  const ARTIFACTS = {
+    "Sampled frames": { kind: "frames", caption: "Sampled frames the model read." },
+    "Motion map": { kind: "motion", caption: "Motion map — red = where you moved most." },
+    Pose: { kind: "pose", caption: "Body-pose overlay." },
+  };
+  const subTabs = $derived([
+    "Video",
+    ...Object.keys(ARTIFACTS).filter((k) => report?.artifacts?.[ARTIFACTS[k].kind]),
+  ]);
+  const hasImages = $derived(subTabs.length > 1);
 
   async function load() {
     if (!stem) {
@@ -41,6 +50,7 @@
     error = "";
     try {
       report = await getReport(stem);
+      watchView = "Video";
     } catch (e) {
       error = String(e?.message || e);
       report = null;
@@ -117,34 +127,32 @@
 
   <div class="mt-3">
     {#if tab === "Watch"}
-      {#if evidence}
-        <div class="mb-3 inline-flex gap-1 rounded-lg border-2 border-line p-0.5 text-sm">
-          {#each ["Video", "Frames & map"] as v}
+      {#if hasImages}
+        <div class="mb-4 flex gap-5">
+          {#each subTabs as t}
             <button
-              onclick={() => (watchView = v)}
-              class="rounded-md px-3 py-1 font-semibold transition hover:bg-surface"
-              class:bg-surface={watchView === v}
-              class:text-app={watchView === v}
-              class:text-muted={watchView !== v}
-            >{v}</button>
+              onclick={() => (watchView = t)}
+              class="whitespace-nowrap border-b-2 pb-1 text-sm font-semibold transition"
+              class:border-accent={watchView === t}
+              class:text-app={watchView === t}
+              class:border-transparent={watchView !== t}
+              class:text-muted={watchView !== t}
+            >{t}</button>
           {/each}
         </div>
       {/if}
 
-      {#if !evidence || watchView === "Video"}
+      {#if watchView === "Video" || !hasImages}
         <VideoReview {report} />
-      {:else}
-        <div class="grid gap-4 sm:grid-cols-2">
-          {#if report.artifacts?.frames}
-            <figure><img src={artifact(report.stem, "frames")} alt="sampled frames" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Sampled frames the model read.</figcaption></figure>
-          {/if}
-          {#if report.artifacts?.motion}
-            <figure><img src={artifact(report.stem, "motion")} alt="motion map" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Motion map — red = where you moved most.</figcaption></figure>
-          {/if}
-          {#if report.artifacts?.pose}
-            <figure><img src={artifact(report.stem, "pose")} alt="pose overlay" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Body-pose overlay.</figcaption></figure>
-          {/if}
-        </div>
+      {:else if ARTIFACTS[watchView]}
+        <figure class="max-w-3xl">
+          <img
+            src={artifact(report.stem, ARTIFACTS[watchView].kind)}
+            alt={watchView}
+            class="w-full rounded-lg border-2 border-line"
+          />
+          <figcaption class="mt-1 text-xs text-muted">{ARTIFACTS[watchView].caption}</figcaption>
+        </figure>
       {/if}
     {:else if tab === "Coaching"}
       {#if report.focus}
