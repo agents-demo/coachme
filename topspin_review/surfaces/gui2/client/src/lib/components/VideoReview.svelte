@@ -4,7 +4,7 @@
   import MotionChart from "./MotionChart.svelte";
   import Timeline from "./Timeline.svelte";
   import Segments from "./Segments.svelte";
-  import Moments from "./Moments.svelte";
+  import KeyMoments from "./KeyMoments.svelte";
   import Provenance from "./Provenance.svelte";
   import { outputs } from "$lib/outputs";
 
@@ -32,7 +32,7 @@
   const momentsItem = {
     how: "The same flagged moments as a list — click a time to play just that moment.",
     method: "Derived from the report's issues: their evidence timestamps become this clickable list.",
-    detail: "surfaces/gui2 client · Moments.svelte (from the report's issues)",
+    detail: "surfaces/gui2 client · KeyMoments.svelte (from the report's issues)",
     local: false,
   };
 
@@ -301,7 +301,7 @@
         <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
         <Provenance item={momentsItem} />
         <div class="mt-2">
-          <Moments {report} />
+          <KeyMoments {report} />
         </div>
       </div>
     {/if}
