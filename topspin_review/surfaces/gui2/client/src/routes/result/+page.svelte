@@ -19,7 +19,7 @@
   const MAIN_TABS = [
     { id: "Watch", hint: "Play the video and tap a moment to jump. Switch to “Model view” for the frames it read." },
     { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
-    { id: "Details", hint: "The fine print: limitations, the report-quality score, and downloads." },
+    { id: "Notes", hint: "Caveats about this clip, the report-quality score, and downloads." },
   ];
   const TECH_TAB = {
     id: "Diagnostics",
@@ -29,6 +29,8 @@
   const evidence = $derived(
     Boolean(report?.artifacts?.motion || report?.artifacts?.frames || report?.artifacts?.pose),
   );
+  const clipWarnings = $derived(report?.quality?.warnings || []);
+  const caveats = $derived((report?.limitations || []).filter((l) => !clipWarnings.includes(l)));
 
   async function load() {
     if (!stem) {
@@ -180,12 +182,24 @@
         <ul class="mt-1 list-disc pl-5 text-sm">{#each report.drills as d}<li>{d}</li>{/each}</ul>
       {/if}
       {#if report.progress}<p class="mt-3 text-sm text-muted">Since last time: {report.progress}</p>{/if}
-    {:else if tab === "Details"}
-      {#if report.limitations?.length}
-        <h3 class="font-display font-bold">Keep in mind</h3>
-        <ul class="mt-1 list-disc pl-5 text-sm">{#each report.limitations as l}<li>{l}</li>{/each}</ul>
+    {:else if tab === "Notes"}
+      <h3 class="font-display font-bold">Notes</h3>
+      <p class="mt-1 text-sm text-muted">
+        Caveats for this analysis of <b>this clip</b> (and the limits of the method) — not coaching advice.
+      </p>
+
+      {#if clipWarnings.length}
+        <h4 class="mt-4 text-sm font-semibold text-app">About your clip</h4>
+        <ul class="mt-1 list-disc pl-5 text-sm">{#each clipWarnings as w}<li>{w}</li>{/each}</ul>
       {/if}
-      <p class="mt-3 text-sm">
+
+      {#if caveats.length}
+        <h4 class="mt-4 text-sm font-semibold text-app">What limits the analysis</h4>
+        <ul class="mt-1 list-disc pl-5 text-sm">{#each caveats as l}<li>{l}</li>{/each}</ul>
+      {/if}
+
+      <h4 class="mt-4 text-sm font-semibold text-app">Report quality</h4>
+      <p class="mt-1 text-sm">
         <b class={scoreTone(report.score?.score ?? 0)}>{report.score?.score ?? 0}/100</b> —
         how trustworthy the report is, not how well you played. Built from
         evidence coverage ({Math.round((report.score?.evidence_coverage || 0) * 100)}% of issues cite a timestamp),
@@ -194,7 +208,9 @@
       {#if report.score?.hallucination_flags?.length}
         <p class="mt-1 text-xs text-bad">Unsupported claims flagged: {report.score.hallucination_flags.join(", ")}</p>
       {/if}
-      <div class="mt-3 flex gap-3 text-sm">
+
+      <h4 class="mt-4 text-sm font-semibold text-app">Download</h4>
+      <div class="mt-1 flex gap-3 text-sm">
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "md")} download>Download Markdown</a>
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "html")} target="_blank" rel="noreferrer">Open HTML</a>
       </div>
