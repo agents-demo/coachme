@@ -63,7 +63,6 @@ export function outputs(report) {
   if (hasBall3D) {
     ball.push({ id: "ball3d", label: "Ball flight", producer: "ball.trajectory3d()", step: "tracking ball", where: "report → metrics.ball.trajectory3d", local: true });
   }
-  if (ball.length) groups.push({ id: "ball", group: "The ball", items: ball });
 
   // --- Your body --------------------------------------------------------------
   const body = [];
@@ -77,6 +76,9 @@ export function outputs(report) {
     body.push({ id: "pose3d", label: "Body 3D", producer: "pose.estimate() (world landmarks)", step: "estimating pose", where: "report → metrics.pose[].landmarks3d", local: true });
   }
   if (body.length) groups.push({ id: "body", group: "Your body", items: body });
+
+  // --- The ball (outcome; least reliable signal, so it goes last) -------------
+  if (ball.length) groups.push({ id: "ball", group: "The ball", items: ball });
 
   return groups;
 }
