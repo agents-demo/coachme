@@ -30,17 +30,27 @@
   const caveats = $derived((report?.limitations || []).filter((l) => !clipWarnings.includes(l)));
 
   // Watch sub-tabs: "Video", then one tab per available analysis image.
-  // Order: the motion map (the readable insight) first, then the raw sampled frames, then the pose overlay.
-  const ARTIFACTS = {
-    "Motion map": { kind: "motion", caption: "Motion map — red = where you moved most." },
-    "Sampled frames": { kind: "frames", caption: "Sampled frames the model read." },
-    Pose: { kind: "pose_hero", caption: "Body-pose skeleton on a full frame (peak-motion moment)." },
-    "Pose over time": { kind: "pose", caption: "Body-pose skeleton across the sampled frames." },
-  };
-  const subTabs = $derived([
-    "Video",
-    ...Object.keys(ARTIFACTS).filter((k) => report?.artifacts?.[ARTIFACTS[k].kind]),
-  ]);
+  // Order: the motion map (the readable insight) first, then the raw sampled frames, then the pose.
+  // Pose falls back to the sampled-frames sheet when no full-frame hero exists (older reports).
+  const views = $derived.by(() => {
+    const a = report?.artifacts || {};
+    const out = [];
+    if (a.motion) out.push({ id: "Motion map", kind: "motion", caption: "Motion map — red = where you moved most." });
+    if (a.frames) out.push({ id: "Sampled frames", kind: "frames", caption: "Sampled frames the model read." });
+    if (a.pose_hero) out.push({ id: "Pose", kind: "pose_hero", caption: "Body-pose skeleton on a full frame (peak-motion moment)." });
+    if (a.pose) {
+      const hasHero = Boolean(a.pose_hero);
+      out.push({
+        id: hasHero ? "Pose over time" : "Pose",
+        kind: "pose",
+        caption: hasHero
+          ? "Body-pose skeleton across the sampled frames."
+          : "Body-pose skeleton across the sampled frames (full-frame hero not available for this run).",
+      });
+    }
+    return out;
+  });
+  const subTabs = $derived(["Video", ...views.map((v) => v.id)]);
   const hasImages = $derived(subTabs.length > 1);
 
   const issues = $derived(report?.issues || []);
@@ -166,15 +176,14 @@
 
       {#if watchView === "Video" || !hasImages}
         <VideoReview {report} />
-      {:else if ARTIFACTS[watchView]}
-        <figure class="max-w-3xl">
-          <img
-            src={artifact(report.stem, ARTIFACTS[watchView].kind)}
-            alt={watchView}
-            class="w-full rounded-lg border-2 border-line"
-          />
-          <figcaption class="mt-1 text-xs text-muted">{ARTIFACTS[watchView].caption}</figcaption>
-        </figure>
+      {:else}
+        {@const v = views.find((x) => x.id === watchView)}
+        {#if v}
+          <figure class="max-w-3xl">
+            <img src={artifact(report.stem, v.kind)} alt={watchView} class="w-full rounded-lg border-2 border-line" />
+            <figcaption class="mt-1 text-xs text-muted">{v.caption}</figcaption>
+          </figure>
+        {/if}
       {/if}
     {:else if tab === "Coaching"}
       {#if report.focus}
