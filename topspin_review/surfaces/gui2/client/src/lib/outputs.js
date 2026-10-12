@@ -24,7 +24,7 @@ export function outputs(report) {
       id: "video",
       label: "Video",
       stepLabel: "Your upload",
-      how: "Your uploaded clip, played back here. The flagged seconds are listed in the Key moments tab.",
+      how: "Your uploaded clip, played back here. The moments the coach pointed out are in the Key moments tab.",
       local: true,
     },
   ];
