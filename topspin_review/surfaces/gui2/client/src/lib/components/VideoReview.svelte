@@ -268,7 +268,7 @@
       <div class="mt-4">
         <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Timeline</h3>
         <p class="mt-1 text-xs text-muted">All tied to the playhead — watch them move together; click any to jump.</p>
-        <div class="mt-2 space-y-3 rounded-xl border-2 border-line p-3">
+        <div class="mt-3 space-y-3">
           {#if series.length}
             <div>
               <div class="text-xs font-semibold text-muted">Movement</div>
@@ -283,15 +283,14 @@
               <div class="mt-1"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
             </div>
           {/if}
-          <div>
-            <div class="text-xs font-semibold text-muted">Key moments</div>
-            <Provenance item={keyMomentsItem} />
-            <div class="mt-1"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
-            <div class="mt-3 border-l-2 border-line pl-3">
-              <KeyMoments {report} />
-            </div>
-          </div>
         </div>
+      </div>
+
+      <div class="mt-4">
+        <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
+        <Provenance item={keyMomentsItem} />
+        <div class="mt-2"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
+        <div class="mt-3"><KeyMoments {report} /></div>
       </div>
     {/if}
   </div>
