@@ -15,7 +15,7 @@
   const series = $derived(movementSeries(report));
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report.source || ""));
   const duration = $derived(Math.max(0.001, ...(report.frame_times || [1])));
-  const markers = $derived(groups.flatMap((g) => g.times.map((t) => ({ t, confidence: g.confidence }))));
+  const markers = $derived(groups.flatMap((g) => g.times.map((t) => ({ t, confidence: g.confidence, text: g.text }))));
 
   function seek(t) {
     if (video) {
@@ -265,9 +265,9 @@
     </div>
 
     {#if report.has_source && !isPhoto}
-      <details class="mt-2 text-sm">
-        <summary class="cursor-pointer font-semibold text-muted">Trim &amp; export</summary>
-        <div class="mt-2 flex flex-wrap items-end gap-3 text-xs">
+      <details class="mt-3 rounded-xl border-2 border-line bg-surface/40 p-3 text-sm">
+        <summary class="cursor-pointer font-semibold text-app">Trim &amp; export</summary>
+        <div class="mt-3 flex flex-wrap items-end gap-3 text-xs">
           <label class="text-muted">Start <span class="font-mono">{tStart.toFixed(1)}s</span>
             <input type="range" min="0" max={duration} step="0.1" bind:value={tStart} class="mt-1 block w-36" />
           </label>
@@ -287,24 +287,34 @@
     {/if}
 
     {#if !isPhoto && report.has_source}
-      <div class="mt-3">
-        <Timeline {markers} {duration} playhead={currentTime} onseek={seek} />        <p class="mt-1 text-xs text-muted">
-          Issue timeline — each mark is a flagged moment (red = high, amber = medium, grey = low confidence). Click to jump.
+      <div class="mt-4">
+        <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Issue timeline</h3>
+        <div class="mt-2">
+          <Timeline {markers} {duration} playhead={currentTime} onseek={seek} />
+        </div>
+        <p class="mt-1 text-xs text-muted">
+          Each mark is a moment the coach flagged (red = high, amber = medium, grey = low confidence). Click to jump; hover a mark to read it.
         </p>
       </div>
     {/if}
 
     {#if !isPhoto && report.has_source}
-      <div class="mt-3">
-        <Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} />
+      <div class="mt-4">
+        <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Rally phases</h3>
+        <div class="mt-2">
+          <Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} />
+        </div>
       </div>
     {/if}
 
     {#if series.length}
-      <div class="mt-3">
-        <MotionChart {series} playhead={currentTime} onseek={seek} />
+      <div class="mt-4">
+        <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Movement over time</h3>
+        <div class="mt-2">
+          <MotionChart {series} playhead={currentTime} onseek={seek} />
+        </div>
         <p class="mt-1 text-xs text-muted">
-          Movement over time — a spike is a step or a swing. Click the chart to jump the video.
+          A spike is a step or a swing. Click the chart to jump the video.
         </p>
       </div>
     {/if}

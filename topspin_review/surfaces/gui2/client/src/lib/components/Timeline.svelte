@@ -26,7 +26,7 @@
     <span
       class="absolute top-1/2 h-3.5 w-1.5 -translate-y-1/2 rounded-full"
       style={`left:calc(${(m.t / duration) * 100}% - 3px); background:${TONE[m.confidence] || TONE.low}`}
-      title={`${fmtTime(m.t)}${m.confidence ? ` · ${m.confidence}` : ""}`}
+      title={`${fmtTime(m.t)}${m.confidence ? ` · ${m.confidence} confidence` : ""}${m.text ? `\n${m.text}` : ""}`}
     ></span>
   {/each}
   <span class="absolute inset-y-0 w-0.5 bg-accent" style={`left:${(playhead / duration) * 100}%`}></span>
