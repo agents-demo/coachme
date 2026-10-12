@@ -24,7 +24,7 @@ export function outputs(report) {
       id: "video",
       label: "Video",
       stepLabel: "Your upload",
-      how: "Your clip exactly as you uploaded it. The moments worth a look are marked on the timeline underneath.",
+      how: "Your uploaded clip, played back here. The flagged seconds are listed in the Key moments tab.",
       local: true,
     },
   ];
