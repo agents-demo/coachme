@@ -262,13 +262,20 @@
             🏋 Drills to practice
             <span class="text-xs font-normal text-muted">{doneCount}/{report.drills.length} done</span>
           </h3>
-          <ul class="mt-2 space-y-1.5 text-sm">
+          <ul class="mt-2 space-y-2 text-sm">
             {#each report.drills as d, i}
-              <li>
+              {@const det = report.drill_details?.[i]}
+              <li class="rounded-xl border-2 border-line p-3">
                 <label class="flex cursor-pointer items-start gap-2">
                   <input type="checkbox" checked={!!doneDrills[i]} onchange={() => toggleDrill(i)} class="mt-0.5" />
-                  <span class:text-muted={doneDrills[i]} class:line-through={doneDrills[i]}>{d}</span>
+                  <span class="font-semibold" class:text-muted={doneDrills[i]} class:line-through={doneDrills[i]}>{d}</span>
                 </label>
+                {#if det}
+                  <div class="mt-1.5 space-y-0.5 pl-6 text-xs text-muted">
+                    {#if det.cue}<div><b class="text-app">Cue:</b> {det.cue}</div>{/if}
+                    {#if det.progression}<div><b class="text-app">Next:</b> {det.progression}</div>{/if}
+                  </div>
+                {/if}
               </li>
             {/each}
           </ul>
