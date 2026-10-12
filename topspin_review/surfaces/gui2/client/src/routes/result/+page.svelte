@@ -184,17 +184,25 @@
   <div class="mt-3">
     {#if tab === "Watch"}
       {#if hasImages}
-        <div class="mb-3 flex flex-wrap gap-x-4 gap-y-1">
-          {#each tabItems as it}
-            <button
-              onclick={() => (watchView = it.id)}
-              title={`${it.producer} · ${it.step} · ${it.where}`}
-              class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
-              class:border-accent={watchView === it.id}
-              class:text-app={watchView === it.id}
-              class:border-transparent={watchView !== it.id}
-              class:text-muted={watchView !== it.id}
-            >{it.label}</button>
+        <div class="mb-3 space-y-1.5">
+          {#each outputGroups as g}
+            {@const items = g.items.filter((i) => !INLINE.includes(i.id))}
+            {#if items.length}
+              <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span class="w-32 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted">{g.group}</span>
+                {#each items as it}
+                  <button
+                    onclick={() => (watchView = it.id)}
+                    title={`${it.producer} · ${it.step} · ${it.where}`}
+                    class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
+                    class:border-accent={watchView === it.id}
+                    class:text-app={watchView === it.id}
+                    class:border-transparent={watchView !== it.id}
+                    class:text-muted={watchView !== it.id}
+                  >{it.label}</button>
+                {/each}
+              </div>
+            {/if}
           {/each}
         </div>
       {/if}
