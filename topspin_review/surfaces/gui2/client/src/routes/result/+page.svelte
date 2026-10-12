@@ -205,15 +205,14 @@
         </div>
       {/if}
       {#if activeGroup && activeGroup.items.length > 1}
-        <div class="mb-3 flex flex-wrap gap-x-4 gap-y-1">
+        <div class="mb-3 inline-flex overflow-hidden rounded-lg border-2 border-line">
           {#each activeGroup.items as it}
             <button
               onclick={() => (watchView = it.id)}
               title={`${it.producer} · ${it.step} · ${it.where}`}
-              class="whitespace-nowrap border-b-2 pb-0.5 text-xs font-semibold transition"
-              class:border-accent2={watchView === it.id}
-              class:text-app={watchView === it.id}
-              class:border-transparent={watchView !== it.id}
+              class="px-3 py-1 text-xs font-semibold transition"
+              class:bg-accent={watchView === it.id}
+              class:text-white={watchView === it.id}
               class:text-muted={watchView !== it.id}
             >{it.label}</button>
           {/each}
