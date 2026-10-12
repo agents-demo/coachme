@@ -330,7 +330,49 @@ are worth anything.
 - **Effort:** `M` (after B1). **Acceptance:** a 3D skeleton synced to the playhead; angles labelled.
   **Risks:** 3D lib weight; world-landmark accuracy.
 
-## 6. Phase C — Analysis depth (the hard moat)
+## 6. Phase B.5 — Measure-stage expansion (the analysis core)
+
+The `measure` stage is where signal quality is won or lost. Today: `sampling` → `metrics` →
+`ball` (heuristic) + `quality`. Grow it so the report reasons over **calibrated, per-rep,
+footwork-aware** measurements.
+
+### Steps (in `core/stages/measure/`)
+- **M1. Calibration** — new `calibrate.py`. Establish **scale** from table/court detection or subject
+  height before measuring; store `calibration` in the report. Fixes the pixel-relative problem (§0.2) so
+  cross-session comparisons are defensible. **L**. *Acceptance:* same player at different distance →
+  comparable ranges within tolerance; uncalibrated → `compare` warns.
+- **M2. Pose as a ticked step** — pull pose out of `metrics.analyze` into its own `tick("estimating pose")`
+  so it's visible in Diagnostics and toggleable (it's the slowest part). **S**.
+- **M3. Stroke / repetition segmentation** — new `segment.py`. Strokes/reps from motion peaks + wrist
+  velocity → `segments[]`. The **enabler** for per-rep metrics, consistency, and per-stroke feedback. **M**.
+  *Acceptance:* N segments with start/end; per-rep metrics + variance; degrades gracefully.
+- **M4. Footwork events** — new `footwork.py`. Step count, foot liftoff/contact, **split-step detector**,
+  recovery time (pose ankles over time). **M**. *Acceptance:* measured steps + split-step with confidence;
+  feeds report evidence.
+- **M5. Extended footage check** — grow `quality.py`: full-body framing / pose completeness, lighting,
+  **camera shake**, distance, fps → usable/limits + actionable tips. **S**.
+- **M6. Scene / rally detection** — detect cuts (multi-rally recordings) + rally segments. **M**.
+- **M7. Handedness auto-detect** — infer left/right from which arm swings more; suggest profile. **S**.
+- **M8. Thorough sampling mode** — config-gated extra burst around motion peaks (uses `sample_burst`). **S**.
+
+### Integrations (in `integrations/`)
+- **I1. YOLO / TrackNet** — real **ball** + **person** detection (`integrations/ball.py`, `person.py`);
+  enables multi-player (C4). **L**.
+- **I2. Subject segmentation model** — mediapipe SelfieSegmentation or a small model to isolate the
+  player (better than the current background-subtraction). **M**.
+- **I3. Optical flow (OpenCV)** — direction + magnitude motion (`integrations/flow.py`) → richer
+  footwork signal than frame-diff. **M**.
+- **I4. Monocular depth (MiDaS)** — rough depth/scale to assist calibration. **L**.
+- **I5. OCR** — read a **scoreboard/scoreline** from the video for match context. **S**.
+
+### Priority within B.5
+1. **M1 calibration** (correctness) → 2. **M2 pose-as-step** → 3. **M3 segmentation** →
+4. **M4 footwork** → 5. **I1/I2/I3** (raw-signal upgrades).
+
+All land in the existing layering (steps in `core/stages/measure/*`, engines in `integrations/*`) →
+`tests/unit/test_architecture.py` stays green.
+
+## 7. Phase C — Analysis depth (the hard moat)
 
 ### C1. Trained ball tracking → shot/rally model
 - **Ref:** SV (its whole product is this).
@@ -397,7 +439,7 @@ are worth anything.
 - **Effort:** `L`. **Acceptance:** two clips analyzed together with better depth cues. **Risks:** sync;
   more compute.
 
-## 7. Phase D — Product, platform & growth
+## 8. Phase D — Product, platform & growth
 
 ### D1. Mobile app (capture-first)
 - **Ref:** all.
@@ -475,7 +517,7 @@ are worth anything.
 - **Effort:** `M` (after D2). **Acceptance:** comments persist and surface; assignments trackable.
   **Risks:** scope — keep it to comments + assignment, not full LMS.
 
-## 8. Cross-cutting work
+## 9. Cross-cutting work
 
 - **Data model:** add optional blocks to the report without breaking the schema:
   `pose3d`, `ball2`, `rallies[]`, `players[]`, `annotations[]`, `skills{}`, `plan`, `reel`.
@@ -491,7 +533,7 @@ are worth anything.
 
 ---
 
-## 9. Prioritization (recommended sequence)
+## 10. Prioritization (recommended sequence)
 
 | # | Feature | Ref | Effort | Demo? | Impact |
 |---|---|---|---|---|---|
@@ -505,6 +547,13 @@ are worth anything.
 | A6 | Frame-step + slow-mo | CE/V1 | S | ✅ | Medium |
 | A7 | Capture guide | OF | S | ✅ | Low |
 | A8 | Footwork / position heat map | HC/SB | S | ✅ | Medium |
+| M1 | Calibration (measure) | — | L | — | High |
+| M2 | Pose as its own step (measure) | — | S | — | Medium |
+| M3 | Stroke / repetition segmentation | — | M | — | High |
+| M4 | Footwork events + split-step | — | M | ✅ | High |
+| I1 | Ball + person detection (YOLO/TrackNet) | SV | L | — | High |
+| I2 | Subject segmentation model | — | M | — | Medium |
+| I3 | Optical flow motion | — | M | — | Medium |
 | B1 | 3D biomechanics | SB | L | — | High |
 | B2 | Telestration | CE/V1 | L | ✅ | High |
 | B3 | Angle tools | CE/V1 | S | ✅ | Medium |
@@ -518,19 +567,21 @@ are worth anything.
 | D2 | Coach/team | HL | XL | — | High (B2B) |
 | D1 | Mobile app | all | XL | — | High |
 
-**Build order:** A0 → 0.2 (calibration) → 0.1 (eval) → 0.3 (feedback) → A6 → A5 → A8 → A2 → A1 → A3 → A4 → B1 → B2 → B3 → B5 → B8 → B9 → D3 → C1 → C2 → C6 → D1/D2 → C3/D5/D6. (0.4–0.8 run alongside.)
+**Build order:** A0 → 0.2 → **M1 (calibration)** → 0.1 → 0.3 → A6 → A5 → A8 → **M2 → M3 → M4** → A2 → A1 → A3 → A4 → **I1 → I2 → I3** → B1 → B2 → B3 → B5 → B8 → B9 → D3 → C1 → C2 → C6 → D1/D2 → C3/D5/D6. (0.4–0.8 run alongside.)
 
 **Milestones**
 - **M0 (foundations):** A0 + 0.1–0.8. Demo fallback, eval harness, calibration, feedback, session
   library + streaming, i18n, offline/provider portability, privacy, deploy/ops.
 - **M1 (demo-ready):** A1–A7. One polished, shareable result with compare, voice, reel, pose charts.
-- **M2 (pro review):** B1, B2, B3, B5, B6, B7. Telestration + 3D metrics + a real review timeline.
-- **M3 (depth):** C1, C2, C5. Ball tracking + auto segmentation + thorough mode.
-- **M4 (platform):** D1–D5. Mobile, coach/team, plans, shares, skills.
+- **M1.5 (measure core):** M1–M8 + I1–I3. Calibration, pose-as-step, stroke segmentation, footwork
+  events, better ball/person/flow.
+- **M2 (pro review):** B1, B2, B3, B5, B6, B7, B8, B9. Telestration + 3D metrics + a real review timeline.
+- **M3 (depth):** C1, C2, C5, C6, C7. Ball tracking + auto segmentation + line calls + thorough mode.
+- **M4 (platform):** D1–D5, D9. Mobile, coach/team, plans, shares, skills.
 
 ---
 
-## 10. Metrics of success
+## 11. Metrics of success
 
 How we know it's working (not vanity features):
 
@@ -546,7 +597,7 @@ How we know it's working (not vanity features):
 
 ---
 
-## 11. Product strategy & validation
+## 12. Product strategy & validation
 
 **Personas**
 - **Primary:** the self-taught racket-sport amateur (plays 1–3×/week, no coach, films on a phone).
@@ -576,7 +627,7 @@ shareable demos (A3/A4/D4) as the top of the funnel.
 
 ---
 
-## 12. Engineering foundations & risks
+## 13. Engineering foundations & risks
 
 - **Schema versioning.** Add `schema_version` to the report; a `domain/report.migrate()` so new
   blocks (`pose3d`, `ball2`, `match`, `annotations`, `plan`) coexist with old reports; the reader
@@ -605,7 +656,7 @@ shareable demos (A3/A4/D4) as the top of the funnel.
 
 ---
 
-## 13. Dependencies & go/no-go gates
+## 14. Dependencies & go/no-go gates
 
 **Dependency graph (key edges)**
 - `A0`, `0.1–0.8` → **foundations** for everything.
@@ -624,7 +675,7 @@ shareable demos (A3/A4/D4) as the top of the funnel.
 
 ---
 
-## 14. Non-goals / guardrails
+## 15. Non-goals / guardrails
 
 - **Not medical.** D6 stays non-diagnostic and disclaimed.
 - **No fabricated measurements.** Keep the "measured-only" stance (`domain/evaluate.py` flags
