@@ -231,6 +231,16 @@ are worth anything.
 
 ---
 
+### A8. Footwork / position heat map
+- **Ref:** HC (heat maps), SB.
+- **Goal:** a floor/court **heat map of where you stood** over the clip (from the subject-box center),
+  distinct from the *motion* map (which shows where the image changed).
+- **Where:** `core/video/metrics.py` already tracks the subject; accumulate a position grid →
+  artifact `<stem>_heatmap.png`; show under Watch.
+- **Effort:** `S`. **Acceptance:** heat map from the subject track; shows stationary-vs-traveling;
+  absent for photos. **Risks:** none.
+- **Why demo-worthy:** instantly readable "you never left the middle".
+
 ## 5. Phase B — Core review experience (make it feel pro)
 
 ### B1. 3D biomechanics from pose world-landmarks
@@ -304,6 +314,22 @@ are worth anything.
 
 ---
 
+### B8. Video trim editor + GIF / vertical clip export
+- **Ref:** SV, OF.
+- **Goal:** in-app **trim** (in/out handles) of the clip, then export **mp4 / GIF**, plus a **9:16
+  vertical** cut for socials.
+- **Where:** gui2 (trim handles on the video) + `integrations/media.py` (ffmpeg trim → mp4/gif/vertical crop).
+- **Effort:** `M`. **Acceptance:** trim to a range and export mp4 + gif; a one-click vertical clip of a
+  flagged moment. **Risks:** ffmpeg filter graph complexity; gif size.
+
+### B9. 3D body-model (avatar) view
+- **Ref:** SB.
+- **Goal:** render the pose as an animated **3D skeleton/avatar** (from world landmarks) that plays with
+  the video — more legible than a flat overlay.
+- **Where:** gui2 (lightweight 3D via canvas/three.js) + `metrics.pose3d` (from B1).
+- **Effort:** `M` (after B1). **Acceptance:** a 3D skeleton synced to the playhead; angles labelled.
+  **Risks:** 3D lib weight; world-landmark accuracy.
+
 ## 6. Phase C — Analysis depth (the hard moat)
 
 ### C1. Trained ball tracking → shot/rally model
@@ -355,6 +381,21 @@ are worth anything.
 - **Risks:** token/time cost (gate it).
 
 ---
+
+### C6. Line calls / scoring / match stats
+- **Ref:** SV (its headline feature).
+- **Goal:** automatic **scorekeeping**, in/out calls (advisory, with a "review" affordance), rally
+  stats, and a **match summary**.
+- **Where:** needs C1 (ball + court detection); `domain` match model; report gains `match{}`.
+- **Effort:** `L` (after C1). **Acceptance:** score tracked with reviewable calls + a match summary;
+  calls clearly labelled advisory. **Risks:** accuracy/liability — never present as official.
+
+### C7. Multi-camera / dual-angle
+- **Ref:** pro tools (Onform/V1 multi-cam).
+- **Goal:** analyze two **synced** captures (front + side) for depth/3D fusion and a better read.
+- **Where:** multi-file submission; sync by audio/pose; fusion in `core/video/`.
+- **Effort:** `L`. **Acceptance:** two clips analyzed together with better depth cues. **Risks:** sync;
+  more compute.
 
 ## 7. Phase D — Product, platform & growth
 
@@ -426,6 +467,14 @@ are worth anything.
 
 ---
 
+### D9. Coach comments on frames + drill assignments
+- **Ref:** HL, OF.
+- **Goal:** a coach pins **comments to a frame/time** and **assigns drills**; the athlete sees them
+  in-session and gets a notification.
+- **Where:** builds on B2 (annotations) + D2 (accounts).
+- **Effort:** `M` (after D2). **Acceptance:** comments persist and surface; assignments trackable.
+  **Risks:** scope — keep it to comments + assignment, not full LMS.
+
 ## 8. Cross-cutting work
 
 - **Data model:** add optional blocks to the report without breaking the schema:
@@ -455,17 +504,21 @@ are worth anything.
 | A5 | Pose angles over time | SB | S | ✅ | Medium |
 | A6 | Frame-step + slow-mo | CE/V1 | S | ✅ | Medium |
 | A7 | Capture guide | OF | S | ✅ | Low |
+| A8 | Footwork / position heat map | HC/SB | S | ✅ | Medium |
 | B1 | 3D biomechanics | SB | L | — | High |
 | B2 | Telestration | CE/V1 | L | ✅ | High |
 | B3 | Angle tools | CE/V1 | S | ✅ | Medium |
 | B5 | Issue timeline | SV | M | ✅ | High |
+| B8 | Trim editor + GIF/vertical export | SV/OF | M | ✅ | Medium |
+| B9 | 3D body-model view | SB | M | ✅ | Medium |
 | C1 | Ball tracking | SV | XL | — | High |
 | C2 | Auto segmentation | SV | L | — | High |
+| C6 | Line calls / scoring / match stats | SV | L | — | High |
 | D3 | Personalized plan + memory | OF | L | ✅ | High |
 | D2 | Coach/team | HL | XL | — | High (B2B) |
 | D1 | Mobile app | all | XL | — | High |
 
-**Build order:** A0 → 0.2 (calibration) → 0.1 (eval) → 0.3 (feedback) → A6 → A5 → A2 → A1 → A3 → A4 → B1 → B2 → B3 → B5 → D3 → C1 → C2 → D1/D2 → C3/D5/D6. (0.4–0.8 run alongside.)
+**Build order:** A0 → 0.2 (calibration) → 0.1 (eval) → 0.3 (feedback) → A6 → A5 → A8 → A2 → A1 → A3 → A4 → B1 → B2 → B3 → B5 → B8 → B9 → D3 → C1 → C2 → C6 → D1/D2 → C3/D5/D6. (0.4–0.8 run alongside.)
 
 **Milestones**
 - **M0 (foundations):** A0 + 0.1–0.8. Demo fallback, eval harness, calibration, feedback, session
@@ -493,7 +546,85 @@ How we know it's working (not vanity features):
 
 ---
 
-## 11. Non-goals / guardrails
+## 11. Product strategy & validation
+
+**Personas**
+- **Primary:** the self-taught racket-sport amateur (plays 1–3×/week, no coach, films on a phone).
+- **Secondary:** the club/intermediate player chasing technique; the **coach** (a buyer for D2); the
+  parent of a junior.
+
+**Beachhead:** **table tennis** first (our sample is TT; tables are everywhere; self-taught players
+abound), then tennis → badminton/squash/padel. Resist going broad before one sport is great.
+
+**Positioning:** *"the coach you can replay."* Automatic, **evidence-grounded** (every claim cites a
+timestamp), **private/local by default**, and it writes a **plan you can question** (agentic report +
+Ask) — not just metrics.
+
+**Moat vs table stakes**
+- Moat: the agentic **plan + memory** (D3) over session history; the **local/open pipeline**; the
+  evidence discipline; the run diagnostics.
+- Table stakes (competitors already have): tracking, pose, charts, compare, reels.
+
+**Business model (if productizing):** freemium (N sessions) → subscription; **coach/team seats** (D2);
+self-host with **bring-your-own-model** (0.6).
+
+**Go-to-market:** club partnerships, coach outreach, sport communities (forums/subreddits), and
+shareable demos (A3/A4/D4) as the top of the funnel.
+
+**Validation plan:** interview ~5 coaches + ~10 amateurs; the two questions that matter —
+"is the report useful?" (from 0.3 👍) and "would you pay?"; wire both to the Metrics of success (§10).
+
+---
+
+## 12. Engineering foundations & risks
+
+- **Schema versioning.** Add `schema_version` to the report; a `domain/report.migrate()` so new
+  blocks (`pose3d`, `ball2`, `match`, `annotations`, `plan`) coexist with old reports; the reader
+  tolerates missing keys (`read.py` already does). Migrate on read, write the new version on next save.
+- **Prompt & model versioning / reproducibility.** Record the **prompt id/hash + model + provider**
+  per run (Diagnostics shows the model today, not the prompt). Re-running with the same inputs should
+  be explainable; keep a golden-report snapshot test (§0.1).
+- **Security.**
+  - **Frame prompt-injection:** the vision model reads **OCR'd text from the video** — a user could
+    put "ignore your instructions…" on screen. Mitigate: instruct the model to treat on-screen text as
+    **data, not instructions**; strip/flag instruction-like text; never let frame text trigger tools.
+  - Upload validation (extension + size + magic bytes), **rate limiting**, and **auth** before exposing
+    (§0.8); generalize the media path guards (`/artifact`, `/callmedia`, `/clip`) to one helper.
+- **Storage / scaling.** JSON-per-report + a single-process in-memory job manager won't scale: plan
+  **SQLite→Postgres** for metadata, an artifact **retention/size** policy, and a real **worker pool**
+  (process pool or RQ/Celery) for jobs. Keep runtime paths via `integrations/storage/runtime.py`.
+- **Performance budgets.** Video first frame < 1 s; chart render < 100 ms; target analyze ≲ 90 s for a
+  ~10 s clip (warm). Track in §10.
+- **Test strategy.** Unit (`domain`, `core/video`), architecture (`test_architecture.py`), **API
+  contract** tests for gui2 routes, **gui2 end-to-end** (Playwright), **eval** (§0.1), and a
+  load/latency test. Keep `ruff` + `pytest` green as the merge gate.
+- **Licenses & compliance.** Verify **mediapipe** + the `pose_landmarker` model asset licenses, the
+  share-card **font** license, any **dataset** used for C1, and the openjiuwen dependency terms.
+- **Observability.** Structured logs with **run ids**; a small dashboard for eval drift and cost; error
+  tracking (0.8).
+
+---
+
+## 13. Dependencies & go/no-go gates
+
+**Dependency graph (key edges)**
+- `A0`, `0.1–0.8` → **foundations** for everything.
+- `0.2` (calibration) → trustworthy `compare`/progress (`B7`, `D5`).
+- `A3` (reel) → needs the clips from `media.make_clips`.
+- `B3` → needs `B2`; `B9` → needs `B1`.
+- `C2` → needs `C1`; `C6` → needs `C1` (+ court detection); `C3` (live) → needs `C1`+`C2`+`B1`.
+- `D3` (plan) → needs report history + `0.3` (feedback); `D2`/`D9` → need auth (`0.8`).
+
+**Go/no-go gates**
+- **M0:** eval harness green & prompt-regression stable; calibration tolerance met; demo fallback 100%.
+- **M1:** ≥5 target users rate the report useful ≥4/5 on their own clips.
+- **M3:** ball-tracking accuracy clears its stated threshold on the labeled set — else **descope C1/C6**
+  and keep the heuristic + a "low confidence" label.
+- **M4:** a coach/team pilot with ≥N coaches retained 4 weeks, else park D2.
+
+---
+
+## 14. Non-goals / guardrails
 
 - **Not medical.** D6 stays non-diagnostic and disclaimed.
 - **No fabricated measurements.** Keep the "measured-only" stance (`domain/evaluate.py` flags
