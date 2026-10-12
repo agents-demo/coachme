@@ -32,7 +32,7 @@ export function outputs(report) {
       local: true,
     });
   }
-  groups.push({ group: "Your clip", items: clipItems });
+  groups.push({ id: "clip", group: "Your clip", items: clipItems });
 
   // --- Your movement ----------------------------------------------------------
   const movement = [
@@ -50,7 +50,7 @@ export function outputs(report) {
   if (a.heatmap) {
     movement.push({ id: "heatmap", label: "Footwork", kind: "heatmap", producer: "metrics.position_heatmap()", step: "writing artifacts", where: a.heatmap.replace(/^.*[\\/]/, ""), local: true });
   }
-  groups.push({ group: "Your movement", items: movement });
+  groups.push({ id: "movement", group: "Your movement", items: movement });
 
   // --- The ball ---------------------------------------------------------------
   const ball = [];
@@ -60,7 +60,7 @@ export function outputs(report) {
   if (hasBall3D) {
     ball.push({ id: "ball3d", label: "Ball flight", producer: "ball.trajectory3d()", step: "tracking ball", where: "report → metrics.ball.trajectory3d", local: true });
   }
-  if (ball.length) groups.push({ group: "The ball", items: ball });
+  if (ball.length) groups.push({ id: "ball", group: "The ball", items: ball });
 
   // --- Your body --------------------------------------------------------------
   const body = [];
@@ -73,14 +73,14 @@ export function outputs(report) {
   if (hasPose3D) {
     body.push({ id: "pose3d", label: "Body 3D", producer: "pose.estimate() (world landmarks)", step: "estimating pose", where: "report → metrics.pose[].landmarks3d", local: true });
   }
-  if (body.length) groups.push({ group: "Your body", items: body });
+  if (body.length) groups.push({ id: "body", group: "Your body", items: body });
 
   // --- What the coach saw -----------------------------------------------------
   const seen = [];
   if (a.frames) {
     seen.push({ id: "frames", label: "Frames read", kind: "frames", producer: "imaging.contact_sheet()", step: "writing artifacts", where: a.frames.replace(/^.*[\\/]/, ""), local: true });
   }
-  if (seen.length) groups.push({ group: "What the coach saw", items: seen });
+  if (seen.length) groups.push({ id: "seen", group: "What the coach saw", items: seen });
 
   return groups;
 }

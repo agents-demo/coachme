@@ -38,12 +38,15 @@
 
   // Everything this run produced (see lib/outputs.js).
   const outputGroups = $derived(outputs(report));
-  const outputItems = $derived(outputGroups.flatMap((g) => g.items));
   // Charts shown inside the Video view (and clips) are not separate tabs.
   const INLINE = ["movement", "segments", "clips"];
-  const tabItems = $derived(outputItems.filter((i) => !INLINE.includes(i.id)));
-  const current = $derived(tabItems.find((i) => i.id === watchView) || tabItems[0]);
-  const hasImages = $derived(tabItems.length > 1);
+  // Two-level nav: the user-centric groups are the sub-tabs; their items are the second row.
+  let watchGroup = $state("clip");
+  const visibleGroups = $derived(
+    outputGroups.map((g) => ({ ...g, items: g.items.filter((i) => !INLINE.includes(i.id)) })).filter((g) => g.items.length),
+  );
+  const activeGroup = $derived(visibleGroups.find((g) => g.id === watchGroup) || visibleGroups[0]);
+  const current = $derived(activeGroup?.items.find((i) => i.id === watchView) || activeGroup?.items[0]);
 
   // Spoken summary: focus + the top few issues + the summary paragraph.
   const summaryText = $derived.by(() => {
@@ -96,6 +99,7 @@
     try {
       report = await getReport(stem);
       watchView = "video";
+      watchGroup = "clip";
       doneDrills = {};
       if (!tourSeen) {
         try {
@@ -183,26 +187,35 @@
 
   <div class="mt-3">
     {#if tab === "Watch"}
-      {#if hasImages}
-        <div class="mb-3 space-y-1.5">
-          {#each outputGroups as g}
-            {@const items = g.items.filter((i) => !INLINE.includes(i.id))}
-            {#if items.length}
-              <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span class="w-32 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted">{g.group}</span>
-                {#each items as it}
-                  <button
-                    onclick={() => (watchView = it.id)}
-                    title={`${it.producer} · ${it.step} · ${it.where}`}
-                    class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
-                    class:border-accent={watchView === it.id}
-                    class:text-app={watchView === it.id}
-                    class:border-transparent={watchView !== it.id}
-                    class:text-muted={watchView !== it.id}
-                  >{it.label}</button>
-                {/each}
-              </div>
-            {/if}
+      {#if visibleGroups.length > 1}
+        <div class="mb-2 flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-line pb-1">
+          {#each visibleGroups as g}
+            <button
+              onclick={() => {
+                watchGroup = g.id;
+                watchView = g.items[0].id;
+              }}
+              class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
+              class:border-accent={activeGroup?.id === g.id}
+              class:text-app={activeGroup?.id === g.id}
+              class:border-transparent={activeGroup?.id !== g.id}
+              class:text-muted={activeGroup?.id !== g.id}
+            >{g.group}</button>
+          {/each}
+        </div>
+      {/if}
+      {#if activeGroup && activeGroup.items.length > 1}
+        <div class="mb-3 flex flex-wrap gap-x-4 gap-y-1">
+          {#each activeGroup.items as it}
+            <button
+              onclick={() => (watchView = it.id)}
+              title={`${it.producer} · ${it.step} · ${it.where}`}
+              class="whitespace-nowrap border-b-2 pb-0.5 text-xs font-semibold transition"
+              class:border-accent2={watchView === it.id}
+              class:text-app={watchView === it.id}
+              class:border-transparent={watchView !== it.id}
+              class:text-muted={watchView !== it.id}
+            >{it.label}</button>
           {/each}
         </div>
       {/if}
