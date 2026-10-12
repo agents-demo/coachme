@@ -1,5 +1,5 @@
 <script>
-  import { source, clip } from "$lib/api";
+  import { source } from "$lib/api";
   import { issueGroups, movementSeries, fmtTime } from "$lib/format";
   import MotionChart from "./MotionChart.svelte";
 
@@ -11,7 +11,6 @@
   const groups = $derived(issueGroups(report));
   const series = $derived(movementSeries(report));
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report.source || ""));
-  const clipEntries = $derived(Object.entries(report.clips || {}));
 
   const CONF_TONE = { high: "text-bad", medium: "text-warn", low: "text-muted" };
 
@@ -64,21 +63,6 @@
           Movement over time — a spike is a step or a swing. Click the chart to jump the video.
         </p>
       </div>
-    {/if}
-
-    {#if clipEntries.length}
-      <details class="mt-4 text-sm">
-        <summary class="cursor-pointer font-semibold text-muted">Key-moment clips ({clipEntries.length})</summary>
-        <div class="mt-2 grid gap-2 sm:grid-cols-3">
-          {#each clipEntries as [key] (key)}
-            <div>
-              <div class="mb-1 text-xs text-muted">around {key}s</div>
-              <!-- svelte-ignore a11y_media_has_caption -->
-              <video src={clip(report.stem, key)} controls preload="none" class="w-full"></video>
-            </div>
-          {/each}
-        </div>
-      </details>
     {/if}
   </div>
 
