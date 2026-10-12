@@ -193,6 +193,7 @@ def estimate(frames: list[Image.Image]) -> list[dict] | None:
                         "torso_lean": _torso_lean(wp["l_shoulder"], wp["r_shoulder"], wp["l_hip"], wp["r_hip"]),
                         "shoulder_twist": _twist(wp["l_shoulder"], wp["r_shoulder"]),
                         "hip_twist": _twist(wp["l_hip"], wp["r_hip"]),
+                        "landmarks3d": [[round(wl[i].x, 4), round(wl[i].y, 4), round(wl[i].z, 4)] for i in range(len(wl))],
                     }
                 )
             out.append(entry)

@@ -5,6 +5,7 @@
   import Technical from "$lib/components/Technical.svelte";
   import ReadAloud from "$lib/components/ReadAloud.svelte";
   import PoseChart from "$lib/components/PoseChart.svelte";
+  import Pose3D from "$lib/components/Pose3D.svelte";
   import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
 
   const stem = $derived($page.url.searchParams.get("stem") || "");
@@ -59,7 +60,13 @@
     return out;
   });
   const hasPoseAngles = $derived((report?.metrics?.pose || []).some((p) => p && p.l_knee != null));
-  const subTabs = $derived(["Video", ...views.map((v) => v.id), ...(hasPoseAngles ? ["Pose angles"] : [])]);
+  const hasPose3D = $derived((report?.metrics?.pose || []).some((p) => p && p.landmarks3d));
+  const subTabs = $derived([
+    "Video",
+    ...views.map((v) => v.id),
+    ...(hasPoseAngles ? ["Pose angles"] : []),
+    ...(hasPose3D ? ["3D pose"] : []),
+  ]);
   const hasImages = $derived(subTabs.length > 1);
 
   const issues = $derived(report?.issues || []);
@@ -190,6 +197,8 @@
         <VideoReview {report} />
       {:else if watchView === "Pose angles"}
         <PoseChart {report} />
+      {:else if watchView === "3D pose"}
+        <Pose3D {report} />
       {:else}
         {@const v = views.find((x) => x.id === watchView)}
         {#if v}
