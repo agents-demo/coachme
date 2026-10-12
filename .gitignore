@@ -11,3 +11,17 @@ __pycache__/
 node_modules/
 .svelte-kit/
 .DS_Store
+
+# openjiuwen agent workspace scaffold (created at CWD by the agent runtime)
+AGENT.md
+SOUL.md
+IDENTITY.md
+HEARTBEAT.md
+USER.md
+agents/
+coding_memory/
+context/
+memory/
+messages/
+skills/
+todo/
