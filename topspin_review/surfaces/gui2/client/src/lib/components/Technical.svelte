@@ -181,9 +181,24 @@
                       <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
                     </div>
                   {/each}
+                  {#if c.requested?.length}
+                    <div>
+                      <div class="text-xs uppercase text-muted">requested tool{c.requested.length > 1 ? "s" : ""}</div>
+                      {#each c.requested as tc}
+                        <div class="mt-1">
+                          <span class="font-mono text-xs text-accent2">{tc.name}</span>
+                          {#if tc.arguments}
+                            <pre class="mt-1 overflow-auto rounded bg-ink/40 p-2 text-xs">{tc.arguments}</pre>
+                          {/if}
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
                   {#if c.output}
                     <div class="text-xs uppercase text-muted">output</div>
                     <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{c.output}</pre>
+                  {:else if c.requested?.length}
+                    <p class="text-xs text-muted">No text — the model requested the tool(s) above.</p>
                   {/if}
                 </div>
               </details>
