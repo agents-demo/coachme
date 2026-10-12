@@ -23,16 +23,10 @@
   // Provenance for the timeline rows / key-moments list. Movement + rally come
   // from the catalog (real algorithms); issues + moments come from the model's report.
   const catalog = $derived(Object.fromEntries(outputs(report).flatMap((g) => g.items).map((i) => [i.id, i])));
-  const issuesItem = {
-    how: "The moments the coach flagged in the written report — each mark is one issue's timestamp (colour = confidence). Click to jump; hover to read.",
+  const keyMomentsItem = {
+    how: "The moments the coach flagged in the report. The strip marks them on the timeline; the list below says what each one is — click a time to play just that moment.",
     method: "The AI coach reads the sampled frames plus the measured metrics and writes issues, each pinned to a timestamp with a confidence; a verification pass then removes any it can't support.",
     detail: "the report — core/stages/observe + core/stages/coach (AI agent)",
-    local: false,
-  };
-  const momentsItem = {
-    how: "The same flagged moments as a list — click a time to play just that moment.",
-    method: "Derived from the report's issues: their evidence timestamps become this clickable list.",
-    detail: "surfaces/gui2 client · KeyMoments.svelte (from the report's issues)",
     local: false,
   };
 
@@ -289,18 +283,16 @@
               <div class="mt-1"><Segments segments={report.metrics?.ball?.segments || []} {duration} onseek={seek} /></div>
             </div>
           {/if}
-          <div>
-            <div class="text-xs font-semibold text-muted">Issues</div>
-            <Provenance item={issuesItem} />
-            <div class="mt-1"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
-          </div>
         </div>
       </div>
 
       <div class="mt-4">
         <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
-        <Provenance item={momentsItem} />
+        <Provenance item={keyMomentsItem} />
         <div class="mt-2">
+          <Timeline {markers} {duration} playhead={currentTime} onseek={seek} />
+        </div>
+        <div class="mt-3">
           <KeyMoments {report} />
         </div>
       </div>
