@@ -1,6 +1,6 @@
 <script>
   import { source, clip } from "$lib/api";
-  import { moments, movementSeries, fmtTime } from "$lib/format";
+  import { issueGroups, movementSeries, fmtTime } from "$lib/format";
   import MotionChart from "./MotionChart.svelte";
 
   let { report } = $props();
@@ -8,15 +8,25 @@
   let video = $state();
   let currentTime = $state(0);
 
-  const ms = $derived(moments(report));
+  const groups = $derived(issueGroups(report));
   const series = $derived(movementSeries(report));
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report.source || ""));
   const clipEntries = $derived(Object.entries(report.clips || {}));
-  const activeIdx = $derived.by(() => {
+
+  const CONF_TONE = { high: "text-bad", medium: "text-warn", low: "text-muted" };
+
+  // The issue whose moment is the most recent at/before the playhead.
+  const activeGroup = $derived.by(() => {
     let best = -1;
-    ms.forEach((m, i) => {
-      if (m.t != null && m.t <= currentTime + 0.8) best = i;
-    });
+    let bestT = -Infinity;
+    groups.forEach((g, i) =>
+      g.times.forEach((t) => {
+        if (t <= currentTime + 0.8 && t > bestT) {
+          bestT = t;
+          best = i;
+        }
+      }),
+    );
     return best;
   });
 
@@ -34,20 +44,14 @@
   }
 </script>
 
-<div class="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+<div class="grid gap-6 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]">
   <div>
     {#if report.has_source}
       {#if isPhoto}
         <img src={source(report.stem)} alt="session photo" class="w-full rounded-[14px] border-2 border-line" />
       {:else}
         <!-- svelte-ignore a11y_media_has_caption -->
-        <video
-          bind:this={video}
-          src={source(report.stem)}
-          controls
-          preload="metadata"
-          ontimeupdate={onTime}
-        ></video>
+        <video bind:this={video} src={source(report.stem)} controls preload="metadata" ontimeupdate={onTime}></video>
       {/if}
     {:else}
       <p class="rounded-[14px] border-2 border-line p-6 text-sm text-muted">Media not found on disk.</p>
@@ -61,43 +65,57 @@
         </p>
       </div>
     {/if}
+
+    {#if clipEntries.length}
+      <details class="mt-4 text-sm">
+        <summary class="cursor-pointer font-semibold text-muted">Key-moment clips ({clipEntries.length})</summary>
+        <div class="mt-2 grid gap-2 sm:grid-cols-3">
+          {#each clipEntries as [key] (key)}
+            <div>
+              <div class="mb-1 text-xs text-muted">around {key}s</div>
+              <!-- svelte-ignore a11y_media_has_caption -->
+              <video src={clip(report.stem, key)} controls preload="none" class="w-full"></video>
+            </div>
+          {/each}
+        </div>
+      </details>
+    {/if}
   </div>
 
   <div>
-    <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Moments to review</h3>
-    {#if !ms.length}
+    <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">
+      Moments to review {#if groups.length}<span class="text-muted">· {groups.length}</span>{/if}
+    </h3>
+    {#if !groups.length}
       <p class="mt-2 text-sm text-muted">No timestamped issues.</p>
     {:else}
-      <ol class="mt-2 space-y-1.5">
-        {#each ms as m, i}
-          <li>
-            <button
-              onclick={() => m.t != null && seek(m.t)}
-              class="w-full rounded-lg border-2 px-3 py-2 text-left text-sm transition"
-              class:border-accent2={i === activeIdx}
-              class:bg-surface={i === activeIdx}
-              class:border-line={i !== activeIdx}
-            >
-              {#if m.t != null}<span class="mr-2 font-mono text-xs text-accent2">▶ {fmtTime(m.t)}</span>{/if}
-              <span>{m.text}</span>
-              {#if m.confidence}<span class="ml-2 text-xs text-muted">({m.confidence})</span>{/if}
-            </button>
+      <ol class="mt-2 space-y-2">
+        {#each groups as g, i}
+          <li
+            class="rounded-xl border-2 p-3 transition"
+            class:border-accent2={i === activeGroup}
+            class:bg-surface={i === activeGroup}
+            class:border-line={i !== activeGroup}
+          >
+            <div class="flex items-start gap-2">
+              <span class="text-sm leading-snug">{g.text}</span>
+              {#if g.confidence}
+                <span class="ml-auto shrink-0 text-xs {CONF_TONE[g.confidence] || "text-muted"}">{g.confidence}</span>
+              {/if}
+            </div>
+            {#if g.times.length}
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                {#each g.times as t}
+                  <button
+                    onclick={() => seek(t)}
+                    class="rounded-full border-2 border-line px-2.5 py-0.5 font-mono text-xs text-accent2 transition hover:border-accent2"
+                  >▶ {fmtTime(t)}</button>
+                {/each}
+              </div>
+            {/if}
           </li>
         {/each}
       </ol>
-    {/if}
-
-    {#if clipEntries.length}
-      <h3 class="mt-4 font-display text-sm font-bold uppercase tracking-wide text-muted">Key-moment clips</h3>
-      <div class="mt-2 flex flex-col gap-2">
-        {#each clipEntries as [key] (key)}
-          <div>
-            <div class="mb-1 text-xs text-muted">around {key}s</div>
-            <!-- svelte-ignore a11y_media_has_caption -->
-            <video src={clip(report.stem, key)} controls preload="none" class="w-full"></video>
-          </div>
-        {/each}
-      </div>
     {/if}
   </div>
 </div>

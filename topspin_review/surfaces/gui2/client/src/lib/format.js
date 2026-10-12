@@ -41,6 +41,16 @@ export function moments(report) {
   return out.sort((a, b) => (a.t ?? 1e9) - (b.t ?? 1e9));
 }
 
+// One entry per issue (text once) with all its timestamps as chips.
+export function issueGroups(report) {
+  return (report?.issues || []).map((issue, i) => ({
+    idx: i,
+    text: issueText(issue),
+    confidence: issue?.confidence || "",
+    times: evidenceTimes(issue),
+  }));
+}
+
 // Movement-over-time series from the report metrics.
 export function movementSeries(report) {
   const activity = (report?.metrics || {}).activity || [];
