@@ -83,6 +83,15 @@ def _save_artifacts(video_path: str, frames, timestamps, measured: dict, region_
     if measured.get("pose"):
         annotated = pose.overlay(frames, measured["pose"])
         if annotated:
+            # One full-size annotated frame at the peak-motion moment (a big, clear pose image).
+            peak_t = measured.get("peak_motion_time")
+            hero_idx = 0
+            if peak_t is not None and timestamps:
+                hero_idx = min(range(len(timestamps)), key=lambda k: abs(timestamps[k] - peak_t))
+            hero_path = runtime.ARTIFACTS_DIR / f"{stem}_pose_hero.png"
+            imaging.save_png(annotated[hero_idx], hero_path)
+            paths["pose_hero"] = str(hero_path)
+
             pose_sheet = imaging.contact_sheet(annotated, timestamps, cols=min(4, len(annotated)))
             pose_path = runtime.ARTIFACTS_DIR / f"{stem}_pose.png"
             imaging.save_png(pose_sheet, pose_path)

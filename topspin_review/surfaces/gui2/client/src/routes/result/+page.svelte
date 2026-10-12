@@ -34,7 +34,8 @@
   const ARTIFACTS = {
     "Motion map": { kind: "motion", caption: "Motion map — red = where you moved most." },
     "Sampled frames": { kind: "frames", caption: "Sampled frames the model read." },
-    Pose: { kind: "pose", caption: "Body-pose overlay." },
+    Pose: { kind: "pose_hero", caption: "Body-pose skeleton on a full frame (peak-motion moment)." },
+    "Pose over time": { kind: "pose", caption: "Body-pose skeleton across the sampled frames." },
   };
   const subTabs = $derived([
     "Video",
