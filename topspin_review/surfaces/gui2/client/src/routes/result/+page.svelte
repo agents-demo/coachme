@@ -9,12 +9,18 @@
   let report = $state(null);
   let loading = $state(true);
   let error = $state("");
-  let tab = $state("Review");
+  let tab = $state("Watch");
   let question = $state("");
   let answers = $state([]);
   let asking = $state(false);
 
-  const TABS = ["Review", "Report", "Movement", "Details", "Technical"];
+  // Each tab is named by what the user does there, with a one-line hint.
+  const TABS = [
+    { id: "Watch", hint: "Play the video. Tap a moment to jump to it; click the chart to seek." },
+    { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
+    { id: "Details", hint: "Limitations, the report-quality score, and downloads." },
+    { id: "Under the hood", hint: "Model calls, tokens, and the run timeline (for the curious)." },
+  ];
 
   async function load() {
     if (!stem) {
@@ -73,26 +79,43 @@
     </span>
   </div>
 
-  <!-- Tabs sit right under the header, so they are visible before the tall video block. -->
   <div class="sticky top-14 z-20 -mx-4 mt-4 border-b-2 border-line bg-ink/90 px-4 backdrop-blur">
     <div class="flex gap-1 overflow-x-auto">
       {#each TABS as t}
         <button
-          onclick={() => (tab = t)}
+          onclick={() => (tab = t.id)}
           class="whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition"
-          class:border-accent={tab === t}
-          class:text-app={tab === t}
-          class:border-transparent={tab !== t}
-          class:text-muted={tab !== t}
-        >{t}</button>
+          class:border-accent={tab === t.id}
+          class:text-app={tab === t.id}
+          class:border-transparent={tab !== t.id}
+          class:text-muted={tab !== t.id}
+        >{t.id}</button>
       {/each}
     </div>
   </div>
 
-  <div class="mt-4">
-    {#if tab === "Review"}
+  <p class="mt-2 text-xs text-muted">{TABS.find((t) => t.id === tab)?.hint}</p>
+
+  <div class="mt-3">
+    {#if tab === "Watch"}
       <VideoReview {report} />
-    {:else if tab === "Report"}
+      {#if report.artifacts?.motion || report.artifacts?.frames || report.artifacts?.pose}
+        <details class="mt-5 text-sm">
+          <summary class="cursor-pointer font-semibold text-muted">What the model looked at (frames, motion map, pose)</summary>
+          <div class="mt-3 grid gap-4 sm:grid-cols-2">
+            {#if report.artifacts?.motion}
+              <figure><img src={artifact(report.stem, "motion")} alt="motion map" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Motion map — red = where you moved most.</figcaption></figure>
+            {/if}
+            {#if report.artifacts?.frames}
+              <figure><img src={artifact(report.stem, "frames")} alt="sampled frames" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Sampled frames the model read.</figcaption></figure>
+            {/if}
+            {#if report.artifacts?.pose}
+              <figure><img src={artifact(report.stem, "pose")} alt="pose overlay" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Body-pose overlay.</figcaption></figure>
+            {/if}
+          </div>
+        </details>
+      {/if}
+    {:else if tab === "Coaching"}
       {#if report.focus}
         <div class="rounded-lg border-2 border-good/40 bg-good/10 p-3 text-sm"><b>Focus next session:</b> {report.focus}</div>
       {/if}
@@ -128,21 +151,6 @@
         <ul class="mt-1 list-disc pl-5 text-sm">{#each report.drills as d}<li>{d}</li>{/each}</ul>
       {/if}
       {#if report.progress}<p class="mt-3 text-sm text-muted">Since last time: {report.progress}</p>{/if}
-    {:else if tab === "Movement"}
-      <div class="grid gap-4 sm:grid-cols-2">
-        {#if report.artifacts?.motion}
-          <figure><img src={artifact(report.stem, "motion")} alt="motion map" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Red = where you moved most.</figcaption></figure>
-        {/if}
-        {#if report.artifacts?.frames}
-          <figure><img src={artifact(report.stem, "frames")} alt="sampled frames" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Frames the model read.</figcaption></figure>
-        {/if}
-        {#if report.artifacts?.pose}
-          <figure><img src={artifact(report.stem, "pose")} alt="pose overlay" class="w-full rounded-lg border-2 border-line" /><figcaption class="mt-1 text-xs text-muted">Body pose overlay.</figcaption></figure>
-        {/if}
-      </div>
-      {#if !report.artifacts?.motion && !report.artifacts?.frames}
-        <p class="text-sm text-muted">No movement artifacts (single-image inputs have none).</p>
-      {/if}
     {:else if tab === "Details"}
       {#if report.limitations?.length}
         <h3 class="font-display font-bold">Keep in mind</h3>
@@ -161,7 +169,7 @@
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "md")} download>Download Markdown</a>
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "html")} target="_blank" rel="noreferrer">Open HTML</a>
       </div>
-    {:else if tab === "Technical"}
+    {:else if tab === "Under the hood"}
       <Technical {report} />
     {/if}
   </div>
