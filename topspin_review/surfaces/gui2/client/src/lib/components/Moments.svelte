@@ -35,25 +35,21 @@
   <ol class="space-y-2">
     {#each groups as g, i}
       <li class="rounded-xl border-2 border-line p-3">
-        <div class="flex items-start gap-2">
+        <p class="text-sm leading-snug">{g.text}</p>
+        <div class="mt-2 flex flex-wrap items-center gap-1.5">
           {#if g.confidence}
-            <span class="mt-0.5 shrink-0 rounded-full border-2 border-line px-2 py-0.5 text-xs {CONF_TONE[g.confidence] || 'text-muted'}" title={CONF_HELP}>
-              {g.confidence}
+            <span class="shrink-0 rounded-full border-2 border-line px-2 py-0.5 text-xs {CONF_TONE[g.confidence] || 'text-muted'}" title={CONF_HELP}>
+              confidence: {g.confidence}
             </span>
           {/if}
-          <span class="text-sm leading-snug">{g.text}</span>
+          {#each g.times as t}
+            <button
+              onclick={() => play(t, g.text)}
+              class="rounded-full border-2 border-line px-2.5 py-0.5 font-mono text-xs text-accent2 transition hover:border-accent2"
+              title="Play this moment in a pop-up"
+            >▶ {fmtTime(t)}</button>
+          {/each}
         </div>
-        {#if g.times.length}
-          <div class="mt-2 flex flex-wrap gap-1.5">
-            {#each g.times as t}
-              <button
-                onclick={() => play(t, g.text)}
-                class="rounded-full border-2 border-line px-2.5 py-0.5 font-mono text-xs text-accent2 transition hover:border-accent2"
-                title="Play this moment in a pop-up"
-              >▶ {fmtTime(t)}</button>
-            {/each}
-          </div>
-        {/if}
       </li>
     {/each}
   </ol>

@@ -65,11 +65,11 @@ export function outputs(report) {
   if ((report?.issues || []).some((i) => (i.evidence_times || []).length)) {
     groups.push({
       id: "moments",
-      group: "Moments",
+      group: "Key moments",
       items: [
         {
           id: "moments",
-          label: "Moments to review",
+          label: "Key moments",
           how: "The exact seconds the coach flagged, grouped by issue. Click one to play just that moment.",
           method: "Built from the report's issues: each issue's evidence timestamps (with its confidence) become a clickable moment; clicking opens a modal player seeked to that second.",
           detail: "surfaces/gui2 client · Moments.svelte (from report issues)",
