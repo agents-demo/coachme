@@ -108,6 +108,18 @@ def patch_last_report(patch: dict[str, Any]) -> dict[str, Any] | None:
     return report
 
 
+def set_annotations(stem: str, items: list[dict]) -> list[dict] | None:
+    """Save shape annotations onto a stored report (found by video name or stem)."""
+    report = find_report(stem)
+    if not report:
+        return None
+    path = report_path(report.get("source") or stem)
+    updated = dict(report)
+    updated["annotations"] = items
+    _write(path, updated)
+    return items
+
+
 def delete_report(video_or_stem: str) -> bool:
     """Delete one session's report and its generated artifacts/exports/cache."""
     stem = Path(video_or_stem).stem

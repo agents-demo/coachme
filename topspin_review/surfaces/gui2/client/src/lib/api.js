@@ -10,6 +10,12 @@ export const getReports = () => api("/reports");
 export const getReport = (stem) => api(`/reports/${encodeURIComponent(stem)}`);
 export const deleteReport = (stem) => api(`/reports/${encodeURIComponent(stem)}`, { method: "DELETE" });
 export const ask = (stem, q) => api(`/reports/${encodeURIComponent(stem)}/ask?q=${encodeURIComponent(q)}`);
+export const saveAnnotations = (stem, annotations) =>
+  api(`/reports/${encodeURIComponent(stem)}/annotations`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ annotations }),
+  });
 export const compare = (a, b) => api(`/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
 
 export const analyzeAsync = (body) =>

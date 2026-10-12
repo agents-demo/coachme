@@ -4,14 +4,20 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
+from pydantic import BaseModel
 
 from topspin_review.core import service
+from topspin_review.domain import annotations as annotations_schema
 from topspin_review.domain import compare as compare_mod
 from topspin_review.integrations import reporting
 from topspin_review.integrations.storage import store
 from topspin_review.surfaces.gui2.server import read
 
 router = APIRouter()
+
+
+class AnnotationsRequest(BaseModel):
+    annotations: list[dict] = []
 
 
 @router.get("/reports")
@@ -33,6 +39,16 @@ def delete_report(stem: str) -> dict:
     if read.get_report(stem) is None:
         raise HTTPException(status_code=404, detail="unknown report")
     return {"deleted": store.delete_report(stem)}
+
+
+@router.post("/reports/{stem}/annotations")
+def save_annotations(stem: str, payload: AnnotationsRequest) -> dict:
+    """Persist on-frame shape annotations (arrow / line / circle / pen) for a report."""
+    if read.get_report(stem) is None:
+        raise HTTPException(status_code=404, detail="unknown report")
+    items = annotations_schema.normalize(payload.annotations)
+    store.set_annotations(stem, items)
+    return {"annotations": items}
 
 
 @router.get("/reports/{stem}/ask")

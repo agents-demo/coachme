@@ -1,5 +1,5 @@
 <script>
-  import { source } from "$lib/api";
+  import { source, saveAnnotations } from "$lib/api";
   import { issueGroups, movementSeries, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
   import MotionChart from "./MotionChart.svelte";
   import Timeline from "./Timeline.svelte";
@@ -7,6 +7,7 @@
   let { report } = $props();
 
   let video = $state();
+  let stage = $state();
   let currentTime = $state(0);
 
   const groups = $derived(issueGroups(report));
@@ -15,7 +16,6 @@
   const duration = $derived(Math.max(0.001, ...(report.frame_times || [1])));
   const markers = $derived(groups.flatMap((g) => g.times.map((t) => ({ t, confidence: g.confidence }))));
 
-  // The issue whose moment is the most recent at/before the playhead.
   const activeGroup = $derived.by(() => {
     let best = -1;
     let bestT = -Infinity;
@@ -43,7 +43,7 @@
     if (video) currentTime = video.currentTime;
   }
 
-  // A6: frame-step + slow-mo.
+  // A6 frame-step + slow-mo.
   const fps = $derived(Number(report.fps) || 30);
   let rate = $state(1);
   function setRate(r) {
@@ -59,40 +59,153 @@
   function onLoaded() {
     if (video) video.playbackRate = rate;
   }
+
+  // B2 telestration: draw arrow / circle / pen on the frozen frame (normalized 0..1).
+  const COLOR = "#f97316";
+  let drawMode = $state(false);
+  let tool = $state("arrow");
+  let shapes = $state([]);
+  let drawing = $state(null);
+  let dirty = $state(false);
+  let status = $state("");
+
+  $effect(() => {
+    shapes = (report?.annotations || []).map((s) => ({ ...s }));
+    dirty = false;
+  });
+
+  const clamp = (v) => Math.max(0, Math.min(1, v));
+  function norm(evt) {
+    const rect = stage.getBoundingClientRect();
+    return [clamp((evt.clientX - rect.left) / rect.width), clamp((evt.clientY - rect.top) / rect.height)];
+  }
+  function start(evt) {
+    if (!drawMode) return;
+    if (video) video.pause();
+    const [x, y] = norm(evt);
+    drawing = tool === "pen" ? { type: "pen", color: COLOR, points: [[x, y]] } : { type: tool, color: COLOR, x1: x, y1: y, x2: x, y2: y };
+  }
+  function move(evt) {
+    if (!drawing) return;
+    const [x, y] = norm(evt);
+    if (drawing.type === "pen") drawing = { ...drawing, points: [...drawing.points, [x, y]] };
+    else drawing = { ...drawing, x2: x, y2: y };
+  }
+  function end() {
+    if (!drawing) return;
+    const done = drawing;
+    shapes = [...shapes, done];
+    drawing = null;
+    dirty = true;
+  }
+  function undo() {
+    shapes = shapes.slice(0, -1);
+    dirty = true;
+  }
+  function clear() {
+    shapes = [];
+    dirty = true;
+  }
+  async function save() {
+    status = "saving…";
+    try {
+      await saveAnnotations(report.stem, shapes);
+      status = "saved";
+      dirty = false;
+    } catch (e) {
+      status = String(e?.message || e);
+    }
+  }
 </script>
+
+{#snippet shape(s)}
+  {#if s.type === "pen"}
+    <polyline
+      points={s.points.map((p) => `${p[0]},${p[1]}`).join(" ")}
+      fill="none" stroke={s.color || COLOR} stroke-width="2" vector-effect="non-scaling-stroke"
+    />
+  {:else if s.type === "circle"}
+    <ellipse
+      cx={(s.x1 + s.x2) / 2} cy={(s.y1 + s.y2) / 2}
+      rx={Math.abs(s.x2 - s.x1) / 2} ry={Math.abs(s.y2 - s.y1) / 2}
+      fill="none" stroke={s.color || COLOR} stroke-width="2" vector-effect="non-scaling-stroke"
+    />
+  {:else}
+    <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={s.color || COLOR} stroke-width="2" vector-effect="non-scaling-stroke" />
+    {#if s.type === "arrow"}
+      <circle cx={s.x2} cy={s.y2} r="3" fill={s.color || COLOR} vector-effect="non-scaling-stroke" />
+    {/if}
+  {/if}
+{/snippet}
 
 <div class="grid gap-6 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]">
   <div>
     {#if report.has_source}
       {#if isPhoto}
-        <img src={source(report.stem)} alt="session photo" class="w-full rounded-[14px] border-2 border-line" />
+        <div class="relative" bind:this={stage}>
+          <img src={source(report.stem)} alt="session photo" class="w-full rounded-[14px] border-2 border-line" />
+          <svg
+            class="absolute inset-0 h-full w-full {drawMode ? "cursor-crosshair" : "pointer-events-none"}"
+            viewBox="0 0 1 1" preserveAspectRatio="none"
+            onpointerdown={start} onpointermove={move} onpointerup={end} onpointerleave={end}
+          >
+            {#each shapes as s (s)}{@render shape(s)}{/each}
+            {#if drawing}{@render shape(drawing)}{/if}
+          </svg>
+        </div>
       {:else}
-        <!-- svelte-ignore a11y_media_has_caption -->
-        <video bind:this={video} src={source(report.stem)} controls preload="metadata" ontimeupdate={onTime} onloadedmetadata={onLoaded}></video>
+        <div class="relative" bind:this={stage}>
+          <!-- svelte-ignore a11y_media_has_caption -->
+          <video bind:this={video} src={source(report.stem)} controls preload="metadata" ontimeupdate={onTime} onloadedmetadata={onLoaded}></video>
+          <svg
+            class="absolute inset-0 h-full w-full {drawMode ? "cursor-crosshair" : "pointer-events-none"}"
+            viewBox="0 0 1 1" preserveAspectRatio="none"
+            onpointerdown={start} onpointermove={move} onpointerup={end} onpointerleave={end}
+          >
+            {#each shapes as s (s)}{@render shape(s)}{/each}
+            {#if drawing}{@render shape(drawing)}{/if}
+          </svg>
+        </div>
       {/if}
     {:else}
       <p class="rounded-[14px] border-2 border-line p-6 text-sm text-muted">Media not found on disk.</p>
     {/if}
 
-    {#if report.has_source && !isPhoto}
-      <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
-        <button onclick={() => step(-1)} class="rounded-lg border-2 border-line px-2.5 py-1 font-semibold" title="Previous frame (step 1/fps)">⏮</button>
-        <button onclick={() => step(1)} class="rounded-lg border-2 border-line px-2.5 py-1 font-semibold" title="Next frame (step 1/fps)">⏭</button>
-        <span class="text-xs text-muted">frame step · {Math.round(fps)} fps</span>
-        <div class="ml-auto inline-flex overflow-hidden rounded-lg border-2 border-line">
-          {#each [0.25, 0.5, 1] as r}
-            <button
-              onclick={() => setRate(r)}
-              class="px-2.5 py-1 text-xs font-semibold transition"
-              class:bg-surface={rate === r}
-              class:text-app={rate === r}
-              class:text-muted={rate !== r}
-            >{r}×</button>
-          {/each}
+    <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+      <button
+        onclick={() => (drawMode = !drawMode)}
+        class="rounded-lg border-2 px-3 py-1 font-semibold transition"
+        class:border-accent={drawMode}
+        class:bg-surface={drawMode}
+        class:border-line={!drawMode}
+      >✏ {drawMode ? "Drawing" : "Draw"}</button>
+      {#if drawMode}
+        {#each [["arrow", "Arrow"], ["circle", "Circle"], ["pen", "Pen"]] as [id, label]}
+          <button
+            onclick={() => (tool = id)}
+            class="rounded-lg border-2 px-2.5 py-1 text-xs font-semibold transition"
+            class:border-accent2={tool === id}
+            class:border-line={tool !== id}
+          >{label}</button>
+        {/each}
+        <button onclick={undo} class="rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold">Undo</button>
+        <button onclick={clear} class="rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold">Clear</button>
+        <button onclick={save} disabled={!dirty} class="rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-white disabled:opacity-50">Save</button>
+        {#if status}<span class="text-xs text-muted">{status}</span>{/if}
+      {/if}
+      {#if report.has_source && !isPhoto}
+        <div class="ml-auto flex items-center gap-2">
+          <button onclick={() => step(-1)} class="rounded-lg border-2 border-line px-2.5 py-1 font-semibold" title="Previous frame">⏮</button>
+          <button onclick={() => step(1)} class="rounded-lg border-2 border-line px-2.5 py-1 font-semibold" title="Next frame">⏭</button>
+          <div class="inline-flex overflow-hidden rounded-lg border-2 border-line">
+            {#each [0.25, 0.5, 1] as r}
+              <button onclick={() => setRate(r)} class="px-2 py-1 text-xs font-semibold transition" class:bg-surface={rate === r} class:text-app={rate === r} class:text-muted={rate !== r}>{r}×</button>
+            {/each}
+          </div>
+          <span class="font-mono text-xs text-muted">{fmtTime(currentTime)}</span>
         </div>
-        <span class="font-mono text-xs text-muted">{fmtTime(currentTime)}</span>
-      </div>
-    {/if}
+      {/if}
+    </div>
 
     {#if !isPhoto && report.has_source}
       <div class="mt-3">
