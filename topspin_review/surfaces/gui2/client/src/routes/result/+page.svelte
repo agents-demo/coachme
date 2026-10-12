@@ -42,6 +42,25 @@
   ]);
   const hasImages = $derived(subTabs.length > 1);
 
+  const issues = $derived(report?.issues || []);
+
+  // Drills checklist (local, not persisted).
+  let doneDrills = $state({});
+  function toggleDrill(i) {
+    doneDrills = { ...doneDrills, [i]: !doneDrills[i] };
+  }
+  const doneCount = $derived(Object.values(doneDrills).filter(Boolean).length);
+
+  // Split "claim: evidence" issue text so the metrics de-emphasize under the claim.
+  function splitIssue(text) {
+    const s = String(text || "");
+    const c = s.indexOf(": ");
+    if (c > 8 && c < 160) return [s.slice(0, c), s.slice(c + 2)];
+    const d = s.indexOf(". ");
+    if (d > 8 && d < 160) return [s.slice(0, d + 1), s.slice(d + 2)];
+    return [s, ""];
+  }
+
   async function load() {
     if (!stem) {
       loading = false;
@@ -52,6 +71,7 @@
     try {
       report = await getReport(stem);
       watchView = "Video";
+      doneDrills = {};
     } catch (e) {
       error = String(e?.message || e);
       report = null;
@@ -157,39 +177,80 @@
       {/if}
     {:else if tab === "Coaching"}
       {#if report.focus}
-        <div class="rounded-lg border-2 border-good/40 bg-good/10 p-3 text-sm"><b>Focus next session:</b> {report.focus}</div>
+        <div class="rounded-xl border-2 border-good/40 bg-good/10 p-4 text-sm">
+          <span class="font-display font-bold text-good">Focus next session · </span>{report.focus}
+        </div>
       {/if}
-      {#if report.summary}<p class="mt-3 text-sm">{report.summary}</p>{/if}
+      {#if report.summary}
+        <div class="mt-3 rounded-xl border-2 border-line bg-surface/40 p-4 text-sm">{report.summary}</div>
+      {/if}
 
-      {#if report.strengths?.length}
-        <h3 class="mt-4 font-display font-bold">What's working</h3>
-        <ul class="mt-1 list-disc pl-5 text-sm">{#each report.strengths as s}<li>{s}</li>{/each}</ul>
-      {/if}
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <section class="rounded-xl border-2 border-good/30 bg-good/5 p-4">
+          <h3 class="flex items-center gap-2 font-display font-bold text-good">✅ What's working</h3>
+          {#if report.strengths?.length}
+            <ul class="mt-2 space-y-1.5 text-sm">
+              {#each report.strengths as s}<li>{s}</li>{/each}
+            </ul>
+          {:else}
+            <p class="mt-2 text-sm text-muted">—</p>
+          {/if}
+        </section>
 
-      {#if report.issues?.length}
-        <h3 class="mt-4 font-display font-bold">What to fix</h3>
-        <ul class="mt-1 space-y-1 text-sm">
-          {#each report.issues as i}
-            <li class="rounded-lg border-2 border-line p-2">
-              {issueText(i)}
-              {#if i.evidence_times?.length}
-                <span class="ml-1 font-mono text-xs text-accent2">{i.evidence_times.map((t) => fmtTime(t)).join(", ")}</span>
-              {/if}
-              {#if i.confidence}
-                <span
-                  class="ml-2 whitespace-nowrap rounded-full border-2 border-line px-2 py-0.5 text-xs {CONF_TONE[i.confidence] || 'text-muted'}"
-                  title={CONF_HELP}
-                >{i.confidence} confidence</span>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-      {/if}
+        <section class="rounded-xl border-2 border-warn/30 bg-warn/5 p-4">
+          <h3 class="flex items-center gap-2 font-display font-bold text-warn">🎯 What to fix</h3>
+          {#if issues.length}
+            <ol class="mt-2 space-y-3 text-sm">
+              {#each issues as issue, idx}
+                {@const parts = splitIssue(issueText(issue))}
+                <li class="flex gap-2">
+                  <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-warn/20 text-[11px] font-bold text-warn">{idx + 1}</span>
+                  <div>
+                    <div class="font-semibold">{parts[0]}</div>
+                    {#if parts[1]}<div class="mt-0.5 text-xs text-muted">{parts[1]}</div>{/if}
+                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      {#each issue.evidence_times || [] as t}
+                        <span class="rounded-full border-2 border-line px-2 py-0.5 font-mono text-xs text-accent2">{fmtTime(t)}</span>
+                      {/each}
+                      {#if issue.confidence}
+                        <span
+                          class="rounded-full border-2 border-line px-2 py-0.5 text-xs {CONF_TONE[issue.confidence] || 'text-muted'}"
+                          title={CONF_HELP}
+                        >{issue.confidence}</span>
+                      {/if}
+                    </div>
+                  </div>
+                </li>
+              {/each}
+            </ol>
+          {:else}
+            <p class="mt-2 text-sm text-muted">No issues found.</p>
+          {/if}
+        </section>
+      </div>
 
       {#if report.drills?.length}
-        <h3 class="mt-4 font-display font-bold">Drills to practice</h3>
-        <ul class="mt-1 list-disc pl-5 text-sm">{#each report.drills as d}<li>{d}</li>{/each}</ul>
+        <section class="mt-4 rounded-xl border-2 border-line p-4">
+          <h3 class="flex items-center gap-2 font-display font-bold">
+            🏋 Drills to practice
+            <span class="text-xs font-normal text-muted">{doneCount}/{report.drills.length} done</span>
+          </h3>
+          <ul class="mt-2 space-y-1.5 text-sm">
+            {#each report.drills as d, i}
+              <li>
+                <label class="flex cursor-pointer items-start gap-2">
+                  <input type="checkbox" checked={!!doneDrills[i]} onchange={() => toggleDrill(i)} class="mt-0.5" />
+                  <span class:text-muted={doneDrills[i]} class:line-through={doneDrills[i]}>{d}</span>
+                </label>
+              </li>
+            {/each}
+          </ul>
+          <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface">
+            <div class="h-full rounded-full bg-accent transition-all" style={`width: ${(doneCount / report.drills.length) * 100}%`}></div>
+          </div>
+        </section>
       {/if}
+
       {#if report.progress}<p class="mt-3 text-sm text-muted">Since last time: {report.progress}</p>{/if}
     {:else if tab === "Notes"}
       <h3 class="font-display font-bold">Notes</h3>
