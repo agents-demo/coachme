@@ -56,9 +56,6 @@
     else load();
   }
 
-  const avgQuality = $derived(
-    reports.length ? Math.round(reports.reduce((a, r) => a + (r.score || 0), 0) / reports.length) : 0,
-  );
   const totalIssues = $derived(reports.reduce((a, r) => a + (r.issue_count || 0), 0));
 </script>
 
@@ -79,14 +76,10 @@
 </section>
 
 {#if reports.length && !showNew}
-  <div class="mt-4 grid grid-cols-3 gap-3">
+  <div class="mt-4 grid grid-cols-2 gap-3">
     <div class="card p-4 text-center">
       <div class="font-display text-2xl font-bold">{reports.length}</div>
       <div class="text-[11px] uppercase tracking-wide text-muted">Sessions</div>
-    </div>
-    <div class="card p-4 text-center">
-      <div class="font-display text-2xl font-bold">{avgQuality}</div>
-      <div class="text-[11px] uppercase tracking-wide text-muted">Avg quality</div>
     </div>
     <div class="card p-4 text-center">
       <div class="font-display text-2xl font-bold">{totalIssues}</div>
