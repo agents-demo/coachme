@@ -8,12 +8,24 @@ See the full plan: [`docs/ANDROID_PLAN.md`](../../docs/ANDROID_PLAN.md) (appendi
 
 ## Status
 
-**P0–P2 scaffold** — project setup, settings, DeepSeek client, report model + store, sampling, the
-**measure** stage (activity + subject region/track + mechanics + `footwork_series` + motion/position
-maps), the observe + coach passes, and a Compose shell (Sessions / New / Result with Analysis maps +
-side-to-side chart, Observations, Coaching+Ask, Diagnostics). Not yet compiled; **pose (MediaPipe)**
-and **ball (ONNX)** and the remaining UI (player/telestration, trim/reel/card, compare, moments) are
-the next phases.
+**P0–P4 scaffold** — project setup, settings, DeepSeek client, report model + store, sampling, the
+full **measure** stage (activity + subject/mechanics + `footwork_series` + motion/position maps),
+**pose** (MediaPipe PoseLandmarker: skeleton, angles, 3D, fast-hand, footwork), **ball** (ONNX YOLO +
+tracker: path, stats, segments, 3D trajectory), the observe + coach passes, and a Compose shell
+(Sessions / New / Result with Analysis showing maps + charts + pose + tracked object, Observations,
+Coaching + Ask, Diagnostics). Not yet compiled; **P5/P6** (player + telestration, trim/GIF/reel/card,
+compare, key moments/clips, full Diagnostics, readiness, voice, localization) remain.
+
+## Models (required)
+
+The on-device models are **not committed** (large). Copy them into `app/src/main/assets/`:
+
+```
+copy runtime\data\models\pose_landmarker_lite.task  surfaces\android\app\src\main\assets\
+copy runtime\data\models\ball.onnx                  surfaces\android\app\src\main\assets\
+```
+
+(pose comes from `integrations/pose.py`'s download; ball from `scripts/fetch_ball_model.py`.)
 
 ## Build
 

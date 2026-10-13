@@ -153,7 +153,49 @@ private fun Analysis(r: Report) {
             }
             FootworkChart(foot)
         }
-        if (foot == null && r.artifacts["motion"] == null) {
+        r.artifacts["pose"]?.let {
+            Text("Skeleton", fontWeight = FontWeight.Bold)
+            AsyncImage(model = File(it), contentDescription = "Skeleton", modifier = Modifier.fillMaxWidth())
+        }
+        val poseSummary = m["pose_summary"] as? kotlinx.serialization.json.JsonObject
+        if (poseSummary != null && poseSummary.isNotEmpty()) {
+            Text("Body angles", fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                poseSummary["l_knee_mean"]?.let { Stat(it.toString(), "L knee") }
+                poseSummary["r_knee_mean"]?.let { Stat(it.toString(), "R knee") }
+                poseSummary["l_elbow_mean"]?.let { Stat(it.toString(), "L elbow") }
+                poseSummary["r_elbow_mean"]?.let { Stat(it.toString(), "R elbow") }
+            }
+        }
+        val strokes = m["strokes"] as? kotlinx.serialization.json.JsonArray
+        if (strokes != null && strokes.isNotEmpty()) {
+            Text("Fast-hand events", fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                strokes.forEach { s ->
+                    val o = s as? kotlinx.serialization.json.JsonObject
+                    val hand = o?.get("hand")?.toString()?.trim('"') ?: "?"
+                    val t = o?.get("t")?.toString() ?: "?"
+                    Text("$hand ${t}s", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+        val ball = m["ball"] as? kotlinx.serialization.json.JsonObject
+        r.artifacts["ball"]?.let {
+            Text("Object path", fontWeight = FontWeight.Bold)
+            AsyncImage(model = File(it), contentDescription = "Object path", modifier = Modifier.fillMaxWidth())
+        }
+        ball?.get("stats")?.let { st ->
+            val o = st as? kotlinx.serialization.json.JsonObject
+            if (o != null) {
+                Text("Tracked object", fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    o["visible_frames"]?.let { Stat(it.toString(), "Frames tracked") }
+                    o["max_speed"]?.let { Stat(it.toString(), "Max speed") }
+                    (ball["segments"] as? kotlinx.serialization.json.JsonArray)?.let { Stat(it.size.toString(), "Active spans") }
+                }
+            }
+        }
+        if (foot == null && r.artifacts["motion"] == null && r.artifacts["pose"] == null && r.artifacts["ball"] == null) {
             Text("No measurements available for this run.", style = MaterialTheme.typography.bodyMedium)
         }
     }

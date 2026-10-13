@@ -7,3 +7,7 @@ captures/
 .cxx/
 *.iml
 .idea/
+
+# Bundled ML models (large; copy from runtime/data/models — see README)
+app/src/main/assets/*.task
+app/src/main/assets/*.onnx

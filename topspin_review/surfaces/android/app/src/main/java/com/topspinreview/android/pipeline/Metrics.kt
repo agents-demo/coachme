@@ -17,6 +17,7 @@ data class Measured(
     val json: JsonObject,
     val motionMap: Bitmap?,
     val positionMap: Bitmap?,
+    val activity: List<Pair<Double, Double>>,
 )
 
 /**
@@ -68,7 +69,7 @@ object Metrics {
             put("subject_coverage", round(region.count { it }.toDouble() / (AW * AH), 3))
         }
 
-        return Measured(json, motionMap(frames, region), positionHeatmap(frames, track))
+        return Measured(json, motionMap(frames, region), positionHeatmap(frames, track), activity)
     }
 
     /** Metrics rendered for prompts (subset of `metrics.text()`; Appendix L1). */

@@ -35,6 +35,8 @@ import kotlin.math.ceil
  */
 class Pipeline(
     private val sampler: Sampler,
+    private val pose: Pose,
+    private val ball: Ball,
     private val client: DeepSeekClient,
     private val tools: ReportTools,
     private val store: ReportStore,
@@ -53,7 +55,22 @@ class Pipeline(
 
         onStage("Measure movement")
         val measured = Metrics.analyze(frames)
-        val metrics = measured.json
+
+        onStage("Estimate pose")
+        val poseSeq = pose.detect(frames)
+
+        onStage("Track ball")
+        val ballDets = ball.detect(frames)
+        val ballJson = ball.process(frames, ballDets, measured.activity)
+        val metrics = JsonObject(
+            measured.json + mapOf(
+                "pose_summary" to pose.summarize(poseSeq),
+                "pose3d_summary" to pose.summarize3d(poseSeq),
+                "strokes" to pose.strokes(poseSeq, frames),
+                "footwork" to pose.footwork(poseSeq),
+                "ball" to ballJson,
+            )
+        )
         val metricsText = Metrics.text(metrics)
 
         val sheet = contactSheet(frames)
@@ -64,6 +81,8 @@ class Pipeline(
         artifacts["frames"] = store.saveArtifact(stem, "frames", sheet)
         measured.motionMap?.let { artifacts["motion"] = store.saveArtifact(stem, "motion", it) }
         measured.positionMap?.let { artifacts["heatmap"] = store.saveArtifact(stem, "heatmap", it) }
+        pose.overlay(frames, poseSeq)?.let { artifacts["pose"] = store.saveArtifact(stem, "pose", it) }
+        ball.overlay(frames, ballJson)?.let { artifacts["ball"] = store.saveArtifact(stem, "ball", it) }
 
         val windows = try {
             onStage("First look")

@@ -5,7 +5,9 @@ import com.topspinreview.android.data.ReportStore
 import com.topspinreview.android.data.SettingsStore
 import com.topspinreview.android.llm.DeepSeekClient
 import com.topspinreview.android.llm.ReportTools
+import com.topspinreview.android.pipeline.Ball
 import com.topspinreview.android.pipeline.Pipeline
+import com.topspinreview.android.pipeline.Pose
 import com.topspinreview.android.pipeline.Sampler
 import dagger.Module
 import dagger.Provides
@@ -46,8 +48,14 @@ object AppModule {
     fun sampler(@ApplicationContext ctx: Context) = Sampler(ctx)
 
     @Provides @Singleton
+    fun pose(@ApplicationContext ctx: Context) = Pose(ctx)
+
+    @Provides @Singleton
+    fun ball(@ApplicationContext ctx: Context) = Ball(ctx)
+
+    @Provides @Singleton
     fun pipeline(
-        sampler: Sampler, client: DeepSeekClient, tools: ReportTools,
+        sampler: Sampler, pose: Pose, ball: Ball, client: DeepSeekClient, tools: ReportTools,
         store: ReportStore, settings: SettingsStore, json: Json,
-    ) = Pipeline(sampler, client, tools, store, settings, json)
+    ) = Pipeline(sampler, pose, ball, client, tools, store, settings, json)
 }
