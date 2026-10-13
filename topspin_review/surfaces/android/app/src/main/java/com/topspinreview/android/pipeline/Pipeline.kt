@@ -49,19 +49,30 @@ class Pipeline(
         val stem = File(videoPath).nameWithoutExtension
         tools.runStem = stem
 
+        fun since(ns: Long) = (System.nanoTime() - ns) / 1e9
+        val timeline = linkedMapOf<String, Double>()
+
         onStage("Pick frames")
+        val tFrames = System.nanoTime()
         val frames = sampler.sample(videoPath, cfg.maxFrames)
+        timeline["sampling frames"] = since(tFrames)
         require(frames.isNotEmpty()) { "No frames could be extracted." }
 
         onStage("Measure movement")
+        val tMeasure = System.nanoTime()
         val measured = Metrics.analyze(frames)
+        timeline["measuring motion"] = since(tMeasure)
 
         onStage("Estimate pose")
+        val tPose = System.nanoTime()
         val poseSeq = pose.detect(frames)
+        timeline["estimating pose"] = since(tPose)
 
         onStage("Track ball")
+        val tBall = System.nanoTime()
         val ballDets = ball.detect(frames)
         val ballJson = ball.process(frames, ballDets, measured.activity)
+        timeline["tracking ball"] = since(tBall)
         val metrics = JsonObject(
             measured.json + mapOf(
                 "pose_summary" to pose.summarize(poseSeq),
@@ -86,6 +97,7 @@ class Pipeline(
 
         val windows = try {
             onStage("First look")
+            client.stage = "vision: overview"
             val coarse = client.vision(
                 Prompts.VISION_AGENT_SYSTEM,
                 Prompts.coarse(frames.size, cfg.sport, cfg.level, cfg.hand, cfg.goal, metricsText, sampler.duration(videoPath)),
@@ -100,6 +112,7 @@ class Pipeline(
             "${o["start"]}s-${o["end"]}s"
         }.ifEmpty { "none" }
         val observations = try {
+            client.stage = "vision: detail"
             val fine = client.vision(
                 Prompts.VISION_AGENT_SYSTEM,
                 Prompts.fine(0, cfg.level, cfg.hand, cfg.goal, metricsText, windowLabel),
@@ -113,10 +126,30 @@ class Pipeline(
 
         val savedStem = tools.lastSavedStem ?: stem
         val loaded = store.load(savedStem)
+        val callsJson = buildJsonArray {
+            client.calls.forEach { c ->
+                add(buildJsonObject {
+                    put("stage", c.stage); put("model", c.model)
+                    put("prompt_tokens", c.promptTokens); put("completion_tokens", c.completionTokens)
+                    put("seconds", c.seconds)
+                })
+            }
+        }
+        val usageJson = buildJsonObject {
+            put("calls", client.calls.size)
+            put("total_tokens", client.calls.sumOf { it.promptTokens + it.completionTokens })
+        }
+        val timelineJson = buildJsonArray {
+            timeline.forEach { (s, secs) -> add(buildJsonObject { put("stage", s); put("seconds", secs) }) }
+            client.calls.forEach { add(buildJsonObject { put("stage", it.stage); put("seconds", it.seconds) }) }
+        }
         val report = (loaded ?: Report(
             date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
             sport = cfg.sport, summary = observations, source = videoPath,
-        )).copy(stem = savedStem, metrics = metrics, artifacts = artifacts)
+        )).copy(
+            stem = savedStem, metrics = metrics, artifacts = artifacts,
+            usage = usageJson, calls = callsJson, timeline = timelineJson,
+        )
         store.save(savedStem, report)
         return report
     }
@@ -125,6 +158,7 @@ class Pipeline(
         sport: String, level: String, hand: String, goal: String,
         n: Int, windows: String, observations: String, metricsText: String,
     ) {
+        client.stage = "agent writing report"
         val profileLine = "level $level, $hand-handed, working on $goal"
         val query = Prompts.reportQuery(
             SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),

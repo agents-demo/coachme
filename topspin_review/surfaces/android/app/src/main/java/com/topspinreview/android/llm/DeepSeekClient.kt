@@ -14,6 +14,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -22,6 +23,12 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 data class ToolCall(val id: String, val name: String, val arguments: String)
 data class ChatResponse(val content: String, val toolCalls: List<ToolCall>)
+
+/** One recorded model call, for the Diagnostics tab. */
+data class CallInfo(
+    val stage: String, val model: String,
+    val promptTokens: Int, val completionTokens: Int, val seconds: Double,
+)
 
 /**
  * Direct DeepSeek (OpenAI-compatible) client — the Android replacement for openjiuwen.
@@ -33,6 +40,10 @@ class DeepSeekClient(
     private val settings: SettingsStore,
 ) {
     private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
+
+    /** Current stage label, set by the pipeline; recorded with each call. */
+    var stage: String = ""
+    val calls = mutableListOf<CallInfo>()
 
     private suspend fun cfg(): AppSettings = settings.flow.first()
 
@@ -87,6 +98,7 @@ class DeepSeekClient(
     }
 
     private suspend fun post(cfg: AppSettings, body: JsonObject): ChatResponse = withContext(Dispatchers.IO) {
+        val started = System.nanoTime()
         val req = Request.Builder()
             .url(cfg.apiBase.trimEnd('/') + "/chat/completions")
             .addHeader("Authorization", "Bearer ${cfg.apiKey}")
@@ -96,8 +108,8 @@ class DeepSeekClient(
         http.newCall(req).execute().use { resp ->
             val raw = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) error("HTTP ${resp.code}: ${raw.take(400)}")
-            val msg = json.parseToJsonElement(raw).jsonObject["choices"]!!.jsonArray[0]
-                .jsonObject["message"]!!.jsonObject
+            val root = json.parseToJsonElement(raw).jsonObject
+            val msg = root["choices"]!!.jsonArray[0].jsonObject["message"]!!.jsonObject
             val content = (msg["content"] as? JsonPrimitive)?.content.orEmpty()
             val calls = (msg["tool_calls"] as? JsonArray)?.mapNotNull { el ->
                 val o = el.jsonObject
@@ -108,6 +120,11 @@ class DeepSeekClient(
                     arguments = fn["arguments"]?.jsonPrimitive?.content.orEmpty(),
                 )
             } ?: emptyList()
+            val usage = root["usage"] as? JsonObject
+            val pt = usage?.get("prompt_tokens")?.jsonPrimitive?.intOrNull ?: 0
+            val ct = usage?.get("completion_tokens")?.jsonPrimitive?.intOrNull ?: 0
+            val model = body["model"]?.jsonPrimitive?.content.orEmpty()
+            this@DeepSeekClient.calls.add(CallInfo(stage, model, pt, ct, (System.nanoTime() - started) / 1e9))
             ChatResponse(content, calls)
         }
     }

@@ -321,11 +321,25 @@ private fun Coaching(r: Report, answers: List<Pair<String, String>>, onAsk: (Str
 
 @Composable
 private fun Diagnostics(r: Report) {
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Usage", fontWeight = FontWeight.Bold)
-        Text(r.usage.toString(), style = MaterialTheme.typography.bodySmall)
-        Spacer(Modifier.height(12.dp))
-        Text("Model calls / tools / timeline come from the run's observability (P6).",
-            style = MaterialTheme.typography.bodySmall)
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Model calls", fontWeight = FontWeight.Bold)
+        Text(
+            "${r.calls.size} call(s) · ${r.usage["total_tokens"]?.toString() ?: "0"} tokens",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        r.calls.forEach { el ->
+            val o = el as? kotlinx.serialization.json.JsonObject ?: return@forEach
+            Text(
+                "${o["stage"]} · ${o["model"]} · ${o["prompt_tokens"]} in / ${o["completion_tokens"]} out · ${o["seconds"]}s",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Text("Stage timeline", fontWeight = FontWeight.Bold)
+        r.timeline.forEach { el ->
+            val o = el as? kotlinx.serialization.json.JsonObject ?: return@forEach
+            Text("${o["stage"]}: ${o["seconds"]}s", style = MaterialTheme.typography.bodySmall)
+        }
     }
 }

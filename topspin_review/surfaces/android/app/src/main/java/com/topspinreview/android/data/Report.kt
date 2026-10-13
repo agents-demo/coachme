@@ -33,6 +33,8 @@ data class Report(
     val artifacts: Map<String, String> = emptyMap(),
     val clips: Map<String, String> = emptyMap(),
     val usage: JsonObject = JsonObject(emptyMap()),
+    val calls: JsonArray = JsonArray(emptyList()),
+    val timeline: JsonArray = JsonArray(emptyList()),
     val tt_reading: JsonObject? = null,
     val annotations: JsonArray = JsonArray(emptyList()),
 )
