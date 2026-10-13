@@ -4,6 +4,7 @@
   import VideoReview from "$lib/components/VideoReview.svelte";
   import Technical from "$lib/components/Technical.svelte";
   import ReadAloud from "$lib/components/ReadAloud.svelte";
+  import VoiceInput from "$lib/components/VoiceInput.svelte";
   import PoseChart from "$lib/components/PoseChart.svelte";
   import Pose3D from "$lib/components/Pose3D.svelte";
   import Ball3D from "$lib/components/Ball3D.svelte";
@@ -114,6 +115,14 @@
     load();
   });
 
+  function speak(text) {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text || "");
+    u.rate = 0.95;
+    window.speechSynthesis.speak(u);
+  }
+
   async function doAsk() {
     if (!question.trim() || !stem) return;
     const q = question;
@@ -122,6 +131,7 @@
     try {
       const { answer } = await ask(stem, q);
       answers = [...answers, { q, answer }];
+      speak(answer);
     } catch {
       answers = [...answers, { q, answer: "Could not answer." }];
     } finally {
@@ -535,8 +545,13 @@
       {:else if coachView === "Ask"}
       <section class="card p-4">
         <h3 class="font-display font-bold">Ask about this report</h3>
+        <p class="mt-1 text-xs text-muted">Type, or press the mic and speak — the answer is read aloud.</p>
         {#each answers as a}
-          <div class="mt-2 text-sm"><span class="text-muted">You:</span> {a.q}<br /><span class="text-accent2">Coach:</span> {a.answer}</div>
+          <div class="mt-2 text-sm">
+            <div><span class="text-muted">You:</span> {a.q}</div>
+            <div class="mt-0.5"><span class="text-accent2">Coach:</span> {a.answer}</div>
+            <div class="mt-1"><ReadAloud text={a.answer} label="Replay" /></div>
+          </div>
         {/each}
         <div class="mt-3 flex gap-2">
           <input
@@ -545,6 +560,7 @@
             placeholder="e.g. How do I fix my split-step?"
             class="flex-1 rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm"
           />
+          <VoiceInput ontext={(t, final) => { question = t; if (final) doAsk(); }} />
           <button onclick={doAsk} disabled={asking} class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
             {asking ? "…" : "Ask"}
           </button>
