@@ -137,6 +137,22 @@ are worth anything.
 - **Acceptance:** slider ⇄ blend ⇄ side-by-side; synced playhead; both sessions same normalized progress.
 - **Risks:** performance of dual `<video>` + canvas on low-end devices.
 
+### B5. Pro / reference comparison
+- **Ref:** Onform, V1.
+- **Goal:** compare your motion to a **reference** — a pro template or your own best session — as an
+  overlay or side-by-side, aligned by phase.
+- **Where:** gui2 (phase-aligned playback) + a `domain` phase model.
+- **Effort:** `M`. **Acceptance:** pick a reference; see a phase-aligned comparison at contact.
+- **Risks:** reference licensing; alignment robustness.
+
+### B6. Multi-sport generalization
+- **Ref:** —
+- **Goal:** take the pipeline beyond table tennis (tennis, badminton, squash, padel): sport-aware
+  prompts, terms, and calibration.
+- **Where:** `domain/` sport profiles/terms, prompts, `core/config.py`.
+- **Effort:** `L`. **Acceptance:** a tennis clip yields a sensible report through the same pipeline.
+- **Risks:** per-sport tuning; must not dilute quality for the beachhead sport.
+
 ---
 
 ## 6. Phase B.5 — Measure-stage expansion (the analysis core)
@@ -232,6 +248,22 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Effort:** `L`. **Acceptance:** two clips analyzed together with better depth cues. **Risks:** sync;
   more compute.
 
+### C8. 3D biomechanics — kinematic sequence
+- **Ref:** SB (its core product).
+- **Goal:** joint-by-joint **kinematic sequence** (hips → torso → shoulder → arm) and phase timing
+  (backswing, contact, follow-through) per stroke.
+- **Where:** `core/video/` (from pose 3D world landmarks) + `integrations/pose.py`; report gains
+  `biomechanics{}`.
+- **Effort:** `L`. **Acceptance:** sequence + timing per stroke with confidence; degrades without 3D.
+- **Risks:** monocular 3D accuracy; needs a clean side view.
+
+### C9. Spin estimation (stretch — likely stays a non-goal)
+- **Ref:** SV.
+- **Goal:** estimate **spin** (type and rough amount) if it can be done honestly.
+- **Where:** `core/video/` ball cues (+ possibly a small model).
+- **Effort:** `XL`. **Acceptance:** only if reliable; otherwise keep it as a clearly-stated limitation.
+- **Risks:** single-camera spin is unreliable — do **not** ship a guess; the app stays honest.
+
 ---
 
 ## 8. Phase D — Product, platform & growth
@@ -310,12 +342,26 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Effort:** `M` (after D2). **Acceptance:** comments persist and surface; assignments trackable.
   **Risks:** scope — keep it to comments + assignment, not full LMS.
 
+### D10. Gamification — challenges & leaderboards
+- **Ref:** HC.
+- **Goal:** drills as **challenges** with streaks, plus **leaderboards** — make practice sticky.
+- **Where:** gui2 + a small store (opt-in).
+- **Effort:** `M`. **Acceptance:** join/complete a challenge; an opt-in leaderboard ranks users.
+- **Risks:** privacy/social moderation; keep everything opt-in.
+
+### D11. Cross-device sync
+- **Ref:** consumer apps.
+- **Goal:** sync sessions and the plan across devices (phone ↔ web) once accounts exist.
+- **Where:** builds on D2 (accounts) + a sync store.
+- **Effort:** `M`–`L`. **Acceptance:** a session recorded on the phone shows up on the web.
+- **Risks:** conflict handling; data privacy.
+
 ---
 
 ## 9. Cross-cutting work
 
 - **Data model:** add optional blocks to the report without breaking the schema:
-  `ball2` (shot type), `rallies[]`, `players[]`, `skills{}`, `plan`, `match`. Keep
+  `ball2` (shot type), `rallies[]`, `players[]`, `skills{}`, `plan`, `match`, `biomechanics{}`. Keep
   `domain/report.normalize/validate` tolerant (unknown keys dropped, new keys optional).
 - **Telemetry:** new model passes (shot type, plan, person) must show in Diagnostics — attribute them
   to a **step** (the stage-provider mechanism in `integrations/agents/telemetry/traces.py`) and count
@@ -344,6 +390,8 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | I4 | Monocular depth (MiDaS) | — | L | Low |
 | I5 | OCR scoreboard | — | S | Low |
 | B4 | Overlay compare (blend) | CE/V1 | M | Medium |
+| B5 | Pro / reference comparison | OF/V1 | M | Medium |
+| B6 | Multi-sport generalization | — | L | High |
 | C1 | Ball: shot-type & pace | SV | L | High |
 | C2 | Whole-session segmentation | SV | L | High |
 | C3 | Real-time / live capture | HC/SV/OF | XL | High |
@@ -351,6 +399,8 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | C5 | Higher-fidelity inputs (thorough) | — | M | Medium |
 | C6 | Line calls / scoring / match stats | SV | L | High |
 | C7 | Multi-camera / dual-angle | — | L | Medium |
+| C8 | 3D biomechanics / kinematic sequence | SB | L | High |
+| C9 | Spin estimation (stretch; likely non-goal) | SV | XL | Low |
 | D1 | Mobile app | all | XL | High |
 | D2 | Coach / team | HL | XL | High (B2B) |
 | D3 | Personalized plan + memory | OF | L | High |
@@ -360,16 +410,19 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | D7 | Real-time audio coaching (playback) | HC/OF | M | Medium |
 | D8 | Integrations & ecosystem | HL | M–XL | Medium |
 | D9 | Coach comments + drill assignments | HL/OF | M | Medium |
+| D10 | Gamification — challenges & leaderboards | HC | M | Medium |
+| D11 | Cross-device sync | — | M–L | Medium |
 
-**Build order:** 0.2 → 0.1 → 0.3 → **M3** → M5/M6 → I1 → I2 → B4 → **C1 (shot type)** → **C2** →
-C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9. (0.4–0.8 run alongside.)
+**Build order:** 0.2 → 0.1 → 0.3 → **M3** → M5/M6 → I1 → I2 → B4 → B5 → **C1 (shot type)** → **C2** →
+C8 → C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9/D10/D11. (0.4–0.8 and B6 run alongside.)
 
 **Milestones (remaining)**
 - **M-foundations:** 0.1–0.8. Eval harness, feedback, session library + streaming, i18n, offline,
   privacy, deploy/ops.
 - **M-measure:** M3, M5–M8 + I1–I2. Stroke segmentation, footage check, rally detection, person/segmentation.
-- **M-depth:** C1, C2, C5, C6, C7. Shot type + whole-session segmentation + line calls + thorough mode.
-- **M-platform:** D1–D9. Mobile, coach/team, plans, shares, skills, integrations.
+- **M-review:** B4–B6. Overlay compare, reference comparison, multi-sport.
+- **M-depth:** C1–C9. Shot type, whole-session segmentation, line calls, thorough mode, 3D biomechanics.
+- **M-platform:** D1–D11. Mobile, coach/team, plans, shares, skills, integrations, gamification, sync.
 
 ---
 

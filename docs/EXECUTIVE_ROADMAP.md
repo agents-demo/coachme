@@ -15,9 +15,19 @@ Film a training session and get back what to fix and how to practice — a coach
 - The report is honest — every point points to a moment in the video.
 - It already covers: your movement, your body, the ball, and clear advice.
 
+## At a glance
+
+The work comes in three **stages** (when), and the last stage holds five **theme areas** (what):
+
+| Stage | When | What it is |
+|---|---|---|
+| 1. Demo | weeks | Make it show-ready. |
+| 2. Product | months | Make it usable by strangers. |
+| 3. Growth | later | Add the market features (5 theme areas). |
+
 ---
 
-## Horizon 1 — A final demo we are proud of
+## Stage 1 — Demo (weeks)
 
 Goal: a smooth, reliable demo we can show in about 5 minutes.
 
@@ -30,7 +40,7 @@ Goal: a smooth, reliable demo we can show in about 5 minutes.
 - [ ] Tighten the wording so a non-expert understands it.
 - [ ] Rehearse end to end and time it.
 
-## Horizon 2 — A real product people can use (beta)
+## Stage 2 — Product (months)
 
 Goal: a stranger can sign up, upload a clip, and get value on their own.
 
@@ -46,13 +56,45 @@ Goal: a stranger can sign up, upload a clip, and get value on their own.
 - [ ] Support more languages.
 - [ ] Add a coach or team view.
 
-## Later — grow the product
+## Stage 3 — Growth (later): the market features
 
-- [ ] A mobile app for capture and viewing.
-- [ ] Share a session with a coach.
+What other apps have, and where we would add them. Five theme areas, one line each.
+
+**Theme A — Sharper analysis**
+- [ ] Name the shot (forehand / backhand / serve).
+- [ ] Estimate shot speed.
+- [ ] Show 3D body mechanics — how the body moves in sequence.
+- [ ] Split a long session into rallies automatically.
+- [ ] Give feedback per stroke, not just per session.
+- [ ] Check footage quality and tell users how to film better.
+- [ ] Estimate spin — only if it can be done honestly.
+
+**Theme B — Match features**
+- [ ] Automatic scoring.
+- [ ] In/out line calls (a suggestion you can review).
+- [ ] Match statistics.
+
+**Theme C — Live and mobile**
+- [ ] A phone app.
 - [ ] Live feedback while you play.
-- [ ] Match scoring and line calls.
-- [ ] Weekly training plans from your history.
+- [ ] Spoken cues during playback.
+
+**Theme D — More people**
+- [ ] Coach and team accounts.
+- [ ] Share one session with a coach.
+- [ ] Compare your motion to a pro's.
+- [ ] Track more than one player.
+- [ ] Use two cameras for better angles.
+
+**Theme E — Improve over time**
+- [ ] Skill ratings per area (footwork, preparation, recovery).
+- [ ] A weekly plan built from your history.
+- [ ] Challenges and leaderboards to keep practice fun.
+- [ ] Injury and training-load awareness.
+- [ ] Sync across phone and computer.
+- [ ] Connect to watches and health apps.
+
+*Details, effort sizes and ordering for all of these are in the full plan: [ROADMAP.md](ROADMAP.md).*
 
 ---
 
@@ -65,9 +107,9 @@ Goal: a stranger can sign up, upload a clip, and get value on their own.
 
 ## Rough timing
 
-- **Demo polish:** a few weeks.
-- **Product beta:** a few months.
-- **Growth features:** ongoing.
+- **Stage 1 — Demo:** a few weeks.
+- **Stage 2 — Product:** a few months.
+- **Stage 3 — Growth:** ongoing.
 
 ## The one thing to remember
 
