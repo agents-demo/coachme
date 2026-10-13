@@ -618,3 +618,238 @@ result sub-nav: video( motion|frames ) · analysis( heatmaps|movement|pose|objec
   meaning (pair the ✓/dots with text).
 - **Privacy**: local-first; explicit consent before sending frames to the model; one-tap delete.
 - **Cost**: same frame budgets + a per-run token guard; show token usage in Diagnostics.
+
+## Appendix L — Inlined module behaviour (current code)
+
+### L1. `metrics.text()` — metrics rendered for prompts (exact lines)
+```
+- overall motion: mean energy {mean_energy}, peak {max_energy} at t={peak_motion_time}s, net shift (dx,dy)=({dx}, {dy}) px
+- activity timeline: t={t}s E={energy} shift=({dx},{dy}); ...          # one per step
+- subject box: mean height {box_height_mean} width {box_width_mean} (aspect {aspect_mean}), lateral drift {lateral_range}
+- mechanics: lower-body lateral range {lower_lateral_range}, direction changes (step proxy) {lower_direction_changes}, upper-body lateral range {upper_lateral_range}, crouch change {crouch_box_range}
+- ball (heuristic): {summary} [visible {n} frames, max speed {v}/s, x-range {x}, y-range {y}, {h} hit(s), {b} bounce(s)]
+- pose joints (degrees/normalized): {k=v, ...}
+- pose 3D (degrees, world-landmark): {k=v, ...}
+- footwork (pose estimate): {steps} lateral step(s), {hops} hop(s)/split-step(s), base travel {base_travel}
+- calibrated (body-relative, distance-independent): {k=v, ...}
+- strokes (wrist-speed peaks, pose): {n} candidate(s) at {t}s({hand}), ...
+```
+
+### L2. Image rendering
+- **Contact sheet** (`contact_sheet`): `cols=4`, `cell=384×216`, bg `(18,18,22)`; paste each frame resized
+  into the grid; label `#<i+1> t=<t:.2f>s` in yellow `(255,235,60)` over a black `108×16` box at `(x+4,y+3)`.
+- **Motion map** (`motion_map`): 640×360; sum `|gray[i]-gray[i-1]|`; zero outside the subject mask;
+  divide by peak; overlay on frame 0 → `R += acc·200`, `G,B ·= (1 − 0.6·acc)`.
+- **Position heatmap** (`position_heatmap`): 640×360; grid `(w/4, h/4)`, add **60** per subject centre
+  (clamp 255); `resize` bilinear + `GaussianBlur(w/60)`; normalise by peak; overlay →
+  `R += heat·200`, `G,B ·= (1 − 0.7·heat)`.
+
+### L3. Footage-quality gate (`quality.evaluate`) — exact rules
+```
+score = 100
+height < 480                       → "low resolution"                 −20
+single still image                 → "single still image — only static posture can be judged …"  −15
+else:  fps and fps < 25            → "low frame rate (<fps> fps) — fast footwork may be missed"  −25
+       duration and duration < 3   → "very short clip (a few rallies are better)"  −15
+       len(frames) < 8             → "few frames sampled"  −10
+       not mean_energy             → "little visible movement detected"  −30
+subject_coverage is None (video)   → "could not isolate the player from the background"  −20
+return { score: max(0,score), usable: score >= 40, warnings }
+```
+
+### L4. Game reading (`game_reading.summarize`) — TT translation
+Groups **Play / Player / Ball**. Findings (`{group,label,value,note}`):
+- **Play** — `Rallies` (count) · `Phases` (segment labels) · `Contacts / bounces` (hits/bounces) ·
+  `Activity` (busy ≥8 / moderate ≥3 / quiet).
+- **Player** — `Strokes` (count + L/R) · `Knee bend` (extended ≥150 / moderate ≥120 / deep) ·
+  `Elbow bend` (l/r) · `Stance` (loaded if crouch>0.25 else upright) · `Torso lean` · `Rotation`
+  (shoulder/hip) · `Footwork` ("moving well around the table" if lateral>0.15 else "mostly stationary"
+  + note "side-to-side travel…, ~N changes of direction").
+- **Ball** — `Tracked` (visible frames) · `Pace` (relative, max speed) · `Path extent` (x/y).
+- **Moments** (`moments`): from CV events — segment starts ("active span"), contacts
+  ("direction change"), strokes ("<hand> fast-hand"); sorted, merged within 0.3 s.
+- Returns `{ findings[], moments[], text }` (`text` = `label: value (note)` joined by `; `).
+
+### L5. Annotations schema (`domain/annotations`)
+```
+types = arrow | line | circle | pen | angle ;  default color "#f97316" (≤16 chars)
+coords normalized 0..1 (clamped, 4dp)
+line/arrow/circle: {type,color,x1,y1,x2,y2}
+pen: {type,color,points:[[x,y]…]}   # ≥2 pts, ≤500
+angle: {type,color,points:[[x,y],[x,y],[x,y]]}  # exactly 3
+```
+
+### L6. Drill catalog (`domain/drills.lookup`, keyword → entry)
+`split-step/split step/timing hop` → **Split-step** ("Small hop as the opponent contacts; land as the
+ball leaves their racket." / "Add it to shadow footwork, then to multi-ball.") ·
+`footwork/shuffle/step-and-plant/step then/step into` → **Footwork** ·
+`recovery/re-set/reset` → **Recovery** · `weight transfer/load/crouch/dip-and-drive` → **Load & drive** ·
+`shadow/no ball` → **Shadow swings** · `multi-ball/multiball` → **Multi-ball** · `serve/toss` → **Serve** ·
+`forehand` → **Forehand** · `backhand` → **Backhand**. (Each has `name`, `cue`, `progression`.)
+
+### L7. Compare (`domain/compare.compare(older,newer)`)
+Themes via `progress.classify`: `improved = old − new`, `regressed = new − old`,
+`unchanged = old ∩ new`. `metric_deltas` = per-mechanics-key `new − old`. `energy_delta` =
+`mean_energy` diff. `text` = `"<old> -> <new>; improved: …; regressed: …; still open: …; mean energy ±"`.
+
+### L8. Progress themes (`domain/progress`)
+`THEMES` keywords → `footwork|stroke|preparation|recovery|serve`; `classify(text)` returns the set;
+`summarize` computes theme_trend, repeated_themes (≥2 sessions), focus_status
+(`achieved` / `still open` / `no longer flagged`), and a one-line `text`.
+
+### L9. Exports (`integrations/reporting`)
+- **Markdown**: `# Topspin Review report — <video>` · `- Sport/Date` · summary ·
+  `## Strengths/Drills/Limitations` (bulleted) · `## Issues` (`issue_line`) · `## Focus next session` ·
+  `## Progress`.
+- **HTML**: same sections, self-contained; embeds **data-URI** images for `motion`, `pose`, `frames`;
+  inline `<style>` (system-ui, max-width 860). **PDF** via `reportlab` (A4, wrap at 100 chars) else
+  HTML-to-print.
+
+### L10. Media (`integrations/media`)
+- **Clip**: `ffmpeg -ss -to -c copy` (fast) → fallback `libx264 -preset veryfast -an` (accurate).
+- **Clips** (`make_clips`): up to **3**, centred at `t−1.0 … t+2.0`, named `moment_<i>_<t>s.mp4`.
+- **Reel** (`make_reel`): concat, `scale=1280:720:…decrease,pad=1280:720,setsar=1`, `libx264 -an`.
+- **Export** (`export_clip`): **gif** → optional `crop=ih*9/16`, `fps=12`, `scale=720`, palettegen/use;
+  **mp4** → optional vertical `crop=ih*9/16` + `scale=720:1280`, `setsar=1`.
+
+### L11. Share card (`integrations/cards`, 1200×630 PNG)
+bg = `pose_hero || motion || frames`, brightness ×0.42; `"Topspin Review"` (38) at (60,60);
+`"{sport} · {date}"` (24) at (60,118); `"{n} thing(s) to fix"` (56) at (60,210); focus wrapped (28,
+≤4 lines) from y=320; quality score line (24, accent) at bottom-left.
+
+### L12. UI copy catalog (`outputs.js`) — every item, grouped by tab
+Each item carries: **how** (plain, player), **method** (technical), **detail** (source), **engine**.
+
+| Tab / group | Item | how | method (short) | detail | engine |
+|---|---|---|---|---|---|
+| Video · Your clip | Video | your uploaded clip; moments are in Key moments | — | — | — |
+| Video · Your clip | Frames read | the exact stills the AI looked at; favours busy moments | motion-weighted sampling: 64 probes @160×90, budget split 0.3+e/peak, keep first/last, tiled | `sampling.py + imaging.py · contact_sheet()` | ffmpeg + Pillow |
+| Video · Motion | Movement over time | movement energy moment-to-moment; a peak = burst | 320×180 gray, mean abs diff (in subject region); shift via FFT phase correlation | `metrics.py · activity()` | NumPy |
+| Video · Motion | Active spans | stretches of consistent activity, calm gaps between | energy ≥ max(median·1.3, median+0.5); spans ≥0.4s; summarized by reversals | `ball.py · phase_segments()` | — |
+| Analysis · Movement | Side-to-side movement | how far hips/legs travelled left–right | lower third of subject box tracked; spread of centre = lateral range; reversals counted | `metrics.py · body_regions()` | NumPy |
+| Analysis · Movement | Movement map | heat map of where the picture changed (red=action) | summed grayscale diffs 640×360, subject-restricted, normalised, red overlay | `metrics.py · motion_map()` | Pillow |
+| Analysis · Movement | Position map | where the subject spent most time | 2D histogram of subject centre, blurred, red overlay | `metrics.py · position_heatmap()` | Pillow |
+| Analysis · Pose | Skeleton | your body as a stick figure at a key moment | PoseLandmarker (lite) 33 landmarks/frame; connections drawn; hero=peak motion | `pose.py · overlay()` | mediapipe |
+| Analysis · Pose | Body angles | knee/elbow angles through the clip | angles from 3 points (knee=hip-knee-ankle, elbow=shoulder-elbow-wrist) + stance/crouch | `pose.py · estimate()` | mediapipe |
+| Analysis · Pose | Body 3D | spin-around 3D model; depth is a best guess | world landmarks (3D metres) → 3D angles + torso lean + shoulder/hip twist | `pose.py · estimate()` | mediapipe |
+| Analysis · Pose | Fast-hand events | moments a hand moved fastest (+ which hand) | wrists (landmarks 15/16), faster wrist, local maxima >0.35×peak, merge <0.4s | `strokes.py · segment()` | mediapipe |
+| Analysis · Tracked object | Object path | route the tracked object took (rough) | YOLO ONNX (letterbox 640, NMS) or blob detect; constant-velocity tracker (jump 0.16, 2 misses, ≥3 pts) | `ballmodel.py detect()` / `ball.py candidates()` | onnxruntime / NumPy |
+| Analysis · Tracked object | Object trajectory | route in 3D; shape useful, distances not | depth z = √(median_area/area) + screen (x,y) → rotatable 3D path | `ball.py · trajectory3d()` | — |
+
+Item keys map to `report.artifacts` (image items), `report.metrics` (charts/3D), `report.clips`, and
+`tt_reading` (Observations findings).
+
+### L13. `format.js` helpers
+- `movementSeries(report)` → `metrics.activity` as `{t, energy}`.
+- `fmtTime(s)` → `"m:ss.s"` or `"s.sss"`; `moments(report)`/`issueGroups(report)` flatten issues×times.
+- `POSE_SERIES` = `[{l_knee,"Left knee",#4f46e5},{r_knee,"Right knee",#818cf8},{l_elbow,"Left elbow",#34d399},{r_elbow,"Right elbow",#fbbf24}]`.
+- `CONF_TONE` high→`text-bad`, medium→`text-warn`, low→`text-muted`; `CONF_HELP` text.
+- `STEP_NAME`, `STEP_GROUP`, `GROUP_ORDER` (`Setup · Measure · Vision (observe) · Report (coach) · Finalize`),
+  `MODEL_STEP`, `STEP_SHORT` — the step naming used by the live feed and Diagnostics (verbatim in source).
+- `captionFor(report)` share text; `scoreTone` (≥80 good, ≥60 warn, else bad).
+
+### L14. Diagnostics (`Technical.svelte`)
+Two cards — **Model calls** (n, vision/text split) and **Tokens billed** (total, vision/text, cached) —
+then tabs **Stages | Calls & tools**.
+- **Stages**: the `timeline` grouped by `STEP_GROUP`, durations as bars, total seconds; a `vision`/`text`
+  tag on model steps (`MODEL_STEP`), hover = `STEP_SHORT`.
+- **Calls & tools**: model calls + tool calls merged by `seq`, grouped by `stage`; each model call
+  expands to **Input** (messages) · **Images sent** (via `/callmedia/<stem>/<name>`) · **Output**
+  (text) or **requested tool** (`name` + arguments); **probe** calls show the image-support self-check
+  ("What color is this image?" → `output`). Tool events show arguments + result/error.
+- Report fields: `usage {vision{calls,total_tokens,cached_tokens,…}, text{…}, total_tokens, models{text,vision,provider,api_base}}`, `calls[]` (with `seq, stage, model, prompt/completion/cached tokens, seconds, input, output, images[], requested[], probe`), `tools[]` (`name, arguments, result, error, seconds, seq, stage`), `timeline[]` (`stage, seconds`).
+
+## Appendix M — Reference pin + example report JSON
+
+**Target the desktop app at commit `5e9b89c517c93553acfb0fb1544304e7a25f3c15`** (this plan was written
+against it). Diff the ported code against that rev.
+
+**Example report** (`<stem>_report.json`, real shape):
+```json
+{
+  "date": "2026-10-08", "sport": "table tennis",
+  "summary": "…", "focus": "…", "progress": "…",
+  "strengths": ["…"],
+  "issues": [{"issue":"Footwork is near-static … t=2.9, 3.0, 4.5, 4.7 …",
+              "evidence_times":[2.9,3.0,4.5,4.7],"confidence":"medium"}],
+  "drills": ["…"], "limitations": ["…"],
+  "observations": "…", "windows": [{"start":1.0,"end":4.0}], "signals": ["…"],
+  "source": "runtime/data/sample.mp4", "frames": 14, "frame_times": [0,0.75,…], "region_box": null,
+  "metrics": { "activity":[…], "track":[…], "posture":{…}, "mechanics":{…}, "footwork_series":[…],
+               "pose":[…], "pose_summary":{…}, "pose3d_summary":{…}, "calibration":{…}, "calibrated":{…},
+               "ball":{"segments":[…],"path":[…],"stats":{…},"trajectory3d":[…]}, "strokes":[…],
+               "mean_energy":…, "max_energy":…, "peak_motion_time":…, "net_shift":[…], "footwork":{…} },
+  "artifacts": {"frames":"…","motion":"…","heatmap":"…","pose":"…","pose_hero":"…","ball":"…",
+                "metrics":"…","observability":"…"},
+  "usage": {"vision":{"calls":4,"total_tokens":34766,"cached_tokens":0,"prompt_tokens":31679,"completion_tokens":3087,"seconds":18.21,"vision_calls":[…]},
+            "text":{"calls":4,"total_tokens":45234,…}, "calls":8, "total_tokens":80000,
+            "models":{"text":"deepseek-v4-pro","vision":"deepseek-v4-flash-vision-exp","provider":"OpenAI","api_base":"https://api.deepseek.com"}}
+}
+```
+(On read the server adds: `stem`, `calls[]` with `probe` flags, `tools[]`, `timeline[]`, `score`,
+`has_source`, `drill_details[]`, `tt_reading`.)
+
+## Appendix N — Project setup
+
+- **Gradle (Kotlin DSL)** modules: `:app` (Compose UI + DI) and `:core` (pipeline/llm/media) so the
+  heavy logic is testable without Android UI.
+- **Key dependencies** (verify latest at build time): Compose BOM, Material3, `androidx.navigation`,
+  `androidx.work`, `androidx.media3` (exoplayer + transformer), Hilt (+dagger), OkHttp + kotlinx.serialization,
+  **OpenCV Android**, **com.google.mediapipe:tasks-vision**, **onnxruntime-android** (or
+  TFLite + `ultralytics` export).
+- **SDK**: `minSdk 26`, `targetSdk` latest, `compileSdk` latest. **ABIs**: `arm64-v8a` + `armeabi-v7a`
+  (add `x86_64` for emulators). Bundle pose + ball models in `assets/`.
+- **R8/ProGuard**: keep rules for MediaPipe Tasks, ONNX Runtime, OpenCV (JNI); keep serialized models.
+- **Size budget**: ≤ ~80 MB APK (models ~34 MB of it); use App Bundle + per-ABI splits.
+
+## Appendix O — App internals
+
+- **Pattern**: unidirectional — `StateFlow<UiState>` from a `ViewModel`; UI is stateless Compose.
+- **DI**: Hilt modules for `LlmClient`, `SettingsStore`, `ReportStore`, `Pipeline`.
+- **Long job**: the analysis runs in a **WorkManager** `CoroutineWorker` (survives backgrounding/process
+  death); progress via `setProgress()` → `WorkInfo` `Flow` → the live stage feed. Cancel = `cancelWork()`.
+- **Threading**: decode/CV on a dispatcher-backed worker; the two model calls are suspend; artifacts on IO.
+- **Streaming**: none required — stage events (ticks) plus a spinner; token streaming optional later.
+
+## Appendix P — Legal / licensing + privacy
+
+- **Bundled third-party**: MediaPipe Tasks (Apache-2.0), ONNX Runtime (MIT), OpenCV (Apache-2.0),
+  the ball model `pingpongball-yolo` (**MIT**), fonts (Inter = OFL, Space Grotesk = OFL). Ship a
+  **NOTICE/attributions** screen + file.
+- **Privacy**: video is processed **on-device**; only **sampled frames + metrics** are sent to the
+  configured model provider. Consent dialog before the first upload; one-tap delete; no analytics.
+  A short **privacy policy** text must accompany any store listing.
+
+## Appendix Q — Localization
+
+- All UI strings in `strings.xml` (EN default; add values-zh). Report language follows the UI language
+  where the model supports it. **Note:** the current prompts are English-only (no Chinese text exists
+  in the code) — translating prompts is future work, not parity.
+
+## Appendix R — Distribution / ops
+
+- **Crash reporting**: optional (e.g. Play Console vitals) — keep privacy-respecting.
+- **Play**: internal → closed → open test tracks; **App Bundle**; versionCode/versionName from Gradle.
+- **CI**: a GitHub Actions job that builds the debug APK, runs unit tests, and (optionally) an
+  instrumented smoke test on an emulator.
+
+## Appendix S — Glossary, definition of done, cost, extras
+
+- **Glossary**: *Session/Report* = one analyzed clip (`<stem>_report.json`); *Metrics* = measured
+  numbers; *Issue* = a finding with `evidence_times` + `confidence`; *Artifacts* = contact sheet, maps,
+  pose, ball, metrics/observability JSON; *Usage* = tokens/latency per model call.
+- **Definition of done (per phase)**:
+  - *P0* — app runs; Settings saves; a "Test connection" call succeeds.
+  - *P1* — pick video → report with Observations+Coaching renders; stored; list shows it.
+  - *P2* — Analysis (Heat maps, Movement, Frames) + provenance render.
+  - *P3* — Pose items render (skeleton/angles/3D/fast-hand).
+  - *P4* — Ball items render (path/3D trajectory/active spans).
+  - *P5* — telestration, trim/GIF/vertical, reel, card, Compare work.
+  - *P6* — every §11 row green; Ask+voice, Diagnostics, readiness, theme.
+- **Cost estimate**: per the sample usage → ~**80k tokens / run** (≈35k vision + 45k text). At current
+  DeepSeek pricing that's a few cents per session; show it in Diagnostics; keep the token guard.
+- **Share-into-app / share-out**: register an `ACTION_SEND`/`ACTION_VIEW` intent filter (video/photo →
+  New analysis); share results via `ACTION_SEND` (reel mp4 / card png / report html).
+- **Retention/cleanup**: cap stored reports (e.g. last N) and prune artifacts/cache; expose in Settings.
+- **Import existing desktop reports**: offer a one-time import of `<stem>_report.json` + artifacts
+  (matching schema) so old sessions appear in the app.
