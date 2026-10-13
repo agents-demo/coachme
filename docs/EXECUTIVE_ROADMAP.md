@@ -1,6 +1,6 @@
 # Simple Roadmap — from demo to real product
 
-*A plain-English plan for management. One line per task. No jargon.*
+*A plain-English plan for management. One line per item. No jargon.*
 
 ---
 
@@ -10,103 +10,122 @@ Film a training session and get back what to fix and how to practice — a coach
 
 ## The core idea — it is multimodal
 
-This is the heart of the product and how we beat the competition:
-
 - It **watches** your video — a vision model reads the frames.
 - It **reads** the numbers (movement, body, ball) it measured itself.
 - It **writes** the coaching in plain words — and can **speak** it.
-- It ties **pictures + numbers + words** together, and every point points to a moment.
+- It ties **pictures + numbers + words** together; every point points to a moment.
 
-Most tools do one sense — pure computer vision, or pure text. This one does all of them at once,
-which is why the advice reads like a coach, not a chart.
+Most tools do **one sense** — pure computer vision, or pure text. This one does **all of them at
+once**, which is why the advice reads like a coach, not a chart.
 
 ## Where we are today
 
 - A working demo exists: video goes in, a coaching report comes out.
 - It runs on a normal computer; the video never leaves the machine.
 - The report is honest — every point points to a moment in the video.
-- It already covers: your movement, your body, the ball, and clear advice.
-
-## At a glance
-
-The work comes in three **stages** (when), and the last stage holds five **theme areas** (what):
-
-| Stage | When | What it is |
-|---|---|---|
-| 1. Demo | weeks | Make it show-ready. |
-| 2. Product | months | Make it usable by strangers. |
-| 3. Growth | later | Add the market features (5 theme areas). |
 
 ---
 
-## Stage 1 — Demo (weeks)
+## The work, by workstream
 
-Goal: a smooth, reliable demo we can show in about 5 minutes.
+Seven workstreams: two build stages (**Demo**, **Product**) and five market areas. A **✓** in the
+last column of each table marks an item that adds or strengthens a *sense* (watch / listen / speak /
+write).
 
-- [ ] Choose one demo clip and one clear "before vs after" story.
-- [ ] Make every screen clean — no broken or confusing parts.
-- [ ] Prepare sample footage that always works.
-- [ ] Add a short guided tour so the story is obvious in two minutes.
-- [ ] Make runs reliable — no crashes in the middle of a demo.
-- [ ] Add a fallback: show a saved result if the live run fails.
-- [ ] Tighten the wording so a non-expert understands it.
-- [ ] Rehearse end to end and time it.
+**Groups at a glance**
 
-## Stage 2 — Product (months)
+| # | Workstream | In one line | Type | Items |
+|---|-----------|-------------|------|:---:|
+| 1 | Demo | Make it show-ready. | Build stage | 8 |
+| 2 | Product | Make it usable by strangers. | Build stage | 13 |
+| 3 | Sharper analysis | Read the play more deeply. | Market area | 8 |
+| 4 | Match play | Score and call a real game. | Market area | 3 |
+| 5 | Live & mobile | Use it on a phone, in the moment. | Market area | 3 |
+| 6 | Coaches & teams | Work with a coach or a team. | Market area | 5 |
+| 7 | Improve over time | Track progress and plan. | Market area | 6 |
 
-Goal: a stranger can sign up, upload a clip, and get value on their own.
+### Workstream 1 — Demo  *(stage: show-ready)*
 
-- [ ] Add accounts and log-in, so people keep their own sessions.
-- [ ] Make uploading from a phone easy.
-- [ ] Run it on a server, so people do not install anything.
-- [ ] Show progress over time — "am I getting better?".
-- [ ] Guide users to film well, so results are good.
-- [ ] Keep data private and give a one-click "delete everything".
-- [ ] Collect feedback on each session (like / dislike).
-- [ ] Track and limit the cost of each analysis.
-- [ ] Add a few more sports (tennis, badminton, squash, padel).
-- [ ] Support more languages.
-- [ ] Add a coach or team view.
+| # | Item | Multimodal |
+|---|------|:---:|
+| 1 | One demo clip + a clear "before/after" story | |
+| 2 | Make every screen clean | |
+| 3 | Sample footage that always works | |
+| 4 | A short guided tour | |
+| 5 | Reliable runs (no mid-demo crashes) | |
+| 6 | Saved-result fallback | |
+| 7 | Plain, simple wording | |
+| 8 | Rehearse end to end | |
 
-## Stage 3 — Growth (later): the market features
+### Workstream 2 — Product  *(stage: beta)*
 
-What other apps have, and where we would add them. Five theme areas, one line each.
+| # | Item | Multimodal |
+|---|------|:---:|
+| 9 | Accounts + log-in | |
+| 10 | Easy phone upload | |
+| 11 | Hosted — nothing to install | |
+| 12 | Progress over time | |
+| 13 | Guide users to film well | |
+| 14 | Private + one-click delete | |
+| 15 | Session feedback (like / dislike) | |
+| 16 | Track and limit cost per session | |
+| 17 | More sports | |
+| 18 | More languages | |
+| 19 | Coach / team view | |
+| 20 | **Ask by voice — hear the answer** | ✓ |
+| 21 | **Keep it multimodal: photo + video in, text + speech out** | ✓ |
 
-**Theme A — Sharper analysis**
-- [ ] Name the shot (forehand / backhand / serve).
-- [ ] Estimate shot speed.
-- [ ] Show 3D body mechanics — how the body moves in sequence.
-- [ ] Split a long session into rallies automatically.
-- [ ] Give feedback per stroke, not just per session.
-- [ ] Check footage quality and tell users how to film better.
-- [ ] Estimate spin — only if it can be done honestly.
+### Workstream 3 — Sharper analysis  *(market area)*
 
-**Theme B — Match features**
-- [ ] Automatic scoring.
-- [ ] In/out line calls (a suggestion you can review).
-- [ ] Match statistics.
+| # | Item | Multimodal |
+|---|------|:---:|
+| 22 | Name the shot (forehand / backhand / serve) | |
+| 23 | Estimate shot speed | |
+| 24 | 3D body mechanics (how the body moves in sequence) | |
+| 25 | Split a session into rallies automatically | |
+| 26 | Feedback per stroke, not just per session | |
+| 27 | Footage-quality check + how to film better | |
+| 28 | Spin — only if it can be done honestly | |
+| 29 | **Understand audio too — voice notes, racket sound** | ✓ |
 
-**Theme C — Live and mobile**
-- [ ] A phone app.
-- [ ] Live feedback while you play.
-- [ ] Spoken cues during playback.
+### Workstream 4 — Match play  *(market area)*
 
-**Theme D — More people**
-- [ ] Coach and team accounts.
-- [ ] Share one session with a coach.
-- [ ] Compare your motion to a pro's.
-- [ ] Track more than one player.
-- [ ] Use two cameras for better angles.
+| # | Item | Multimodal |
+|---|------|:---:|
+| 30 | Automatic scoring | |
+| 31 | In/out line calls (reviewable) | |
+| 32 | Match statistics | |
 
-**Theme E — Improve over time**
-- [ ] Skill ratings per area (footwork, preparation, recovery).
-- [ ] A weekly plan built from your history.
-- [ ] Challenges and leaderboards to keep practice fun.
-- [ ] Injury and training-load awareness.
-- [ ] Sync across phone and computer.
-- [ ] Connect to watches and health apps.
+### Workstream 5 — Live & mobile  *(market area)*
 
-*Details, effort sizes and ordering for all of these are in the full plan: [ROADMAP.md](ROADMAP.md).*
+| # | Item | Multimodal |
+|---|------|:---:|
+| 33 | Phone app | |
+| 34 | Live feedback while playing | |
+| 35 | **Spoken cues during playback** | ✓ |
+
+### Workstream 6 — Coaches & teams  *(market area)*
+
+| # | Item | Multimodal |
+|---|------|:---:|
+| 36 | Coach / team accounts | |
+| 37 | Share one session with a coach | |
+| 38 | Compare your motion to a pro's | |
+| 39 | Track more than one player | |
+| 40 | Use two cameras | |
+
+### Workstream 7 — Improve over time  *(market area)*
+
+| # | Item | Multimodal |
+|---|------|:---:|
+| 41 | Skill ratings per area | |
+| 42 | A weekly plan from your history | |
+| 43 | Challenges + leaderboards | |
+| 44 | Injury / training-load awareness | |
+| 45 | Sync across phone and computer | |
+| 46 | Connect to watches and health apps | |
+
+*Details, effort sizes and ordering are in the full plan: [ROADMAP.md](ROADMAP.md).*
 
 ---
 
@@ -119,11 +138,11 @@ What other apps have, and where we would add them. Five theme areas, one line ea
 
 ## Rough timing
 
-- **Stage 1 — Demo:** a few weeks.
-- **Stage 2 — Product:** a few months.
-- **Stage 3 — Growth:** ongoing.
+- **Workstream 1 — Demo:** a few weeks.
+- **Workstream 2 — Product:** a few months.
+- **Workstreams 3–7 — market areas:** ongoing.
 
 ## The one thing to remember
 
-The pipeline works and is honest. The remaining work is mostly **polish, packaging, and scale** —
-not new science.
+The pipeline works and is honest. Our edge is that it is **multimodal** — it watches, reads its own
+numbers, writes, and speaks — and the remaining work is mostly **polish, packaging, and scale**.

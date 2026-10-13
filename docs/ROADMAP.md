@@ -270,6 +270,16 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Effort:** `XL`. **Acceptance:** only if reliable; otherwise keep it as a clearly-stated limitation.
 - **Risks:** single-camera spin is unreliable — do **not** ship a guess; the app stays honest.
 
+### C10. Audio understanding (a new sense)
+- **Ref:** — *(multimodal core).*
+- **Goal:** add **audio** to the multimodal core — e.g. a coach's spoken notes, or racket/impact
+  sounds as extra evidence. The pipeline already *watches + reads numbers + writes + speaks*; this
+  adds *listening*.
+- **Where:** `integrations/` (audio → text via a speech model) + `core/stages/observe/` (feed the
+  transcript into the reasoning); report gains an `audio{}` block.
+- **Effort:** `M`. **Acceptance:** a clip with spoken notes produces findings that cite them.
+- **Risks:** transcription quality; keep it opt-in and privacy-safe.
+
 ---
 
 ## 8. Phase D — Product, platform & growth
@@ -362,13 +372,21 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Effort:** `M`–`L`. **Acceptance:** a session recorded on the phone shows up on the web.
 - **Risks:** conflict handling; data privacy.
 
+### D12. Voice interaction (ask by voice, hear the answer)
+- **Ref:** — *(multimodal core).*
+- **Goal:** talk to the coach — speak a question, hear the answer (builds on the Ask box + read-aloud).
+- **Where:** gui2 / D1 (speech-to-text + text-to-speech) over the existing `/ask` route.
+- **Effort:** `M`. **Acceptance:** a spoken question returns a spoken, evidence-grounded answer.
+- **Risks:** latency; keep text fallback.
+
 ---
 
 ## 9. Cross-cutting work
 
 - **Data model:** add optional blocks to the report without breaking the schema:
   `ball2` (shot type), `rallies[]`, `players[]`, `skills{}`, `plan`, `match`, `biomechanics{}`. Keep
-  `domain/report.normalize/validate` tolerant (unknown keys dropped, new keys optional).
+  `domain/report.normalize/validate` tolerant (unknown keys dropped, new keys optional). Multimodal
+  additions (`audio{}` transcript) follow the same rule.
 - **Telemetry:** new model passes (shot type, plan, person) must show in Diagnostics — attribute them
   to a **step** (the stage-provider mechanism in `integrations/agents/telemetry/traces.py`) and count
   tokens.
@@ -383,52 +401,57 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 
 ## 10. Prioritization (recommended sequence)
 
-| # | Feature | Ref | Effort | Impact |
-|---|---|---|---|---|
-| 0.1–0.8 | Foundations: eval, calibration, feedback, UX, i18n, offline, privacy, ops | — | M–L | High |
-| M3 | Stroke / repetition segmentation | — | M | High |
-| M5 | Extended footage check | — | S | Medium |
-| M6 | Scene / rally detection | — | M | Medium |
-| M7 | Handedness auto-detect | — | S | Low |
-| M8 | Thorough sampling mode | — | S | Low |
-| I1 | Person detection | SV | M | Medium |
-| I2 | Subject segmentation model | — | M | Medium |
-| I4 | Monocular depth (MiDaS) | — | L | Low |
-| I5 | OCR scoreboard | — | S | Low |
-| B4 | Overlay compare (blend) | CE/V1 | M | Medium |
-| B5 | Pro / reference comparison | OF/V1 | M | Medium |
-| B6 | Multi-sport generalization | — | L | High |
-| C1 | Ball: shot-type & pace | SV | L | High |
-| C2 | Whole-session segmentation | SV | L | High |
-| C3 | Real-time / live capture | HC/SV/OF | XL | High |
-| C4 | Multi-player attribution | HL/SV | L | Medium |
-| C5 | Higher-fidelity inputs (thorough) | — | M | Medium |
-| C6 | Line calls / scoring / match stats | SV | L | High |
-| C7 | Multi-camera / dual-angle | — | L | Medium |
-| C8 | 3D biomechanics / kinematic sequence | SB | L | High |
-| C9 | Spin estimation (stretch; likely non-goal) | SV | XL | Low |
-| D1 | Mobile app | all | XL | High |
-| D2 | Coach / team | HL | XL | High (B2B) |
-| D3 | Personalized plan + memory | OF | L | High |
-| D4 | Share links & socials | OF/HL | M | Medium |
-| D5 | Assessments / skill ratings | SB/HC | M | Medium |
-| D6 | Injury-risk / load | — | L | Medium |
-| D7 | Real-time audio coaching (playback) | HC/OF | M | Medium |
-| D8 | Integrations & ecosystem | HL | M–XL | Medium |
-| D9 | Coach comments + drill assignments | HL/OF | M | Medium |
-| D10 | Gamification — challenges & leaderboards | HC | M | Medium |
-| D11 | Cross-device sync | — | M–L | Medium |
+| # | Feature | Ref | Effort | Impact | Multimodal |
+|---|---|---|---|---|---|
+| 0.1–0.8 | Foundations: eval, calibration, feedback, UX, i18n, offline, privacy, ops | — | M–L | High | |
+| M3 | Stroke / repetition segmentation | — | M | High | |
+| M5 | Extended footage check | — | S | Medium | |
+| M6 | Scene / rally detection | — | M | Medium | |
+| M7 | Handedness auto-detect | — | S | Low | |
+| M8 | Thorough sampling mode | — | S | Low | |
+| I1 | Person detection | SV | M | Medium | |
+| I2 | Subject segmentation model | — | M | Medium | |
+| I4 | Monocular depth (MiDaS) | — | L | Low | |
+| I5 | OCR scoreboard | — | S | Low | |
+| B4 | Overlay compare (blend) | CE/V1 | M | Medium | |
+| B5 | Pro / reference comparison | OF/V1 | M | Medium | |
+| B6 | Multi-sport generalization | — | L | High | |
+| C1 | Ball: shot-type & pace | SV | L | High | |
+| C2 | Whole-session segmentation | SV | L | High | |
+| C3 | Real-time / live capture | HC/SV/OF | XL | High | |
+| C4 | Multi-player attribution | HL/SV | L | Medium | |
+| C5 | Higher-fidelity inputs (thorough) | — | M | Medium | |
+| C6 | Line calls / scoring / match stats | SV | L | High | |
+| C7 | Multi-camera / dual-angle | — | L | Medium | |
+| C8 | 3D biomechanics / kinematic sequence | SB | L | High | |
+| C9 | Spin estimation (stretch; likely non-goal) | SV | XL | Low | |
+| C10 | Audio understanding (a new sense — listen) | — | M | High | ✓ |
+| D1 | Mobile app | all | XL | High | |
+| D2 | Coach / team | HL | XL | High (B2B) | |
+| D3 | Personalized plan + memory | OF | L | High | |
+| D4 | Share links & socials | OF/HL | M | Medium | |
+| D5 | Assessments / skill ratings | SB/HC | M | Medium | |
+| D6 | Injury-risk / load | — | L | Medium | |
+| D7 | Real-time audio coaching (playback — speak) | HC/OF | M | Medium | ✓ |
+| D8 | Integrations & ecosystem | HL | M–XL | Medium | |
+| D9 | Coach comments + drill assignments | HL/OF | M | Medium | |
+| D10 | Gamification — challenges & leaderboards | HC | M | Medium | |
+| D11 | Cross-device sync | — | M–L | Medium | |
+| D12 | Voice interaction (ask by voice — speak + listen) | — | M | Medium | ✓ |
+
+**Multimodal** marks work that extends the core senses: **watch** (vision), **read** its own numbers,
+**write**, **listen** (C10), **speak** (D7, D12). The foundation of every item is the multimodal core.
 
 **Build order:** 0.2 → 0.1 → 0.3 → **M3** → M5/M6 → I1 → I2 → B4 → B5 → **C1 (shot type)** → **C2** →
-C8 → C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9/D10/D11. (0.4–0.8 and B6 run alongside.)
+C8 → C10 → C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9/D10/D11/D12. (0.4–0.8 and B6 run alongside.)
 
 **Milestones (remaining)**
 - **M-foundations:** 0.1–0.8. Eval harness, feedback, session library + streaming, i18n, offline,
   privacy, deploy/ops.
 - **M-measure:** M3, M5–M8 + I1–I2. Stroke segmentation, footage check, rally detection, person/segmentation.
 - **M-review:** B4–B6. Overlay compare, reference comparison, multi-sport.
-- **M-depth:** C1–C9. Shot type, whole-session segmentation, line calls, thorough mode, 3D biomechanics.
-- **M-platform:** D1–D11. Mobile, coach/team, plans, shares, skills, integrations, gamification, sync.
+- **M-depth:** C1–C10. Shot type, whole-session segmentation, line calls, thorough mode, 3D biomechanics, audio sense.
+- **M-platform:** D1–D12. Mobile, coach/team, plans, shares, skills, integrations, gamification, sync, voice.
 
 ---
 
