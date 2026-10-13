@@ -1,6 +1,7 @@
 package com.topspinreview.android.data
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 
 /** A finding with the timestamps that support it and a confidence. */
@@ -33,4 +34,5 @@ data class Report(
     val clips: Map<String, String> = emptyMap(),
     val usage: JsonObject = JsonObject(emptyMap()),
     val tt_reading: JsonObject? = null,
+    val annotations: JsonArray = JsonArray(emptyList()),
 )

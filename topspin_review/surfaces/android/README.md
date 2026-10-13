@@ -12,10 +12,10 @@ See the full plan: [`docs/ANDROID_PLAN.md`](../../docs/ANDROID_PLAN.md) (appendi
 full **measure** stage (activity + subject/mechanics + `footwork_series` + motion/position maps),
 **pose** (MediaPipe PoseLandmarker: skeleton, angles, 3D, fast-hand, footwork), **ball** (ONNX YOLO +
 tracker: path, stats, segments, 3D trajectory), the observe + coach passes, and a Compose shell
-(Sessions / New / Result with Analysis showing maps + charts + pose + tracked object, Observations,
-Coaching + Ask (+ voice read-aloud & mic), Diagnostics). Not yet compiled; **P5/P6** (player +
-telestration, trim/GIF/reel/card, compare, key-moment clips, full Diagnostics, readiness,
-localization) remain.
+(Sessions / New / Result with Video = player + freehand telestration + trim→mp4 share; Analysis =
+maps + charts + pose + tracked object; Observations; Coaching + Ask with voice). Not yet compiled;
+**P5/P6** remaining: frame-step/slow-mo, GIF/vertical/reel/share-card, compare, key-moment clips,
+full Diagnostics, readiness, localization.
 
 ## Models (required)
 

@@ -64,6 +64,12 @@ class ResultViewModel @Inject constructor(
 
     fun load(stem: String) { _report.value = store.load(stem) }
 
+    fun saveAnnotations(annotations: kotlinx.serialization.json.JsonArray) {
+        val r = _report.value ?: return
+        store.saveAnnotations(r.stem, annotations)
+        _report.value = r.copy(annotations = annotations)
+    }
+
     fun ask(question: String) = viewModelScope.launch {
         val r = _report.value ?: return@launch
         val context = buildJsonObject {
@@ -111,7 +117,7 @@ fun ResultScreen(stem: String, onBack: () -> Unit, vm: ResultViewModel = hiltVie
                 TABS.forEachIndexed { i, t -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) }) }
             }
             when (tab) {
-                0 -> Placeholder("Video: player, frame-step, slow-mo, draw/angle tool, trim & export (P5)")
+                0 -> VideoTab(r, vm::saveAnnotations)
                 1 -> Analysis(r)
                 2 -> Observations(r)
                 3 -> Coaching(r, answers, onAsk = vm::ask)

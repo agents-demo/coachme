@@ -23,6 +23,12 @@ class ReportStore(private val context: Context) {
 
     fun save(stem: String, report: Report) = file(stem).writeText(json.encodeToString(Report.serializer(), report))
 
+    /** Persist a session's shape annotations (drawn on the video). */
+    fun saveAnnotations(stem: String, annotations: kotlinx.serialization.json.JsonArray) {
+        val current = load(stem) ?: return
+        file(stem).writeText(json.encodeToString(Report.serializer(), current.copy(annotations = annotations)))
+    }
+
     /** Save a raw JSON string (as returned by the model) under a stem. */
     fun saveRaw(stem: String, rawJson: String) = file(stem).writeText(rawJson)
 
