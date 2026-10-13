@@ -97,7 +97,22 @@ class DeepSeekClient(
         return post(cfg, body)
     }
 
-    private suspend fun post(cfg: AppSettings, body: JsonObject): ChatResponse = withContext(Dispatchers.IO) {
+    private suspend fun post(cfg: AppSettings, body: JsonObject): ChatResponse {
+        var last: Exception? = null
+        for (attempt in 0 until 3) {
+            try {
+                return doPost(cfg, body)
+            } catch (e: java.net.UnknownHostException) {
+                last = e; kotlinx.coroutines.delay(700L * (attempt + 1))
+            } catch (e: java.io.IOException) {
+                last = e; kotlinx.coroutines.delay(700L * (attempt + 1))
+            }
+        }
+        val host = cfg.apiBase.trimEnd('/')
+        throw IllegalStateException("Network error reaching $host — check the phone's internet / Private DNS.", last)
+    }
+
+    private suspend fun doPost(cfg: AppSettings, body: JsonObject): ChatResponse = withContext(Dispatchers.IO) {
         val started = System.nanoTime()
         val req = Request.Builder()
             .url(cfg.apiBase.trimEnd('/') + "/chat/completions")

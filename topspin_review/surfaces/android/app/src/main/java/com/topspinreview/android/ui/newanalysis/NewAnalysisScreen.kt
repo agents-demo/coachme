@@ -71,8 +71,10 @@ class NewAnalysisViewModel @Inject constructor(
             _state.value = State(running = true, stage = "Preparing")
             try {
                 val file = copyToCache(uri)
-                val report = pipeline.analyze(file.absolutePath, regionBox) { stage ->
-                    _state.value = _state.value.copy(stage = stage)
+                val report = withContext(Dispatchers.Default) {
+                    pipeline.analyze(file.absolutePath, regionBox) { stage ->
+                        _state.value = _state.value.copy(stage = stage)
+                    }
                 }
                 _state.value = State(stem = report.stem.ifBlank { file.nameWithoutExtension })
             } catch (e: CancellationException) {
@@ -97,8 +99,10 @@ class NewAnalysisViewModel @Inject constructor(
                     context.assets.open("sample.mp4").use { input -> out.outputStream().use { input.copyTo(it) } }
                     out
                 }
-                val report = pipeline.analyze(file.absolutePath, regionBox) { stage ->
-                    _state.value = _state.value.copy(stage = stage)
+                val report = withContext(Dispatchers.Default) {
+                    pipeline.analyze(file.absolutePath, regionBox) { stage ->
+                        _state.value = _state.value.copy(stage = stage)
+                    }
                 }
                 _state.value = State(stem = report.stem.ifBlank { file.nameWithoutExtension })
             } catch (e: CancellationException) {
