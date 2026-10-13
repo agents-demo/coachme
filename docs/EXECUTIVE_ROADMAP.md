@@ -18,6 +18,21 @@ Film a training session and get back what to fix and how to practice — a coach
 Most tools do **one sense** — pure computer vision, or pure text. This one does **all of them at
 once**, which is why the advice reads like a coach, not a chart.
 
+## The base — the multimodal core (already built)
+
+Everything sits on these four senses. They are **done today**, which is why they are the floor every
+item stands on — and what competitors don't have.
+
+| Sense | What it does | Status |
+|-------|--------------|:------:|
+| **Watch** | A vision model reads the video frames | Done |
+| **Read** | It uses the numbers (movement, body, ball) it measured itself | Done |
+| **Write** | It writes the coaching in plain words | Done |
+| **Speak** | It reads the report aloud | Done |
+
+The **Senses** column in the item tables below shows **which senses each item uses or adds** — so
+multimodality is visible on every relevant row.
+
 ## Where we are today
 
 - A working demo exists: video goes in, a coaching report comes out.
@@ -28,9 +43,7 @@ once**, which is why the advice reads like a coach, not a chart.
 
 ## The work, by workstream
 
-Seven workstreams: two build stages (**Demo**, **Product**) and five market areas. A **✓** in the
-last column of each table marks an item that adds or strengthens a *sense* (watch / listen / speak /
-write).
+Seven workstreams: two build stages (**Demo**, **Product**) and five market areas.
 
 **Groups at a glance**
 
@@ -44,86 +57,89 @@ write).
 | 6 | Coaches & teams | Work with a coach or a team. | Market area | 5 |
 | 7 | Improve over time | Track progress and plan. | Market area | 6 |
 
+**Senses legend:** **Watch** = vision reads the frames · **Read** = uses its own numbers ·
+**Write** = language · **Speak** = voice out · **Listen** = voice in · **—** = no new sense.
+
 ### Workstream 1 — Demo  *(stage: show-ready)*
 
-| # | Item | Multimodal |
-|---|------|:---:|
-| 1 | One demo clip + a clear "before/after" story | |
-| 2 | Make every screen clean | |
-| 3 | Sample footage that always works | |
-| 4 | A short guided tour | |
-| 5 | Reliable runs (no mid-demo crashes) | |
-| 6 | Saved-result fallback | |
-| 7 | Plain, simple wording | |
-| 8 | Rehearse end to end | |
+| # | Item | Senses |
+|---|------|--------|
+| 1 | One demo clip + a clear "before/after" story | Watch · Write |
+| 2 | Make every screen clean | — |
+| 3 | Sample footage that always works | — |
+| 4 | A short guided tour | Watch · Write |
+| 5 | Reliable runs (no mid-demo crashes) | — |
+| 6 | Saved-result fallback | — |
+| 7 | Plain, simple wording | — |
+| 8 | Rehearse end to end | — |
 
 ### Workstream 2 — Product  *(stage: beta)*
 
-| # | Item | Multimodal |
-|---|------|:---:|
-| 9 | Accounts + log-in | |
-| 10 | Easy phone upload | |
-| 11 | Hosted — nothing to install | |
-| 12 | Progress over time | |
-| 13 | Guide users to film well | |
-| 14 | Private + one-click delete | |
-| 15 | Session feedback (like / dislike) | |
-| 16 | Track and limit cost per session | |
-| 17 | More sports | |
-| 18 | More languages | |
-| 19 | Coach / team view | |
-| 20 | **Ask by voice — hear the answer** | ✓ |
-| 21 | **Keep it multimodal: photo + video in, text + speech out** | ✓ |
+| # | Item | Senses |
+|---|------|--------|
+| 9 | Accounts + log-in | — |
+| 10 | Easy phone upload | — |
+| 11 | Hosted — nothing to install | — |
+| 12 | Progress over time | Read |
+| 13 | Guide users to film well | — |
+| 14 | Private + one-click delete | — |
+| 15 | Session feedback (like / dislike) | — |
+| 16 | Track and limit cost per session | — |
+| 17 | More sports | Watch |
+| 18 | More languages | Write |
+| 19 | Coach / team view | — |
+| 20 | **Ask by voice — hear the answer** | Speak · Listen |
+| 21 | **Keep it multimodal: photo + video in, text + speech out** | Watch · Write · Speak |
 
 ### Workstream 3 — Sharper analysis  *(market area)*
 
-| # | Item | Multimodal |
-|---|------|:---:|
-| 22 | Name the shot (forehand / backhand / serve) | |
-| 23 | Estimate shot speed | |
-| 24 | 3D body mechanics (how the body moves in sequence) | |
-| 25 | Split a session into rallies automatically | |
-| 26 | Feedback per stroke, not just per session | |
-| 27 | Footage-quality check + how to film better | |
-| 28 | Spin — only if it can be done honestly | |
-| 29 | **Understand audio too — voice notes, racket sound** | ✓ |
+| # | Item | Senses |
+|---|------|--------|
+| 22 | Name the shot (forehand / backhand / serve) | Watch · Write |
+| 23 | Estimate shot speed | Watch |
+| 24 | 3D body mechanics (how the body moves in sequence) | Watch |
+| 25 | Split a session into rallies automatically | Watch |
+| 26 | Feedback per stroke, not just per session | Watch · Write |
+| 27 | Footage-quality check + how to film better | Watch |
+| 28 | Spin — only if it can be done honestly | Watch |
+| 29 | **Understand audio too — voice notes, racket sound** | Listen |
 
 ### Workstream 4 — Match play  *(market area)*
 
-| # | Item | Multimodal |
-|---|------|:---:|
-| 30 | Automatic scoring | |
-| 31 | In/out line calls (reviewable) | |
-| 32 | Match statistics | |
+| # | Item | Senses |
+|---|------|--------|
+| 30 | Automatic scoring | Watch |
+| 31 | In/out line calls (reviewable) | Watch |
+| 32 | Match statistics | Read · Write |
 
 ### Workstream 5 — Live & mobile  *(market area)*
 
-| # | Item | Multimodal |
-|---|------|:---:|
-| 33 | Phone app | |
-| 34 | Live feedback while playing | |
-| 35 | **Spoken cues during playback** | ✓ |
+| # | Item | Senses |
+|---|------|--------|
+| 33 | Phone app | Watch |
+| 34 | Live feedback while playing | Watch · Speak |
+| 35 | **Spoken cues during playback** | Speak |
 
 ### Workstream 6 — Coaches & teams  *(market area)*
 
-| # | Item | Multimodal |
-|---|------|:---:|
-| 36 | Coach / team accounts | |
-| 37 | Share one session with a coach | |
-| 38 | Compare your motion to a pro's | |
-| 39 | Track more than one player | |
-| 40 | Use two cameras | |
+| # | Item | Senses |
+|---|------|--------|
+| 36 | Coach / team accounts | — |
+| 37 | Share one session with a coach | Write |
+| 38 | Compare your motion to a pro's | Watch |
+| 39 | Track more than one player | Watch |
+| 40 | Use two cameras | Watch |
 
 ### Workstream 7 — Improve over time  *(market area)*
 
-| # | Item | Multimodal |
-|---|------|:---:|
-| 41 | Skill ratings per area | |
-| 42 | A weekly plan from your history | |
-| 43 | Challenges + leaderboards | |
-| 44 | Injury / training-load awareness | |
-| 45 | Sync across phone and computer | |
-| 46 | Connect to watches and health apps | |
+| # | Item | Senses |
+|---|------|--------|
+| 41 | Skill ratings per area | Read · Write |
+| 42 | A weekly plan from your history | Write |
+| 43 | Challenges + leaderboards | — |
+| 44 | Injury / training-load awareness | Read |
+| 45 | Sync across phone and computer | — |
+| 46 | Connect to watches and health apps | Watch (sensor) |
 
 *Details, effort sizes and ordering are in the full plan: [ROADMAP.md](ROADMAP.md).*
 
