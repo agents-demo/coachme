@@ -23,9 +23,6 @@
   // Provenance for the timeline rows / key-moments list. Movement + rally come
   // from the catalog (real algorithms); issues + moments come from the model's report.
   const catalog = $derived(Object.fromEntries(outputs(report).flatMap((g) => g.items).map((i) => [i.id, i])));
-  const flowSeries = $derived(
-    (report.metrics?.flow || []).map((e, i) => ({ t: (report.frame_times || [])[i + 1] ?? i, energy: e })),
-  );
   const strokeList = $derived(report.metrics?.strokes || []);
   const keyMomentsItem = {
     how: "The moments the coach flagged in the report. The strip marks them on the timeline; the list below says what each one is — click a time to play just that moment.",
@@ -274,13 +271,6 @@
           <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Movement</h3>
           {#if catalog.movement}<Provenance item={catalog.movement} />{/if}
           <div class="mt-2"><MotionChart {series} playhead={currentTime} onseek={seek} /></div>
-        </div>
-      {/if}
-      {#if flowSeries.length}
-        <div class="mt-8">
-          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Optical flow</h3>
-          {#if catalog.flow}<Provenance item={catalog.flow} />{/if}
-          <div class="mt-2"><MotionChart series={flowSeries} playhead={currentTime} onseek={seek} /></div>
         </div>
       {/if}
       {#if (report.metrics?.ball?.segments || []).length}

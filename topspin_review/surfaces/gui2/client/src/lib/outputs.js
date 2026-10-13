@@ -109,18 +109,6 @@ export function outputs(report) {
       local: true,
     });
   }
-  if ((m.flow || []).length) {
-    movement.push({
-      id: "flow",
-      label: "Optical flow",
-      stepLabel: "Measured flow",
-      how: "Direction-aware motion between frames — steadier than raw pixel change.",
-      method: "Dense Farneback optical flow between consecutive sampled frames (OpenCV); the per-step mean flow magnitude is plotted over time.",
-      detail: "integrations/flow.py · magnitude()",
-      engine: "OpenCV",
-      local: true,
-    });
-  }
   if ((m.strokes || []).length) {
     movement.push({
       id: "strokes",

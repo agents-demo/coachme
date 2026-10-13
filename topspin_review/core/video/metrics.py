@@ -405,9 +405,6 @@ def text(metrics: dict) -> str:
     if cal:
         rendered = ", ".join(f"{k}={v}" for k, v in cal.items())
         lines.append(f"- calibrated (body-relative, distance-independent): {rendered}")
-    flow = metrics.get("flow") or []
-    if flow:
-        lines.append(f"- optical flow (mean magnitude): {round(sum(flow) / len(flow), 3)}")
     strokes = metrics.get("strokes") or []
     if strokes:
         detail = ", ".join(f"{s['t']}s({s['hand']})" for s in strokes[:10])

@@ -38,7 +38,7 @@
   // Everything this run produced (see lib/outputs.js).
   const outputGroups = $derived(outputs(report));
   // Charts shown inside the Video view (and clips) are not separate tabs.
-  const INLINE = ["movement", "segments", "clips", "flow", "strokes"];
+  const INLINE = ["movement", "segments", "clips", "strokes"];
   // Two-level nav: the user-centric groups are the sub-tabs; their items are the second row.
   let watchGroup = $state("clip");
   const visibleGroups = $derived(
