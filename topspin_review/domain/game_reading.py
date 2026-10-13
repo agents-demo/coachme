@@ -94,12 +94,13 @@ def summarize(metrics: dict | None) -> dict:
         findings.append(_finding("Player", "Rotation", f"shoulder {tw_s}°, hip {tw_h}°", "twist range"))
     lat = _num(mech.get("lower_lateral_range"))
     if lat is not None:
-        note = f"lateral travel {lat}"
-        if foot.get("steps") is not None:
+        note = f"side-to-side travel {lat} of the frame"
+        steps = mech.get("lower_direction_changes")
+        if steps is not None:
+            note += f", ~{steps} changes of direction"
+        elif foot.get("steps") is not None:
             note += f", ~{foot['steps']} steps"
-        if foot.get("hops") is not None:
-            note += f", ~{foot['hops']} hops"
-        findings.append(_finding("Player", "Footwork", "moving around" if lat > 0.15 else "mostly stationary", note))
+        findings.append(_finding("Player", "Footwork", "moving well around the table" if lat > 0.15 else "mostly stationary", note))
 
     # --- Ball -----------------------------------------------------------------
     vis = stats.get("visible_frames")

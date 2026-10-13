@@ -1,6 +1,5 @@
 <script>
   import { page } from "$app/stores";
-  import { base } from "$app/paths";
   import { getReport, ask, artifact, clip, exportUrl, reelUrl, cardUrl } from "$lib/api";
   import VideoReview from "$lib/components/VideoReview.svelte";
   import Technical from "$lib/components/Technical.svelte";
@@ -9,6 +8,7 @@
   import Pose3D from "$lib/components/Pose3D.svelte";
   import Ball3D from "$lib/components/Ball3D.svelte";
   import MotionChart from "$lib/components/MotionChart.svelte";
+  import FootworkChart from "$lib/components/FootworkChart.svelte";
   import Segments from "$lib/components/Segments.svelte";
   import KeyMoments from "$lib/components/KeyMoments.svelte";
   import TrimExport from "$lib/components/TrimExport.svelte";
@@ -21,7 +21,7 @@
   let loading = $state(true);
   let error = $state("");
   let tab = $state("Video");
-  let measureGroup = $state("movement");
+  let measureGroup = $state("maps");
   let playTime = $state(0);
   let playerRef = $state();
   let ball3dRef = $state();
@@ -50,7 +50,11 @@
   const outputGroups = $derived(outputs(report));
   const videoGroup = $derived(outputGroups.find((g) => g.id === "clip"));
   const motionGroup = $derived(outputGroups.find((g) => g.id === "movement"));
-  const detectionGroups = $derived(outputGroups.filter((g) => ["maps", "body", "ball"].includes(g.id)));
+  const detectionGroups = $derived(
+    ["maps", "body", "ball"]
+      .map((id) => outputGroups.find((g) => g.id === id))
+      .filter(Boolean),
+  );
   // Video tab = the motion / measured-from-video items, then the clip's own items (the player is rendered on its own).
   const videoItems = $derived([...(motionGroup?.items || []), ...(videoGroup?.items || []).filter((i) => i.id !== "video")]);
   const activeDetect = $derived(detectionGroups.find((g) => g.id === measureGroup) || detectionGroups[0]);
@@ -96,7 +100,6 @@
     try {
       report = await getReport(stem);
       tab = "Video";
-      measureGroup = "body";
       doneDrills = {};
     } catch (e) {
       error = String(e?.message || e);
@@ -140,6 +143,18 @@
         </span>
       {/each}
     </div>
+  {:else if it.id === "lateral"}
+    <FootworkChart series={report.metrics?.footwork_series || []} />
+    <div class="mt-4 flex flex-wrap gap-8">
+      <div>
+        <div class="font-display text-3xl font-bold">{Math.round((it.lateral ?? 0) * 100)}%</div>
+        <div class="text-[11px] uppercase tracking-wide text-muted">Side-to-side travel (of frame width)</div>
+      </div>
+      <div>
+        <div class="font-display text-3xl font-bold">{it.steps ?? 0}</div>
+        <div class="text-[11px] uppercase tracking-wide text-muted">Direction changes</div>
+      </div>
+    </div>
   {:else if it.id === "pose_angles"}
     <PoseChart {report} />
   {:else if it.id === "pose3d"}
@@ -172,8 +187,7 @@
 {:else if !report}
   <p class="mt-6 text-sm text-muted">No report selected.</p>
 {:else}
-  <div class="flex items-baseline gap-3">
-    <a href={`${base}/`} class="text-sm font-semibold text-accent">← Sessions</a>
+  <div class="flex flex-wrap items-baseline gap-3">
     <h1 class="font-display text-2xl font-bold">{report.stem}</h1>
     <span class="text-sm text-muted">{report.sport} · {report.date}</span>
     {#if report.fallback}

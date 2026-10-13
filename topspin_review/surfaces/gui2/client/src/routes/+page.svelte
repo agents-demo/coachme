@@ -2,15 +2,37 @@
   import { onMount } from "svelte";
   import { base } from "$app/paths";
   import { goto } from "$app/navigation";
-  import { getReports } from "$lib/api";
+  import { page } from "$app/stores";
+  import { getReports, compare } from "$lib/api";
   import Readiness from "$lib/components/Readiness.svelte";
   import NewAnalysis from "$lib/components/NewAnalysis.svelte";
   import LiveJob from "$lib/components/LiveJob.svelte";
   import ReportCard from "$lib/components/ReportCard.svelte";
+  import CompareVideos from "$lib/components/CompareVideos.svelte";
 
   let reports = $state([]);
   let jobId = $state(null);
   let loading = $state(true);
+  const showNew = $derived($page.url.searchParams.get("new") === "1");
+
+  let a = $state("");
+  let b = $state("");
+  let diff = $state(null);
+  let cmpError = $state("");
+  const aReport = $derived(reports.find((r) => r.stem === a));
+  const bReport = $derived(reports.find((r) => r.stem === b));
+  const canCompareVideos = $derived(
+    Boolean(a && b && a !== b && aReport?.has_source && bReport?.has_source && !aReport?.is_photo && !bReport?.is_photo),
+  );
+  async function runCompare() {
+    cmpError = "";
+    diff = null;
+    try {
+      diff = await compare(a, b);
+    } catch (e) {
+      cmpError = String(e?.message || e);
+    }
+  }
 
   async function load() {
     loading = true;
@@ -20,7 +42,14 @@
       loading = false;
     }
   }
-  onMount(load);
+  onMount(async () => {
+    await load();
+    if (reports.length >= 2) {
+      b = reports[0].stem; // newest (list is newest-first)
+      a = reports[reports.length - 1].stem; // oldest
+    }
+    if (!reports.length && !showNew) goto(`${base}/?new=1`, { replaceState: true });
+  });
 
   function ondone(stem) {
     if (stem) goto(`${base}/result?stem=${encodeURIComponent(stem)}`);
@@ -49,7 +78,7 @@
   </div>
 </section>
 
-{#if reports.length}
+{#if reports.length && !showNew}
   <div class="mt-4 grid grid-cols-3 gap-3">
     <div class="card p-4 text-center">
       <div class="font-display text-2xl font-bold">{reports.length}</div>
@@ -66,23 +95,63 @@
   </div>
 {/if}
 
-<NewAnalysis onqueued={(id) => (jobId = id)} />
+<h2 class="mt-5 font-display text-lg font-bold">{showNew ? "New analysis" : "Sessions"}</h2>
+
+{#if showNew}
+  <NewAnalysis onqueued={(id) => (jobId = id)} />
+  <Readiness />
+{/if}
 
 {#if jobId}
   <LiveJob {jobId} onfinished={load} ondone={ondone} />
 {/if}
 
-<Readiness />
+{#if !showNew}
+  {#if loading}
+    <p class="mt-6 text-sm text-muted">Loading…</p>
+  {:else if !reports.length}
+    <p class="mt-6 text-sm text-muted">No sessions yet. Use “＋ New analysis” in the menu above.</p>
+  {:else}
+    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {#each reports as r (r.stem)}
+        <ReportCard report={r} ondeleted={load} />
+      {/each}
+    </div>
 
-{#if loading}
-  <p class="mt-6 text-sm text-muted">Loading…</p>
-{:else if !reports.length}
-  <p class="mt-6 text-sm text-muted">No sessions yet. Analyze a clip above.</p>
-{:else}
-  <h2 class="mt-8 font-display text-lg font-bold">Sessions</h2>
-  <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    {#each reports as r (r.stem)}
-      <ReportCard report={r} ondeleted={load} />
-    {/each}
-  </div>
+    {#if reports.length >= 2}
+      <h3 class="mt-8 font-display text-lg font-bold">Compare two sessions</h3>
+      <div class="mt-3 flex flex-wrap items-end gap-3 text-sm">
+        <label class="text-xs text-muted">Earlier
+          <select bind:value={a} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2">
+            {#each reports as r (r.stem)}<option value={r.stem}>{r.stem}</option>{/each}
+          </select>
+        </label>
+        <label class="text-xs text-muted">Later
+          <select bind:value={b} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2">
+            {#each reports as r (r.stem)}<option value={r.stem}>{r.stem}</option>{/each}
+          </select>
+        </label>
+        <button onclick={runCompare} disabled={a === b} class="rounded-lg bg-accent px-4 py-2 font-semibold text-white disabled:opacity-50">Compare</button>
+      </div>
+      {#if canCompareVideos}
+        <div class="mt-4">
+          <CompareVideos a={{ stem: a, label: aReport.stem }} b={{ stem: b, label: bReport.stem }} />
+        </div>
+      {/if}
+      {#if cmpError}<p class="mt-2 text-sm text-bad">{cmpError}</p>{/if}
+      {#if diff}
+        <p class="mt-3 text-sm">{diff.text}</p>
+        {#each [["Improved", diff.improved], ["Still an issue", diff.unchanged], ["New / regressed", diff.regressed]] as [label, items]}
+          {#if items?.length}
+            <p class="mt-1 text-sm"><b>{label}:</b> {items.join(", ")}</p>
+          {/if}
+        {/each}
+        {#if diff.metric_deltas && Object.keys(diff.metric_deltas).length}
+          <div class="mt-2 text-xs text-muted">
+            {#each Object.entries(diff.metric_deltas) as [k, v]}<span class="mr-3">{k}: {v > 0 ? "+" : ""}{v}</span>{/each}
+          </div>
+        {/if}
+      {/if}
+    {/if}
+  {/if}
 {/if}

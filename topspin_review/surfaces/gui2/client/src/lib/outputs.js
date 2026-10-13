@@ -67,22 +67,24 @@ export function outputs(report) {
       local: true,
     });
   }
-  if ((m.strokes || []).length) {
-    movement.push({
-      id: "strokes",
-      label: "Fast-hand events",
-      stepLabel: "Estimated pose",
-      how: "Moments where a hand moved fastest, with which hand.",
-      method: "Track both pose wrists (landmarks 15/16) across frames, take the faster wrist per step, pick local maxima above a relative threshold, merge within 0.4s, and guess the dominant hand.",
-      detail: "core/stages/measure/strokes.py · segment()",
-      engine: "mediapipe",
-      local: true,
-    });
-  }
   groups.push({ id: "movement", group: "Motion", items: movement });
 
   // --- Maps (static spatial results of analysing the video) -------------------
   const maps = [];
+  if (m.mechanics && m.mechanics.lower_lateral_range != null) {
+    maps.push({
+      id: "lateral",
+      label: "Side-to-side movement",
+      stepLabel: "Measured your movement",
+      how: "How far your lower body (hips and legs) travelled left–right across the clip, as a share of the frame width.",
+      method: "The lower third of the subject box (the legs) is tracked frame by frame; the horizontal spread of its centre (max − min x) is the lateral range, in fractions of the frame width. Reversals in that path are counted as direction changes.",
+      detail: "core/video/metrics.py · body_regions()",
+      engine: "NumPy",
+      local: true,
+      lateral: m.mechanics.lower_lateral_range,
+      steps: m.mechanics.lower_direction_changes,
+    });
+  }
   if (a.motion) {
     maps.push({
       id: "motion",
@@ -109,7 +111,7 @@ export function outputs(report) {
       local: true,
     });
   }
-  if (maps.length) groups.push({ id: "maps", group: "Heat maps", items: maps });
+  if (maps.length) groups.push({ id: "maps", group: "Movement", items: maps });
 
   // --- Your body --------------------------------------------------------------
   const body = [];
@@ -146,6 +148,18 @@ export function outputs(report) {
       how: "Your body as a 3D model you can spin around. Depth is a best guess from a single camera.",
       method: "The same pose model also returns world landmarks (3D, in metres). These give 3D joint angles plus torso lean and shoulder/hip twist, and the per-frame 3D points are stored so the skeleton can be drawn in 3D and rotated (orthographic projection). Depth from one camera is approximate.",
       detail: "integrations/pose.py · estimate() (world landmarks)",
+      engine: "mediapipe",
+      local: true,
+    });
+  }
+  if ((m.strokes || []).length) {
+    body.push({
+      id: "strokes",
+      label: "Fast-hand events",
+      stepLabel: "Estimated pose",
+      how: "Moments where a hand moved fastest, with which hand.",
+      method: "Track both pose wrists (landmarks 15/16) across frames, take the faster wrist per step, pick local maxima above a relative threshold, merge within 0.4s, and guess the dominant hand.",
+      detail: "core/stages/measure/strokes.py · segment()",
       engine: "mediapipe",
       local: true,
     });

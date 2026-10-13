@@ -335,6 +335,10 @@ def analyze(
         "track": track,
         "posture": post,
         "mechanics": mech,
+        "footwork_series": [
+            {"t": round(float(t), 2), "x": (r["lower"]["cx"] if r and r.get("lower") else None)}
+            for t, r in zip(timestamps, region_track)
+        ],
         "pose": pose_seq,
         "pose_summary": pose.summarize(pose_seq),
         "pose3d_summary": pose.summarize3d(pose_seq),

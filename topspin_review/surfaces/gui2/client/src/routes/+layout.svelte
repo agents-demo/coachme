@@ -5,8 +5,7 @@
   import { base } from "$app/paths";
   let { children } = $props();
   const tabs = [
-    { href: `${base}/`, label: "Analyze" },
-    { href: `${base}/progress`, label: "Progress" },
+    { href: `${base}/`, label: "Sessions" },
   ];
   const here = (href) =>
     href === `${base}/` ? $page.url.pathname === `${base}/` : $page.url.pathname.startsWith(href);
@@ -46,6 +45,10 @@
             class:text-muted={!here(t.href)}
           >{t.label}</a>
         {/each}
+        <a
+          href={`${base}/?new=1`}
+          class="rounded-full px-4 py-1.5 text-sm font-semibold text-muted transition"
+        >＋ New analysis</a>
         <button
           onclick={toggle}
           title="Toggle theme"
