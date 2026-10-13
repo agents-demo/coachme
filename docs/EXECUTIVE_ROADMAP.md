@@ -13,14 +13,14 @@ Film a training session and get back what to fix and how to practice — a coach
 It doesn't just *read* video and *write* text — it works across senses in **both directions**:
 
 **Takes in**
-- **Watch** — a vision model reads the video frames.
-- **Read** — it uses the numbers (movement, body, ball) it measured itself.
-- **Listen** — audio, e.g. a coach's spoken notes *(planned)*.
+- **Watch** — reads **video/photos** (a vision model reads the frames).
+- **Read** — reads **its own numbers** (movement, body, ball; later sensors).
+- **Listen** — hears **audio**, e.g. a coach's spoken notes *(planned)*.
 
 **Puts out**
-- **Write** — the coaching in plain words.
-- **Speak** — it reads the report aloud.
-- **Show** — video and pictures: highlight clips, overlays, share cards.
+- **Write** — writes **text**: the coaching in plain words.
+- **Speak** — speaks **audio**: it reads the report aloud.
+- **Show** — shows **video & images**: highlight clips, overlays, share cards.
 
 Most tools do **one sense** (pure vision, or pure text). This one **watches, reads and listens — then
 writes, speaks and shows**, all tied to the moments in your clip.
@@ -29,14 +29,14 @@ writes, speaks and shows**, all tied to the moments in your clip.
 
 These are the six senses. Five are **done today**; *Listen* is the one new one to add.
 
-| Sense | Direction | What it does | Status |
-|-------|-----------|--------------|:------:|
-| **Watch** | In | A vision model reads the video frames | Done |
-| **Read** | In | Uses the numbers (movement, body, ball) it measured itself | Done |
-| **Listen** | In | Hears audio — a coach's notes, racket sounds | Planned |
-| **Write** | Out | Writes the coaching in plain words | Done |
-| **Speak** | Out | Reads the report aloud | Done |
-| **Show** | Out | Video & pictures — highlight clips, overlays, share cards | Done |
+| Sense | Direction | Medium | What it does | Status |
+|-------|:---------:|--------|--------------|:------:|
+| **Watch** | In | Video / photos | A vision model reads the video frames | Done |
+| **Read** | In | Its own numbers | Reads the movement/body/ball numbers it measured | Done |
+| **Listen** | In | Audio | Hears a coach's notes, racket sounds | Planned |
+| **Write** | Out | Text | Writes the coaching in plain words | Done |
+| **Speak** | Out | Audio | Reads the report aloud | Done |
+| **Show** | Out | Video / images | Highlight clips, overlays, share cards | Done |
 
 The **Senses** column in the item tables below shows **which senses each item uses or adds** — so
 multimodality is visible on every relevant row.
