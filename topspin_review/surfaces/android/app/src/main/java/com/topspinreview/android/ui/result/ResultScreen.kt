@@ -260,6 +260,13 @@ private fun Observations(r: Report) {
                     "t=${issue.evidence_times.joinToString(", ")} · confidence ${issue.confidence}",
                     style = MaterialTheme.typography.bodySmall,
                 )
+                if (issue.evidence_times.isNotEmpty()) {
+                    val ctx = androidx.compose.ui.platform.LocalContext.current
+                    androidx.compose.material3.TextButton(onClick = {
+                        val t = issue.evidence_times.first()
+                        clipAndShare(ctx, r.source, t - 1.0, t + 2.0)
+                    }) { Text("Clip & share") }
+                }
             }
         }
     }
