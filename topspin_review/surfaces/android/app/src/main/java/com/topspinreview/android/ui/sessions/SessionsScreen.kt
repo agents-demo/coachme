@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,6 +55,7 @@ fun SessionsScreen(
     onOpen: (String) -> Unit,
     onNew: () -> Unit,
     onSettings: () -> Unit,
+    onCompare: () -> Unit,
     vm: SessionsViewModel = hiltViewModel(),
 ) {
     val reports by vm.reports.collectAsStateWithLifecycle()
@@ -61,7 +63,10 @@ fun SessionsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Topspin Review") },
-                actions = { IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Settings") } },
+                actions = {
+                    IconButton(onClick = onCompare) { Icon(Icons.Filled.CompareArrows, "Compare sessions") }
+                    IconButton(onClick = onSettings) { Icon(Icons.Filled.Settings, "Settings") }
+                },
             )
         },
         floatingActionButton = {

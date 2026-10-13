@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.topspinreview.android.ui.compare.CompareScreen
 import com.topspinreview.android.ui.newanalysis.NewAnalysisScreen
 import com.topspinreview.android.ui.result.ResultScreen
 import com.topspinreview.android.ui.sessions.SessionsScreen
@@ -21,6 +22,7 @@ fun AppNav() {
                 onOpen = { stem -> nav.navigate("result/$stem") },
                 onNew = { nav.navigate("new") },
                 onSettings = { nav.navigate("settings") },
+                onCompare = { nav.navigate("compare") },
             )
         }
         composable("new") {
@@ -36,5 +38,6 @@ fun AppNav() {
             ResultScreen(stem = entry.arguments?.getString("stem").orEmpty(), onBack = { nav.popBackStack() })
         }
         composable("settings") { SettingsScreen(onBack = { nav.popBackStack() }) }
+        composable("compare") { CompareScreen(onBack = { nav.popBackStack() }) }
     }
 }
