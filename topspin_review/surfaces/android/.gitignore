@@ -1,5 +1,6 @@
 # Android
 local.properties
+secret.properties
 .gradle/
 build/
 captures/

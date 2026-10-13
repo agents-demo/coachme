@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,6 +7,13 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
 }
+
+// Optional build-time defaults (API key etc.) from a gitignored secret.properties.
+val secretProps = Properties().apply {
+    val f = rootProject.file("secret.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun secret(k: String) = secretProps.getProperty(k, "")
 
 android {
     namespace = "com.topspinreview.android"
@@ -17,6 +26,11 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+
+        buildConfigField("String", "DEFAULT_API_BASE", "\"${secret("apiBase")}\"")
+        buildConfigField("String", "DEFAULT_API_KEY", "\"${secret("apiKey")}\"")
+        buildConfigField("String", "DEFAULT_TEXT_MODEL", "\"${secret("textModel")}\"")
+        buildConfigField("String", "DEFAULT_VISION_MODEL", "\"${secret("visionModel")}\"")
     }
 
     buildTypes {
@@ -30,7 +44,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }

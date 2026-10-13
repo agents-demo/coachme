@@ -9,15 +9,16 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import android.content.Context
+import com.topspinreview.android.BuildConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /** The API + analysis settings (same values as the desktop `.env`). */
 data class AppSettings(
-    val apiBase: String = "https://api.deepseek.com",
-    val apiKey: String = "",
-    val textModel: String = "deepseek-v4-pro",
-    val visionModel: String = "deepseek-v4-flash-vision-exp",
+    val apiBase: String = BuildConfig.DEFAULT_API_BASE.ifBlank { "https://api.deepseek.com" },
+    val apiKey: String = BuildConfig.DEFAULT_API_KEY,
+    val textModel: String = BuildConfig.DEFAULT_TEXT_MODEL.ifBlank { "deepseek-v4-pro" },
+    val visionModel: String = BuildConfig.DEFAULT_VISION_MODEL.ifBlank { "deepseek-v4-flash-vision-exp" },
     val agentic: Boolean = false,
     val maxFrames: Int = 12,
     // player profile (feeds prompts + rubric)
@@ -47,10 +48,10 @@ class SettingsStore(private val context: Context) {
 
     val flow: Flow<AppSettings> = context.dataStore.data.map { p ->
         AppSettings(
-            apiBase = p[K.apiBase] ?: "https://api.deepseek.com",
-            apiKey = p[K.apiKey] ?: "",
-            textModel = p[K.textModel] ?: "deepseek-v4-pro",
-            visionModel = p[K.visionModel] ?: "deepseek-v4-flash-vision-exp",
+            apiBase = p[K.apiBase] ?: AppSettings().apiBase,
+            apiKey = p[K.apiKey] ?: AppSettings().apiKey,
+            textModel = p[K.textModel] ?: AppSettings().textModel,
+            visionModel = p[K.visionModel] ?: AppSettings().visionModel,
             agentic = p[K.agentic] ?: false,
             maxFrames = p[K.maxFrames] ?: 12,
             sport = p[K.sport] ?: "table tennis",
