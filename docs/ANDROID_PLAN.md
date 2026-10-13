@@ -106,9 +106,16 @@ All three stages run in the app; only the two model calls go over the network.
   spans, 3D trajectory.
 
 ### 7.5 Observe — vision pass (DeepSeek)
-- Build the **contact sheet** (tile sampled frames) and the **zoom frames**.
-- Send them to the **vision model** (`VISION_MODEL_NAME`) as multimodal input; two passes: overview
-  (propose windows) → detail (per-window findings with **evidence timestamps** + confidence).
+- **Coarse pass**: render the **overview contact sheet** (`cols = min(4, n)`) and send it as an image
+  with `COARSE_PROMPT` → windows.
+- **Fine pass**: render the **detail contact sheet**, the **motion map**, the **pose sheet**
+  (contact sheet of pose overlays, when pose exists), and the **zoom frames** (`zoom_<i>.png`), and
+  send them all as images with `FINE_PROMPT` → per-window findings with **evidence timestamps** +
+  confidence.
+- **Still pass** (photo): send the single frame with `STILL_PROMPT`.
+- **Transport note:** the desktop app has the model read image *files* via a `read_file` tool
+  (openjiuwen). On Android there is no tool loop for images — **inline the images as content**
+  (base64 `image_url`) in the user message instead.
 
 ### 7.6 Coach — report agent (DeepSeek + tools)
 - Call the **text model** (`MODEL_NAME`) with **function/tool calling**, reproducing today's tools:
@@ -225,6 +232,9 @@ Reimplement each screen of the current app in Compose:
 ## 13. Settings
 
 - API: base URL, key, text model, vision model (defaults from `.env`).
+- **Profile**: sport, level, dominant hand, goal — **gui2 has no editor today** (the pipeline just
+  reads the stored profile); the Android app should add one, since these feed the prompts and the
+  rubric.
 - Analysis: agentic on/off, frame budget, region box default.
 - Appearance: theme. Language (later).
 - A **"Test connection"** button (health check against the model endpoint).
@@ -282,6 +292,8 @@ contracts, and schema. Source references are to the current app (read them, then
 | `integrations/ballmodel.py` | `media/BallModel.kt` | ONNX YOLO detect (ORT Mobile/TFLite) |
 | `core/stages/measure/strokes.py` | `media/Strokes.kt` | fast-hand events from pose wrists |
 | `core/stages/measure/quality.py` | `media/Quality.kt` | footage-quality gate |
+| `core/video/cvutil.py` | `media/Cvutil.kt` | connected components (largest subject blob) |
+| `core/service.py` (`ask`) | `llm/Ask.kt` | grounded Q&A (QA prompt) |
 | `integrations/pose.py` | `media/Pose.kt` | MediaPipe Tasks PoseLandmarker → landmarks/angles/3D |
 | `core/stages/observe/*` | `pipeline/Observe.kt` | contact sheet, zoom windows, **vision** calls, JSON parse |
 | `core/stages/coach/*` | `pipeline/Coach.kt` + `llm/ReportTools.kt` | report prompt, tools, verification, retrieval, clips |
@@ -291,10 +303,14 @@ contracts, and schema. Source references are to the current app (read them, then
 | `domain/compare.py` | `domain/Compare.kt` | two-session diff |
 | `domain/progress.py`, `drills.py` | `domain/*.kt` | themes, drill catalog |
 | `integrations/reporting.py` | `export/Reporting.kt` | Markdown / HTML |
+| `integrations/storage/{store,cache,demo_cache,runtime,json_store}.py` | `data/*.kt` | report store, frame cache, demo fallback cache, paths, JSON |
 | `integrations/media.py` | `media/Clips.kt` | reel, moment clips, trim, GIF, vertical |
 | `integrations/cards.py` | `media/Cards.kt` | share card PNG |
 | `surfaces/gui2/client/**` | `ui/**` (Compose) | every screen & component (§10) |
 | `surfaces/gui2/server/read.py` | `data/ReadModel.kt` | shapes the report for the UI (tt_reading, drill_details) |
+
+*Unused on desktop (do **not** port): `client/.../components/Timeline.svelte` and `TrendChart.svelte`
+have no imports (leftovers from the removed Progress page).*
 
 ## Appendix B — Algorithm & parameter reference
 
@@ -316,6 +332,10 @@ contracts, and schema. Source references are to the current app (read them, then
   lower-body lateral range = `max(cx) − min(cx)`; direction changes = sign flips with **|Δ| > 0.005**.
 - Mechanics keys: `lower_lateral_range, lower_vertical_range, upper_lateral_range,
   lower_direction_changes, crouch_box_range`; plus `footwork_series` (per-frame lower `cx`).
+- Calibration (`calibrated`, body-relative so a farther player isn't "slower"):
+  `lower_lateral_range_bw = lower_lateral_range / box_width_mean`,
+  `upper_lateral_range_bw = upper_lateral_range / box_width_mean`,
+  `crouch_change_bh = crouch_box_range / box_height_mean`.
 - Maps: motion map (summed diffs → red overlay), position heatmap (subject-centre histogram, blur).
 
 **Ball** (`Ball.kt` / `BallModel.kt`)
@@ -329,6 +349,11 @@ contracts, and schema. Source references are to the current app (read them, then
 **Strokes** (`Strokes.kt`)
 - Track pose wrists (landmarks **15 / 16**); faster wrist per step; local maxima above
   **0.35 ×** peak speed; merge events within **0.4 s**.
+
+**Footwork** (`Metrics.kt · footwork(poseSeq)`) — a **separate** metric from `mechanics.*`
+- From pose **ankles** (landmarks 27/28): midpoint `(x,y)` per frame; `steps` = horizontal sign flips
+  with `|Δ| > 0.01`; `hops` = local vertical minima with dip `> 0.015`; `base_travel = max(x)−min(x)`;
+  `base_height_range = max(y)−min(y)`. Keys: `{steps, hops, base_travel, base_height_range}`.
 
 **Quality score** (`Evaluate.kt`)
 - `30·evidence_coverage + 20·has_summary + 15·has_focus + 10·has_limitations + 10·has_issues +
@@ -359,6 +384,13 @@ contracts, and schema. Source references are to the current app (read them, then
 - `get_profile()` → JSON `{sport, level, dominant_hand, goal}`.
 - `recent_reports(n:int=5)` → JSON array of past reports.
 - `save_report(report_json:str)` → validates + persists; returns "report saved" (+ warnings).
+
+**Ask — grounded Q&A** (`llm/Ask.kt`) — one text call, no tools:
+- **System**: `You are Topspin Review. Answer questions about the player's coaching report using ONLY
+  the report and its measurements. Be concise and practical. Never invent spin, ball speed, or exact
+  angles. If the report does not cover it, say so.`
+- **User**: `Report:\n<json of {summary, strengths, issues, drills, focus, metrics, limitations}>\n\nQuestion: <q>`
+- Failure → `"Could not answer: <err>"`. The answer is read aloud (Appendix H).
 
 ## Appendix D — Report schema (data model)
 
@@ -636,6 +668,9 @@ result sub-nav: video( motion|frames ) · analysis( heatmaps|movement|pose|objec
 ```
 
 ### L2. Image rendering
+- **Pipeline render** (`render_images`): `overview_sheet.png` = contact sheet (`cols=min(4,n)`);
+  `detail_sheet.png` = same; `motion_map.png` (≥2 frames); `pose_sheet.png` = contact sheet of pose
+  overlays (when pose exists); `zoom_<i>.png` per zoom frame; `still.png` for photos.
 - **Contact sheet** (`contact_sheet`): `cols=4`, `cell=384×216`, bg `(18,18,22)`; paste each frame resized
   into the grid; label `#<i+1> t=<t:.2f>s` in yellow `(255,235,60)` over a black `108×16` box at `(x+4,y+3)`.
 - **Motion map** (`motion_map`): 640×360; sum `|gray[i]-gray[i-1]|`; zero outside the subject mask;
@@ -678,6 +713,8 @@ line/arrow/circle: {type,color,x1,y1,x2,y2}
 pen: {type,color,points:[[x,y]…]}   # ≥2 pts, ≤500
 angle: {type,color,points:[[x,y],[x,y],[x,y]]}  # exactly 3
 ```
+Persisted via `POST /reports/{stem}/annotations` (stored on the report JSON under `annotations`);
+reloaded when the session is opened. The Draw/angle tool edits this list live on the video overlay.
 
 ### L6. Drill catalog (`domain/drills.lookup`, keyword → entry)
 `split-step/split step/timing hop` → **Split-step** ("Small hop as the opponent contacts; land as the
