@@ -2,9 +2,9 @@
   import { source } from "$lib/api";
   import { issueGroups, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
 
-  let { report } = $props();
+  let { report, moments = null } = $props();
 
-  const groups = $derived(issueGroups(report));
+  const groups = $derived(moments ? [] : issueGroups(report));
   let open = $state(null); // { t, text }
   let video = $state();
 
@@ -29,7 +29,17 @@
 
 <svelte:window onkeydown={onKey} />
 
-{#if !groups.length}
+{#if moments?.length}
+  <div class="flex flex-wrap gap-1.5">
+    {#each moments as m}
+      <button
+        onclick={() => play(m.t, m.label)}
+        class="rounded-full border-2 border-line px-2.5 py-0.5 font-mono text-xs text-accent2 transition hover:border-accent2"
+        title="Play this moment in a pop-up"
+      >▶ {fmtTime(m.t)} <span class="font-sans text-muted">{m.label}</span></button>
+    {/each}
+  </div>
+{:else if !groups.length}
   <p class="text-sm text-muted">No timestamped issues in this report.</p>
 {:else}
   <ol class="space-y-2">

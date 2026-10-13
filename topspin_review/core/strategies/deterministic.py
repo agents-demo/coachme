@@ -21,6 +21,7 @@ from topspin_review.core.stages.coach.prompts import rubric_text
 from topspin_review.core.stages.measure import ball, quality, sampling
 from topspin_review.core.strategies.base import Strategy
 from topspin_review.core.video import imaging, metrics
+from topspin_review.domain import game_reading
 from topspin_review.domain import report as report_schema
 from topspin_review.integrations import media, pose
 from topspin_review.integrations.storage import runtime, store
@@ -173,6 +174,7 @@ class DeterministicStrategy(Strategy):
                 }
                 baseline = f"Previous mechanics: {prev_mech}\nNow: {now_mech}\nChange: {deltas}"
         quality_note = "; ".join(clip_quality.get("warnings") or []) or "ok"
+        reading = game_reading.summarize(measured)
 
         query = (
             f"Today is {date.today().isoformat()}. "
@@ -184,6 +186,7 @@ class DeterministicStrategy(Strategy):
             f"Analysis ({len(frames)} sampled frames, windows examined: {window_label}):\n"
             f"{observations}\n\n"
             f"Measured motion/mechanics:\n{metrics.text(measured)}\n\n"
+            f"Game reading (those measurements read in {profile.get('sport', 'table tennis')} terms):\n{reading['text']}\n\n"
             f"Footage quality: {quality_note}.\n\n"
             + (f"Baseline (previous session):\n{baseline}\n\n" if baseline else "")
             + f"Check the player against this technique rubric (issues should map to it):\n{rubric}\n\n"
@@ -213,10 +216,9 @@ class DeterministicStrategy(Strategy):
 
         clips: dict = {}
         if config.clips_enabled() and not params.is_still:
-            clip_times: list[float] = []
-            for item in (report.get("issues") or [])[:3]:
-                if isinstance(item, dict):
-                    clip_times.extend(item.get("evidence_times") or [])
+            # Cut around the CV-derived moments (agent-free), not the report's issues.
+            reading = game_reading.summarize(params.measured)
+            clip_times = [m["t"] for m in reading.get("moments", [])][:3]
             try:
                 clips = media.make_clips(params.video_path, clip_times, Path(params.video_path).stem)
             except Exception:

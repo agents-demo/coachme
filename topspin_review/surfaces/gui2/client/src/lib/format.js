@@ -100,6 +100,14 @@ export const STEP_NAME = {
   exporting: "Export files",
   done: "Done",
 };
+// Joint-angle series used by the pose chart (shared so callers can render the legend).
+export const POSE_SERIES = [
+  { key: "l_knee", label: "Left knee", color: "#4f46e5" },
+  { key: "r_knee", label: "Right knee", color: "#818cf8" },
+  { key: "l_elbow", label: "Left elbow", color: "#34d399" },
+  { key: "r_elbow", label: "Right elbow", color: "#fbbf24" },
+];
+
 export function shortLabel(stage) {
   return STEP_NAME[stage] || stage || "";
 }

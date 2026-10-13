@@ -1,31 +1,43 @@
 <script>
   import { page } from "$app/stores";
-  import { getReport, ask, artifact, exportUrl, reelUrl, cardUrl } from "$lib/api";
+  import { base } from "$app/paths";
+  import { getReport, ask, artifact, clip, exportUrl, reelUrl, cardUrl } from "$lib/api";
   import VideoReview from "$lib/components/VideoReview.svelte";
   import Technical from "$lib/components/Technical.svelte";
   import ReadAloud from "$lib/components/ReadAloud.svelte";
   import PoseChart from "$lib/components/PoseChart.svelte";
   import Pose3D from "$lib/components/Pose3D.svelte";
   import Ball3D from "$lib/components/Ball3D.svelte";
+  import MotionChart from "$lib/components/MotionChart.svelte";
+  import Segments from "$lib/components/Segments.svelte";
+  import KeyMoments from "$lib/components/KeyMoments.svelte";
   import TrimExport from "$lib/components/TrimExport.svelte";
   import Provenance from "$lib/components/Provenance.svelte";
   import { outputs } from "$lib/outputs";
-  import { scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
+  import { movementSeries, scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP, POSE_SERIES } from "$lib/format";
 
   const stem = $derived($page.url.searchParams.get("stem") || "");
   let report = $state(null);
   let loading = $state(true);
   let error = $state("");
-  let tab = $state("Review");
+  let tab = $state("Video");
+  let measureGroup = $state("movement");
+  let playTime = $state(0);
+  let playerRef = $state();
+  let ball3dRef = $state();
+  let obsView = $state("Findings");
+  let coachView = $state("Advice");
+  const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report?.source || ""));
   let question = $state("");
   let answers = $state([]);
   let asking = $state(false);
 
-  // User-facing tabs on the left; the raw execution detail is a separate "utility" tab on the right.
+  // Tabs are separated by *what a thing is*: your media, what was measured (CV), and the coach's read (AI).
   const MAIN_TABS = [
-    { id: "Review", hint: "Your footage plus what was measured from it — movement, the ball, your body — and the moments to look at." },
-    { id: "Coaching", hint: "Your focus, what's working, what to fix, and drills to practice." },
-    { id: "Notes", hint: "Caveats about this clip, the report-quality score, and downloads." },
+    { id: "Video", hint: "Your clip: watch it, step frame-by-frame, slow it down, draw on it — with the motion measured from it." },
+    { id: "Analysis", hint: "Results of analysing the video — the body, any tracked object, and the spatial maps. Pure analysis, no sport terms." },
+    { id: "Observations", hint: "Everything we saw — the findings read in table-tennis terms, plus the notable moments. Not coaching yet." },
+    { id: "Coaching", hint: "What the coach says: your focus, what to fix, drills, and the flagged moments." },
   ];
   const TECH_TAB = {
     id: "Diagnostics",
@@ -35,38 +47,36 @@
   const clipWarnings = $derived(report?.quality?.warnings || []);
   const caveats = $derived((report?.limitations || []).filter((l) => !clipWarnings.includes(l)));
 
-  // Everything this run produced (see lib/outputs.js).
   const outputGroups = $derived(outputs(report));
-  // Charts shown inside the Video view (and clips) are not separate tabs.
-  const INLINE = ["movement", "segments", "clips", "strokes"];
-  // Two-level nav: the user-centric groups are the sub-tabs; their items are the second row.
-  let watchGroup = $state("clip");
-  const visibleGroups = $derived(
-    outputGroups.map((g) => ({ ...g, items: g.items.filter((i) => !INLINE.includes(i.id)) })).filter((g) => g.items.length),
-  );
-  const activeGroup = $derived(visibleGroups.find((g) => g.id === watchGroup) || visibleGroups[0]);
+  const videoGroup = $derived(outputGroups.find((g) => g.id === "clip"));
+  const motionGroup = $derived(outputGroups.find((g) => g.id === "movement"));
+  const detectionGroups = $derived(outputGroups.filter((g) => ["maps", "body", "ball"].includes(g.id)));
+  // Video tab = the motion / measured-from-video items, then the clip's own items (the player is rendered on its own).
+  const videoItems = $derived([...(motionGroup?.items || []), ...(videoGroup?.items || []).filter((i) => i.id !== "video")]);
+  const activeDetect = $derived(detectionGroups.find((g) => g.id === measureGroup) || detectionGroups[0]);
+  const duration = $derived(Math.max(0.001, ...(report?.frame_times || [1])));
+  const segments = $derived(report?.metrics?.ball?.segments || []);
+  const strokes = $derived(report?.metrics?.strokes || []);
+  const series = $derived(movementSeries(report));
 
-  // Spoken summary: focus + the top few issues + the summary paragraph.
   const summaryText = $derived.by(() => {
     if (!report) return "";
     const parts = [`${report.sport || "Session"} on ${report.date || "an unknown date"}.`];
     if (report.focus) parts.push(`Focus next session: ${report.focus}.`);
-    const issues = (report.issues || []).slice(0, 3).map((i) => issueText(i)).filter(Boolean);
-    if (issues.length) parts.push(`What to fix: ${issues.join(". ")}.`);
+    const issueList = (report.issues || []).slice(0, 3).map((i) => issueText(i)).filter(Boolean);
+    if (issueList.length) parts.push(`What to fix: ${issueList.join(". ")}.`);
     if (report.summary) parts.push(report.summary);
     return parts.join(" ");
   });
 
   const issues = $derived(report?.issues || []);
 
-  // Drills checklist (local, not persisted).
   let doneDrills = $state({});
   function toggleDrill(i) {
     doneDrills = { ...doneDrills, [i]: !doneDrills[i] };
   }
   const doneCount = $derived(Object.values(doneDrills).filter(Boolean).length);
 
-  // Split "claim: evidence" issue text so the metrics de-emphasize under the claim.
   function splitIssue(text) {
     const s = String(text || "");
     const c = s.indexOf(": ");
@@ -85,7 +95,8 @@
     error = "";
     try {
       report = await getReport(stem);
-      watchGroup = "clip";
+      tab = "Video";
+      measureGroup = "body";
       doneDrills = {};
     } catch (e) {
       error = String(e?.message || e);
@@ -114,6 +125,46 @@
   }
 </script>
 
+{#snippet visual(it)}
+  {#if it.id === "video"}
+    <VideoReview {report} />
+  {:else if it.id === "movement"}
+    <MotionChart series={movementSeries(report)} playhead={playTime} onseek={(t) => playerRef?.seek(t)} />
+  {:else if it.id === "segments"}
+    <Segments {segments} {duration} playhead={playTime} onseek={(t) => playerRef?.seek(t)} />
+  {:else if it.id === "strokes"}
+    <div class="flex flex-wrap gap-1.5">
+      {#each strokes as s}
+        <span class="rounded-full border-2 border-line px-2.5 py-0.5 font-mono text-xs text-accent2" title={`${s.hand} · strength ${s.strength}`}>
+          {s.hand === "left" ? "L" : s.hand === "right" ? "R" : "?"} {fmtTime(s.t)}
+        </span>
+      {/each}
+    </div>
+  {:else if it.id === "pose_angles"}
+    <PoseChart {report} />
+  {:else if it.id === "pose3d"}
+    <Pose3D {report} />
+  {:else if it.id === "ball3d"}
+    <Ball3D {report} />
+  {:else if it.kind}
+    <figure>
+      <img src={artifact(report.stem, it.kind)} alt={it.label} class="w-full rounded-xl border-2 border-line" />
+    </figure>
+  {:else if it.id === "ball"}
+    <p class="rounded-xl border-2 border-line p-4 text-sm text-muted">
+      No small moving object detected in this clip — automatic tracking is hard here.
+    </p>
+  {/if}
+{/snippet}
+
+{#snippet frow(f)}
+  <div class="text-sm">
+    <span class="font-semibold text-app">{f.label}:</span>
+    <span class="text-app"> {f.value}</span>
+    <span class="block text-xs text-muted">{f.note}</span>
+  </div>
+{/snippet}
+
 {#if loading}
   <p class="mt-6 text-sm text-muted">Loading…</p>
 {:else if error}
@@ -122,20 +173,12 @@
   <p class="mt-6 text-sm text-muted">No report selected.</p>
 {:else}
   <div class="flex items-baseline gap-3">
+    <a href={`${base}/`} class="text-sm font-semibold text-accent">← Sessions</a>
     <h1 class="font-display text-2xl font-bold">{report.stem}</h1>
     <span class="text-sm text-muted">{report.sport} · {report.date}</span>
     {#if report.fallback}
       <span class="rounded-full border border-warn px-2 py-0.5 text-[11px] font-semibold text-warn" title="The live run failed; this is the last recorded result for this clip.">recorded run</span>
     {/if}
-    <span
-      class="ml-auto text-right"
-      title="How trustworthy the report is (evidence coverage, confidence, no unsupported spin/speed claims) — not how well you played."
-    >
-      <span class="font-display text-xl font-bold {scoreTone(report.score?.score ?? 0)}">
-        {report.score?.score ?? 0}<span class="text-sm text-muted">/100</span>
-      </span>
-      <span class="block text-[11px] uppercase tracking-wide text-muted">report quality</span>
-    </span>
   </div>
 
   <div class="sticky top-14 z-20 -mx-4 mt-4 border-b-2 border-line bg-ink/90 px-4 backdrop-blur">
@@ -165,72 +208,197 @@
   <p class="mt-2 text-xs text-muted">{[...MAIN_TABS, TECH_TAB].find((t) => t.id === tab)?.hint}</p>
 
   <div class="mt-3">
-    {#if tab === "Review"}
-      <p class="mb-5 text-xs text-muted">🖥 Everything on this tab is computed on your device — no AI tokens. Only the written report uses the AI agent.</p>
-      {#if visibleGroups.length > 1}
+    {#if tab === "Video"}
+      {#if report.has_source && !isPhoto}
+        <div class="flex items-start justify-between gap-3">
+          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Clip</h3>
+          <TrimExport {report} />
+        </div>
+        <div class="mt-3"><VideoReview {report} bind:this={playerRef} bind:time={playTime} /></div>
+      {/if}
+      <div class="mt-8 space-y-14">
+        {#each videoItems as it (it.id)}
+          <section>
+            <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
+            <Provenance item={it} />
+            <div class="mt-3">{@render visual(it)}</div>
+          </section>
+        {/each}
+      </div>
+    {:else if tab === "Analysis"}
+      <p class="mb-5 text-xs text-muted">🖥 Results of analysing the clip, on your device — no AI tokens. Tap <b class="text-app">details</b> for the technical note.</p>
+      {#if detectionGroups.length > 1}
         <div class="mb-5 flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-line pb-2">
-          {#each visibleGroups as g}
+          {#each detectionGroups as g}
             <button
-              onclick={() => (watchGroup = g.id)}
+              onclick={() => (measureGroup = g.id)}
               class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
-              class:border-accent={activeGroup?.id === g.id}
-              class:text-app={activeGroup?.id === g.id}
-              class:border-transparent={activeGroup?.id !== g.id}
-              class:text-muted={activeGroup?.id !== g.id}
+              class:border-accent={activeDetect?.id === g.id}
+              class:text-app={activeDetect?.id === g.id}
+              class:border-transparent={activeDetect?.id !== g.id}
+              class:text-muted={activeDetect?.id !== g.id}
             >{g.group}</button>
           {/each}
         </div>
       {/if}
-
-      {#if activeGroup}
+      {#if activeDetect}
         <div class="space-y-14">
-          {#each activeGroup.items as it (it.id)}
+          {#each activeDetect.items as it (it.id)}
             <section>
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
-                  <Provenance item={it} />
-                </div>
-                {#if it.id === "video"}
-                  <TrimExport {report} />
-                {/if}
-              </div>
-              <div class="mt-3">
-                {#if it.id === "video"}
-                  <VideoReview {report} />
-                {:else if it.id === "pose_angles"}
-                  <PoseChart {report} />
-                {:else if it.id === "pose3d"}
-                  <Pose3D {report} />
-                {:else if it.id === "ball3d"}
-                  <Ball3D {report} />
-                {:else if it.kind}
-                  <figure>
-                    <img src={artifact(report.stem, it.kind)} alt={it.label} class="w-full rounded-xl border-2 border-line" />
-                  </figure>
-                {:else if it.id === "ball"}
-                  <p class="rounded-xl border-2 border-line p-4 text-sm text-muted">
-                    No ball detected in this clip — automatic ball tracking is hard here. A clearer, side-on angle usually helps.
-                  </p>
-                {/if}
-              </div>
+              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
+              <Provenance item={it} />
+              <div class="mt-3">{@render visual(it)}</div>
             </section>
           {/each}
         </div>
       {/if}
+    {:else if tab === "Observations"}
+      <h3 class="font-display font-bold">Observations</h3>
+      <p class="mt-1 text-sm text-muted">
+        Everything we saw, read in table-tennis terms — enough to plan from. No advice yet.
+      </p>
+      <div class="mb-5 mt-4 flex gap-5 border-b-2 border-line pb-2">
+        {#each ["Findings", "Key moments"] as v}
+          <button
+            onclick={() => (obsView = v)}
+            class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
+            class:border-accent={obsView === v}
+            class:text-app={obsView === v}
+            class:border-transparent={obsView !== v}
+            class:text-muted={obsView !== v}
+          >{v}</button>
+        {/each}
+      </div>
+      {#if obsView === "Findings"}
+      {#if report.tt_reading?.findings?.length}
+        {#each ["Play", "Player", "Ball"] as grp}
+          {@const items = report.tt_reading.findings.filter((f) => f.group === grp)}
+          {#if items.length}
+            <section class="mt-5 rounded-xl border-2 border-line p-4">
+              <h4 class="font-display text-sm font-bold uppercase tracking-wide text-accent">{grp}</h4>
+
+              {#if grp === "Ball"}
+                <div class="mt-3 space-y-5">
+                  {#if report.artifacts?.ball}
+                    <div class="grid gap-5 sm:grid-cols-2">
+                      <figure>
+                        <img src={artifact(report.stem, "ball")} alt="Tracked path" class="w-full rounded-lg border-2 border-line" />
+                      </figure>
+                      <div class="grid content-start gap-y-2">
+                        {#each items.filter((f) => f.label === "Tracked" || f.label === "Path extent") as f}{@render frow(f)}{/each}
+                      </div>
+                    </div>
+                  {/if}
+                  {#if (report.metrics?.ball?.trajectory3d || []).length > 2}
+                    <div class="grid gap-5 sm:grid-cols-2">
+                      <Ball3D {report} hideStats hideControls bind:this={ball3dRef} />
+                      <div class="grid content-start gap-y-2">
+                        {#each items.filter((f) => f.label !== "Tracked" && f.label !== "Path extent") as f}{@render frow(f)}{/each}
+                        <button onclick={() => ball3dRef?.reset()} class="mt-2 w-fit rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold text-app">Reset view</button>
+                      </div>
+                    </div>
+                  {/if}
+                  {#if !report.artifacts?.ball && (report.metrics?.ball?.trajectory3d || []).length <= 2}
+                    <div class="grid content-start gap-y-2">
+                      {#each items as f}{@render frow(f)}{/each}
+                    </div>
+                  {/if}
+                </div>
+              {:else}
+                <div class="mt-3 grid gap-5 sm:grid-cols-2">
+                  <div class="space-y-4">
+                    {#if grp === "Play"}
+                      {#if series.length}<MotionChart {series} playhead={0} onseek={() => {}} />{/if}
+                      {#if segments.length}<Segments {segments} {duration} playhead={0} onseek={() => {}} tt />{/if}
+                    {:else if grp === "Player"}
+                      {#if report.artifacts?.pose_hero || report.artifacts?.pose}
+                        <figure>
+                          <img src={artifact(report.stem, report.artifacts.pose_hero ? "pose_hero" : "pose")} alt="Skeleton" class="w-full rounded-lg border-2 border-line" />
+                        </figure>
+                      {/if}
+                      <PoseChart {report} chrome={false} />
+                    {/if}
+                  </div>
+
+                  <div class="grid content-start gap-y-2">
+                    {#each items as f}{@render frow(f)}{/each}
+                    {#if grp === "Player"}
+                      <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
+                        {#each POSE_SERIES as s (s.key)}
+                          <span class="inline-flex items-center gap-1.5">
+                            <span class="inline-block h-2 w-3 rounded-full" style={`background:${s.color}`}></span>{s.label}
+                          </span>
+                        {/each}
+                        <span>0°–180° · {fmtTime(duration)}</span>
+                      </div>
+                      <p class="text-xs text-muted">
+                        Joint angles over the clip (from the sampled frames). Values are pose estimates, not clinical measurements.
+                      </p>
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+            </section>
+          {/if}
+        {/each}
+      {:else}
+        <p class="mt-3 text-sm text-muted">No observations available for this run.</p>
+      {/if}
+      {:else}
+
+      {#if issues.length || report.focus}
+        <section class="mt-8">
+          <h3 class="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-muted">
+            Key moments
+            <span class="inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-1.5 py-0.5 text-[10px] font-semibold text-accent2">✨ AI agent</span>
+          </h3>
+          <p class="mt-1 text-xs text-muted">The notable seconds — click a time to play just that moment.</p>
+          <div class="mt-3"><KeyMoments {report} /></div>
+        </section>
+      {/if}
+
+      {#if report.clips && Object.keys(report.clips).length}
+        <section class="mt-8">
+          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Moment clips</h3>
+          <p class="mt-1 text-xs text-muted">Short clips around the noted moments.</p>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {#each Object.entries(report.clips).sort((a, b) => Number(a[0]) - Number(b[0])) as [key]}
+              <figure class="rounded-xl border-2 border-line p-2">
+                <!-- svelte-ignore a11y_media_has_caption -->
+                <video src={clip(report.stem, key)} controls preload="metadata" class="w-full rounded-lg border-2 border-line"></video>
+                <figcaption class="mt-1 flex items-center justify-between text-xs text-muted">
+                  <span class="font-mono">@ {fmtTime(Number(key))}</span>
+                  <a href={clip(report.stem, key)} download class="font-semibold text-accent">Download</a>
+                </figcaption>
+              </figure>
+            {/each}
+          </div>
+        </section>
+      {/if}
+      {/if}
     {:else if tab === "Coaching"}
+      <div class="mb-5 flex gap-5 border-b-2 border-line pb-2">
+        {#each ["Advice", "Practice", "Details", "Ask"] as v}
+          <button
+            onclick={() => (coachView = v)}
+            class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
+            class:border-accent={coachView === v}
+            class:text-app={coachView === v}
+            class:border-transparent={coachView !== v}
+            class:text-muted={coachView !== v}
+          >{v}</button>
+        {/each}
+      </div>
+      {#if coachView === "Advice"}
       <div class="mb-3 flex justify-end">
         <ReadAloud text={summaryText} />
       </div>
       {#if report.focus}
-        <div class="rounded-xl border-2 border-good/40 bg-good/10 p-4 text-sm">
-          <span class="font-display font-bold text-good">Focus next session · </span>{report.focus}
+        <div class="rounded-2xl border-2 border-good/40 bg-good/10 p-5">
+          <div class="font-display text-sm font-bold uppercase tracking-wide text-good">Focus next session</div>
+          <p class="mt-1 text-base font-semibold text-app">{report.focus}</p>
         </div>
       {/if}
-      {#if report.summary}
-        <div class="mt-3 rounded-xl border-2 border-line bg-surface/40 p-4 text-sm">{report.summary}</div>
-      {/if}
-
       <div class="mt-4 grid gap-4 lg:grid-cols-2">
         <section class="rounded-xl border-2 border-good/30 bg-good/5 p-4">
           <h3 class="flex items-center gap-2 font-display font-bold text-good">✅ What's working</h3>
@@ -243,97 +411,45 @@
           {/if}
         </section>
 
-        <section class="rounded-xl border-2 border-warn/30 bg-warn/5 p-4">
-          <h3 class="flex items-center gap-2 font-display font-bold text-warn">🎯 What to fix</h3>
-          {#if issues.length}
-            <ol class="mt-2 space-y-3 text-sm">
-              {#each issues as issue, idx}
+        {#if issues.length}
+          <section class="rounded-xl border-2 border-warn/30 bg-warn/5 p-4">
+            <h3 class="flex items-center gap-2 font-display font-bold text-warn">🎯 What to improve</h3>
+            <ul class="mt-2 space-y-1.5 text-sm">
+              {#each issues as issue}
                 {@const parts = splitIssue(issueText(issue))}
-                <li class="flex gap-2">
-                  <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-warn/20 text-[11px] font-bold text-warn">{idx + 1}</span>
-                  <div>
-                    <div class="font-semibold">{parts[0]}</div>
-                    {#if parts[1]}<div class="mt-0.5 text-xs text-muted">{parts[1]}</div>{/if}
-                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      {#each issue.evidence_times || [] as t}
-                        <span class="rounded-full border-2 border-line px-2 py-0.5 font-mono text-xs text-accent2">{fmtTime(t)}</span>
-                      {/each}
-                      {#if issue.confidence}
-                        <span
-                          class="rounded-full border-2 border-line px-2 py-0.5 text-xs {CONF_TONE[issue.confidence] || 'text-muted'}"
-                          title={CONF_HELP}
-                        >{issue.confidence}</span>
-                      {/if}
-                    </div>
-                  </div>
+                <li class="flex items-start gap-2">
+                  <span class="mt-0.5 text-warn">•</span>
+                  <span class="font-semibold">{parts[0]}</span>
                 </li>
               {/each}
-            </ol>
-          {:else}
-            <p class="mt-2 text-sm text-muted">No issues found.</p>
-          {/if}
-        </section>
+            </ul>
+            <p class="mt-2 text-xs text-muted">Full observations (with timestamps) are on the Observations tab.</p>
+          </section>
+        {/if}
       </div>
 
-      {#if report.drills?.length}
-        <section class="mt-4 rounded-xl border-2 border-line p-4">
-          <h3 class="flex items-center gap-2 font-display font-bold">
-            🏋 Drills to practice
-            <span class="text-xs font-normal text-muted">{doneCount}/{report.drills.length} done</span>
-          </h3>
-          <ul class="mt-2 space-y-2 text-sm">
-            {#each report.drills as d, i}
-              {@const det = report.drill_details?.[i]}
-              <li class="rounded-xl border-2 border-line p-3">
-                <label class="flex cursor-pointer items-start gap-2">
-                  <input type="checkbox" checked={!!doneDrills[i]} onchange={() => toggleDrill(i)} class="mt-0.5" />
-                  <span class="font-semibold" class:text-muted={doneDrills[i]} class:line-through={doneDrills[i]}>{d}</span>
-                </label>
-                {#if det}
-                  <div class="mt-1.5 space-y-0.5 pl-6 text-xs text-muted">
-                    {#if det.cue}<div><b class="text-app">Cue:</b> {det.cue}</div>{/if}
-                    {#if det.progression}<div><b class="text-app">Next:</b> {det.progression}</div>{/if}
-                  </div>
-                {/if}
-              </li>
-            {/each}
-          </ul>
-          <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface">
-            <div class="h-full rounded-full bg-accent transition-all" style={`width: ${(doneCount / report.drills.length) * 100}%`}></div>
-          </div>
-        </section>
+      {#if report.summary || report.progress}
+        <div class="mt-6 border-t-2 border-line pt-4">
+          <h4 class="text-[11px] font-semibold uppercase tracking-wide text-muted">Read more</h4>
+          {#if report.summary}<p class="mt-2 text-sm text-muted">{report.summary}</p>{/if}
+          {#if report.progress}<p class="mt-3 text-sm text-muted"><b class="text-app">Since last time:</b> {report.progress}</p>{/if}
+        </div>
       {/if}
-
-      {#if report.progress}<p class="mt-3 text-sm text-muted">Since last time: {report.progress}</p>{/if}
-    {:else if tab === "Notes"}
-      <h3 class="font-display font-bold">Notes</h3>
-      <p class="mt-1 text-sm text-muted">
-        Caveats for this analysis of <b>this clip</b> (and the limits of the method) — not coaching advice.
-      </p>
+      {:else if coachView === "Details"}
+      <h3 class="font-display font-bold">Details</h3>
+      <p class="mt-1 text-sm text-muted">About this clip and how it was measured — not coaching.</p>
 
       {#if clipWarnings.length}
         <h4 class="mt-4 text-sm font-semibold text-app">About your clip</h4>
         <ul class="mt-1 list-disc pl-5 text-sm">{#each clipWarnings as w}<li>{w}</li>{/each}</ul>
       {/if}
-
       {#if caveats.length}
         <h4 class="mt-4 text-sm font-semibold text-app">What limits the analysis</h4>
         <ul class="mt-1 list-disc pl-5 text-sm">{#each caveats as l}<li>{l}</li>{/each}</ul>
       {/if}
 
-      <h4 class="mt-4 text-sm font-semibold text-app">Report quality</h4>
-      <p class="mt-1 text-sm">
-        <b class={scoreTone(report.score?.score ?? 0)}>{report.score?.score ?? 0}/100</b> —
-        how trustworthy the report is, not how well you played. Built from
-        evidence coverage ({Math.round((report.score?.evidence_coverage || 0) * 100)}% of issues cite a timestamp),
-        the confidence mix, and a check for unsupported claims (spin / ball speed / exact angles).
-      </p>
-      {#if report.score?.hallucination_flags?.length}
-        <p class="mt-1 text-xs text-bad">Unsupported claims flagged: {report.score.hallucination_flags.join(", ")}</p>
-      {/if}
-
-      <h4 class="mt-4 text-sm font-semibold text-app">Download</h4>
-      <div class="mt-1 flex flex-wrap gap-3 text-sm">
+      <h4 class="mt-4 text-sm font-semibold text-app">Save / export</h4>
+      <div class="mt-2 flex flex-wrap gap-3 text-sm">
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "md")} download>Download Markdown</a>
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "html")} target="_blank" rel="noreferrer">Open HTML</a>
         {#if report.clips && Object.keys(report.clips).length}
@@ -341,26 +457,65 @@
         {/if}
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={cardUrl(report.stem)} download>Share card (PNG)</a>
       </div>
+      {:else if coachView === "Practice"}
+      {#if report.drills?.length}
+        <div class="mb-4 flex items-center gap-3">
+          <span class="text-sm text-muted">{doneCount} of {report.drills.length} done</span>
+          <div class="ml-auto h-2 w-40 overflow-hidden rounded-full bg-surface">
+            <div class="h-full rounded-full bg-accent transition-all" style={`width: ${(doneCount / report.drills.length) * 100}%`}></div>
+          </div>
+        </div>
+        <ul class="space-y-3">
+          {#each report.drills as d, i}
+            {@const det = report.drill_details?.[i]}
+            {@const done = !!doneDrills[i]}
+            <li>
+              <label
+                class="flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition {done
+                  ? 'border-good/50 bg-good/5'
+                  : 'border-line'}"
+              >
+                <input type="checkbox" checked={done} onchange={() => toggleDrill(i)} class="mt-1 h-4 w-4" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent">{i + 1}</span>
+                    <span class="font-semibold text-app" class:text-muted={done} class:line-through={done}>{d}</span>
+                  </div>
+                  {#if det}
+                    <div class="mt-2 space-y-1 pl-8 text-xs text-muted">
+                      {#if det.cue}<div><span class="font-semibold text-app">Cue:</span> {det.cue}</div>{/if}
+                      {#if det.progression}<div><span class="font-semibold text-app">Next step:</span> {det.progression}</div>{/if}
+                    </div>
+                  {/if}
+                </div>
+              </label>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="text-sm text-muted">No practice items for this session.</p>
+      {/if}
+      {:else if coachView === "Ask"}
+      <section class="card p-4">
+        <h3 class="font-display font-bold">Ask about this report</h3>
+        {#each answers as a}
+          <div class="mt-2 text-sm"><span class="text-muted">You:</span> {a.q}<br /><span class="text-accent2">Coach:</span> {a.answer}</div>
+        {/each}
+        <div class="mt-3 flex gap-2">
+          <input
+            bind:value={question}
+            onkeydown={(e) => e.key === "Enter" && doAsk()}
+            placeholder="e.g. How do I fix my split-step?"
+            class="flex-1 rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm"
+          />
+          <button onclick={doAsk} disabled={asking} class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+            {asking ? "…" : "Ask"}
+          </button>
+        </div>
+      </section>
+      {/if}
     {:else if tab === "Diagnostics"}
       <Technical {report} />
     {/if}
   </div>
-
-  <section class="card mt-6 p-4">
-    <h3 class="font-display font-bold">Ask about this report</h3>
-    {#each answers as a}
-      <div class="mt-2 text-sm"><span class="text-muted">You:</span> {a.q}<br /><span class="text-accent2">Coach:</span> {a.answer}</div>
-    {/each}
-    <div class="mt-3 flex gap-2">
-      <input
-        bind:value={question}
-        onkeydown={(e) => e.key === "Enter" && doAsk()}
-        placeholder="e.g. How do I fix my split-step?"
-        class="flex-1 rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm"
-      />
-      <button onclick={doAsk} disabled={asking} class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-        {asking ? "…" : "Ask"}
-      </button>
-    </div>
-  </section>
 {/if}

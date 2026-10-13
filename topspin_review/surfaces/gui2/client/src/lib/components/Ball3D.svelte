@@ -1,7 +1,13 @@
 <script>
   import { fmtTime } from "$lib/format";
 
-  let { report } = $props();
+  let { report, hideStats = false, hideControls = false } = $props();
+
+  /** Reset the orbit view (exposed so callers can place the button elsewhere). */
+  export function reset() {
+    yaw = -0.5;
+    pitch = 0.2;
+  }
 
   const traj = $derived(report?.metrics?.ball?.trajectory3d || []);
   const stats = $derived(report?.metrics?.ball?.stats || {});
@@ -47,7 +53,7 @@
       Not enough tracked ball points in this report to plot a trajectory.
     </p>
   {:else}
-    <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
+    <div class="grid gap-3 {hideStats ? '' : 'sm:grid-cols-[minmax(0,1fr)_11rem]'}">
       <div
         class="relative h-72 overflow-hidden rounded-[14px] border-2 border-line bg-surface"
         class:cursor-grabbing={dragging} class:cursor-grab={!dragging}
@@ -65,14 +71,18 @@
         </svg>
       </div>
 
-      <div class="text-xs text-muted">
-        <div class="font-semibold text-app">{projected.length} tracked points</div>
-        {#if stats.x_range != null}<div>x-range {stats.x_range}</div>{/if}
-        {#if stats.y_range != null}<div>y-range {stats.y_range}</div>{/if}
-        {#if stats.max_speed != null}<div>max speed {stats.max_speed}/s</div>{/if}
-        <div class="mt-2">{traj.length ? fmtTime(traj[0].t) + " – " + fmtTime(traj[traj.length - 1].t) : ""}</div>
-        <button onclick={() => { yaw = -0.5; pitch = 0.2; }} class="mt-3 rounded-lg border-2 border-line px-2.5 py-1 font-semibold text-app">Reset view</button>
-      </div>
+      {#if !hideStats}
+        <div class="text-xs text-muted">
+          <div class="font-semibold text-app">{projected.length} tracked points</div>
+          {#if stats.x_range != null}<div>x-range {stats.x_range}</div>{/if}
+          {#if stats.y_range != null}<div>y-range {stats.y_range}</div>{/if}
+          {#if stats.max_speed != null}<div>max speed {stats.max_speed}/s</div>{/if}
+          <div class="mt-2">{traj.length ? fmtTime(traj[0].t) + " – " + fmtTime(traj[traj.length - 1].t) : ""}</div>
+        </div>
+      {/if}
     </div>
+    {#if !hideControls}
+      <button onclick={reset} class="mt-3 rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold text-app">Reset view</button>
+    {/if}
   {/if}
 </div>

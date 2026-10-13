@@ -1,17 +1,12 @@
 <script>
-  import { fmtTime } from "$lib/format";
+  import { fmtTime, POSE_SERIES } from "$lib/format";
 
-  let { report } = $props();
+  let { report, chrome = true } = $props();
 
   const times = $derived(report.frame_times || []);
   const pose = $derived(report.metrics?.pose || []);
 
-  const SERIES = [
-    { key: "l_knee", label: "Left knee", color: "#4f46e5" },
-    { key: "r_knee", label: "Right knee", color: "#818cf8" },
-    { key: "l_elbow", label: "Left elbow", color: "#34d399" },
-    { key: "r_elbow", label: "Right elbow", color: "#fbbf24" },
-  ];
+  const SERIES = POSE_SERIES;
 
   const W = 640;
   const H = 170;
@@ -44,18 +39,20 @@
         {/if}
       {/each}
     </svg>
-    <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
-      {#each SERIES as s (s.key)}
-        <span class="inline-flex items-center gap-1.5">
-          <span class="inline-block h-2 w-3 rounded-full" style={`background:${s.color}`}></span>{s.label}
-        </span>
-      {/each}
-      <span class="ml-auto">0°–180° · {fmtTime(tMax)}</span>
-    </div>
-    <p class="mt-1 text-xs text-muted">
-      Joint angles over the clip (from the sampled frames). Useful for spotting a knee/elbow dip during the
-      stroke. Values are pose estimates, not clinical measurements.
-    </p>
+    {#if chrome}
+      <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
+        {#each SERIES as s (s.key)}
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-2 w-3 rounded-full" style={`background:${s.color}`}></span>{s.label}
+          </span>
+        {/each}
+        <span class="ml-auto">0°–180° · {fmtTime(tMax)}</span>
+      </div>
+      <p class="mt-1 text-xs text-muted">
+        Joint angles over the clip (from the sampled frames). Useful for spotting a knee/elbow dip during the
+        stroke. Values are pose estimates, not clinical measurements.
+      </p>
+    {/if}
   </div>
 {:else}
   <p class="text-sm text-muted">No pose angles for this run (pose unavailable or no person detected).</p>

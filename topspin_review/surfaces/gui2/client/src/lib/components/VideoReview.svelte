@@ -1,37 +1,17 @@
 <script>
   import { source, saveAnnotations } from "$lib/api";
-  import { issueGroups, movementSeries, fmtTime } from "$lib/format";
-  import MotionChart from "./MotionChart.svelte";
-  import Timeline from "./Timeline.svelte";
-  import Segments from "./Segments.svelte";
-  import KeyMoments from "./KeyMoments.svelte";
-  import Provenance from "./Provenance.svelte";
-  import { outputs } from "$lib/outputs";
+  import { fmtTime } from "$lib/format";
 
-  let { report } = $props();
+  let { report, time = $bindable(0) } = $props();
 
   let video = $state();
   let stage = $state();
   let currentTime = $state(0);
 
-  const groups = $derived(issueGroups(report));
-  const series = $derived(movementSeries(report));
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report.source || ""));
-  const duration = $derived(Math.max(0.001, ...(report.frame_times || [1])));
-  const markers = $derived(groups.flatMap((g) => g.times.map((t) => ({ t, confidence: g.confidence, text: g.text }))));
 
-  // Provenance for the timeline rows / key-moments list. Movement + rally come
-  // from the catalog (real algorithms); issues + moments come from the model's report.
-  const catalog = $derived(Object.fromEntries(outputs(report).flatMap((g) => g.items).map((i) => [i.id, i])));
-  const strokeList = $derived(report.metrics?.strokes || []);
-  const keyMomentsItem = {
-    how: "The moments the coach flagged in the report. The strip marks them on the timeline; the list below says what each one is — click a time to play just that moment.",
-    method: "The AI coach reads the sampled frames plus the measured metrics and writes issues, each pinned to a timestamp with a confidence; a verification pass then removes any it can't support.",
-    detail: "the report — core/stages/observe + core/stages/coach (AI agent)",
-    local: false,
-  };
-
-  function seek(t) {
+  /** Seek the shared player (used by the synced charts on other tabs). */
+  export function seek(t) {
     if (video) {
       try {
         video.currentTime = Number(t);
@@ -39,9 +19,14 @@
       } catch {}
     }
     currentTime = Number(t);
+    time = currentTime;
   }
+
   function onTime() {
-    if (video) currentTime = video.currentTime;
+    if (video) {
+      currentTime = video.currentTime;
+      time = currentTime;
+    }
   }
 
   // A6 frame-step + slow-mo.
@@ -56,6 +41,7 @@
     video.pause();
     video.currentTime = Math.max(0, video.currentTime + dir / fps);
     currentTime = video.currentTime;
+    time = currentTime;
   }
   function onLoaded() {
     if (video) video.playbackRate = rate;
@@ -264,46 +250,5 @@
         </div>
       {/if}
     </div>
-
-    {#if !isPhoto && report.has_source}
-      {#if series.length}
-        <div class="mt-8">
-          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Movement</h3>
-          {#if catalog.movement}<Provenance item={catalog.movement} />{/if}
-          <div class="mt-2"><MotionChart {series} playhead={currentTime} onseek={seek} /></div>
-        </div>
-      {/if}
-      {#if (report.metrics?.ball?.segments || []).length}
-        <div class="mt-8">
-          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Rally phases</h3>
-          {#if catalog.segments}<Provenance item={catalog.segments} />{/if}
-          <div class="mt-2"><Segments segments={report.metrics?.ball?.segments || []} {duration} playhead={currentTime} onseek={seek} /></div>
-        </div>
-      {/if}
-      {#if strokeList.length}
-        <div class="mt-8">
-          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Strokes</h3>
-          {#if catalog.strokes}<Provenance item={catalog.strokes} />{/if}
-          <div class="mt-2 flex flex-wrap gap-1.5">
-            {#each strokeList as s}
-              <button
-                onclick={() => seek(s.t)}
-                title={`${s.hand} · strength ${s.strength}`}
-                class="rounded-full border-2 border-line px-2.5 py-0.5 font-mono text-xs text-accent2 transition hover:border-accent2"
-              >{s.hand === "left" ? "L" : s.hand === "right" ? "R" : "?"} ▶ {fmtTime(s.t)}</button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-      <div class="mt-8">
-        <div class="flex items-center gap-2">
-          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Key moments</h3>
-          <span class="inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-1.5 py-0.5 text-[10px] font-semibold text-accent2">✨ AI agent</span>
-        </div>
-        <Provenance item={keyMomentsItem} hideBadge />
-        <div class="mt-2"><Timeline {markers} {duration} playhead={currentTime} onseek={seek} /></div>
-        <div class="mt-2"><KeyMoments {report} /></div>
-      </div>
-    {/if}
   </div>
 </div>

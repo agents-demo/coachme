@@ -3,11 +3,11 @@
 //   - how:    PLAIN English, for the player (no jargon).
 //   - method: the full TECHNICAL method, for a developer (behind "details").
 //   - detail/engine: source location + third-party engine (behind "details").
-// Shared by the Review tabs and the first-run tour.
 //
-// `kind` maps to an artifact image route; items without a `kind` render via a
-// dedicated component (video, charts, 3D). Items whose id is in INLINE
-// (result/+page.svelte) live inside the Video view, not as tabs.
+// Groups are separated by nature in the UI: the "clip" group (your media) renders
+// on the Video tab; the rest (movement / body / ball) are the measured outputs on
+// the Measurements tab. `kind` maps to an artifact image route; items without a
+// `kind` render via a dedicated component (video, charts, 3D, strokes).
 
 export function outputs(report) {
   const a = report?.artifacts || {};
@@ -28,22 +28,6 @@ export function outputs(report) {
       local: true,
     },
   ];
-  let clips = [];
-  try {
-    clips = Object.entries(report?.clips || {});
-  } catch {}
-  if (clips.length) {
-    clipItems.push({
-      id: "clips",
-      label: `Moment clips (${clips.length})`,
-      stepLabel: "Cut after the report",
-      how: "Short clips around the main flagged moments, so you can watch the key bits back to back.",
-      method: "Takes the flagged timestamps (up to 3), and for each cuts a window of 1s before to 2s after into its own short mp4 with ffmpeg. (The downloadable reel later concatenates these.)",
-      detail: "integrations/media.py · make_clips()",
-      engine: "ffmpeg",
-      local: true,
-    });
-  }
   if (a.frames) {
     clipItems.push({
       id: "frames",
@@ -65,7 +49,7 @@ export function outputs(report) {
       id: "movement",
       label: "Movement over time",
       stepLabel: "Measured your movement",
-      how: "The clip's movement energy, moment to moment — a peak is a step or a swing.",
+      how: "The clip's movement energy, moment to moment — a peak is a burst of action.",
       method: "For every consecutive pair of sampled frames: downscale to 320×180 grayscale, take the mean absolute pixel difference (inside the subject region when available) as the energy; the global shift (dx, dy) between the two frames comes from FFT phase correlation.",
       detail: "core/video/metrics.py · activity()",
       engine: "NumPy",
@@ -75,21 +59,37 @@ export function outputs(report) {
   if ((m.ball?.segments || []).length) {
     movement.push({
       id: "segments",
-      label: "Segmentation phases",
+      label: "Active spans",
       stepLabel: "Tracked the ball",
-      how: "The clip split into phases — a rally where the ball kept changing direction (a hit or bounce), or plain movement in between.",
-      method: "Movement energy is compared against a threshold of max(median×1.3, median+0.5); contiguous spans above it become segments (≥0.4s). Each segment is labelled by the ball track's direction reversals inside it — a horizontal flip = a hit, a vertical flip = a bounce — giving 'Rally · N contacts', 'Bounce play', or 'Movement'.",
+      how: "Stretches where the picture stayed consistently active, separated by calmer gaps.",
+      method: "Movement energy is compared against a threshold of max(median×1.3, median+0.5); contiguous spans above it become segments (≥0.4s). Each span is summarised by direction reversals along the tracked object's path (horizontal vs vertical flips).",
       detail: "core/stages/measure/ball.py · phase_segments()",
       local: true,
     });
   }
-  if (a.motion) {
+  if ((m.strokes || []).length) {
     movement.push({
+      id: "strokes",
+      label: "Fast-hand events",
+      stepLabel: "Estimated pose",
+      how: "Moments where a hand moved fastest, with which hand.",
+      method: "Track both pose wrists (landmarks 15/16) across frames, take the faster wrist per step, pick local maxima above a relative threshold, merge within 0.4s, and guess the dominant hand.",
+      detail: "core/stages/measure/strokes.py · segment()",
+      engine: "mediapipe",
+      local: true,
+    });
+  }
+  groups.push({ id: "movement", group: "Motion", items: movement });
+
+  // --- Maps (static spatial results of analysing the video) -------------------
+  const maps = [];
+  if (a.motion) {
+    maps.push({
       id: "motion",
       label: "Movement map",
       kind: "motion",
       stepLabel: "Drew the picture",
-      how: "A heat map of where the picture changed most — red is where your action happened.",
+      how: "A heat map of where the picture changed most — red is where the action happened.",
       method: "Absolute grayscale differences between consecutive frames are summed at 640×360, restricted to the subject region, normalised by the peak, and drawn as a red overlay on the first frame.",
       detail: "core/video/metrics.py · motion_map()",
       engine: "Pillow",
@@ -97,38 +97,26 @@ export function outputs(report) {
     });
   }
   if (a.heatmap) {
-    movement.push({
+    maps.push({
       id: "heatmap",
-      label: "Footwork map",
+      label: "Position map",
       kind: "heatmap",
       stepLabel: "Drew the picture",
-      how: "A map of the court: red is where you stood the most.",
+      how: "A map of where the subject spent the most time within the frame.",
       method: "2D histogram of the subject-box centre across frames, gaussian-blurred, drawn as a red overlay on frame 1.",
       detail: "core/video/metrics.py · position_heatmap()",
       engine: "Pillow",
       local: true,
     });
   }
-  if ((m.strokes || []).length) {
-    movement.push({
-      id: "strokes",
-      label: "Strokes",
-      stepLabel: "Estimated pose",
-      how: "Candidate strokes, found where a wrist moved fastest — click one to jump there.",
-      method: "Track both pose wrists (landmarks 15/16) across frames, take the faster wrist per step, pick local maxima above a relative threshold, merge within 0.4s, and guess the dominant hand.",
-      detail: "core/stages/measure/strokes.py · segment()",
-      engine: "mediapipe",
-      local: true,
-    });
-  }
-  groups.push({ id: "movement", group: "Your movement", items: movement });
+  if (maps.length) groups.push({ id: "maps", group: "Heat maps", items: maps });
 
   // --- Your body --------------------------------------------------------------
   const body = [];
   if (a.pose_hero || a.pose) {
     body.push({
       id: "pose",
-      label: "Body pose",
+      label: "Skeleton",
       kind: a.pose_hero ? "pose_hero" : "pose",
       stepLabel: "Detected your body",
       how: "Your body drawn as a stick figure, so you can see your posture at a key moment.",
@@ -162,21 +150,21 @@ export function outputs(report) {
       local: true,
     });
   }
-  if (body.length) groups.push({ id: "body", group: "Your body", items: body });
+  if (body.length) groups.push({ id: "body", group: "Pose", items: body });
 
   // --- The ball (outcome; least reliable signal, so it goes last) -------------
   const ball = [];
   if (a.ball) {
     ball.push({
       id: "ball",
-      label: "Ball path",
+      label: "Object path",
       kind: "ball",
-      stepLabel: "Tracked the ball",
+      stepLabel: "Tracked the object",
       how: onnx
-        ? "The route the ball took, found automatically and drawn over a frame. A rough guide."
-        : "The route the ball took, drawn over a frame. A rough guide — the ball is hard to track reliably.",
+        ? "The route the tracked object took, found automatically and drawn over a frame. A rough guide."
+        : "The route the tracked object took, drawn over a frame. A rough guide — small fast objects are hard to track reliably.",
       method: onnx
-        ? "A trained YOLO detector (ONNX, letterboxed to 640, class-agnostic NMS) finds the ball in each frame; a constant-velocity nearest-neighbour tracker links detections (max jump 0.16, tolerating 2 missed frames, tracks of ≥3 points). The main track is drawn over the middle frame."
+        ? "A trained YOLO detector (ONNX, letterboxed to 640, class-agnostic NMS) finds the object in each frame; a constant-velocity nearest-neighbour tracker links detections (max jump 0.16, tolerating 2 missed frames, tracks of ≥3 points). The main track is drawn over the middle frame."
         : "Each frame is masked for bright, round-ish warm/white blobs (small colour+shape criteria, optionally confirmed by OpenCV Hough circles); a constant-velocity nearest-neighbour tracker links them (max jump 0.16, tolerating 2 missed frames, tracks of ≥3 points), and the main track is drawn over the middle frame.",
       detail: onnx ? "integrations/ballmodel.py · detect()" : "core/stages/measure/ball.py · candidates()",
       engine: onnx ? "onnxruntime" : "NumPy",
@@ -185,9 +173,9 @@ export function outputs(report) {
   } else {
     ball.push({
       id: "ball",
-      label: "Ball path",
-      stepLabel: "Tracked the ball",
-      how: "No ball detected in this clip — automatic ball tracking is hard here. A clearer, side-on angle usually helps.",
+      label: "Object path",
+      stepLabel: "Tracked the object",
+      how: "No small moving object detected in this clip — automatic tracking is hard here.",
       method: onnx
         ? "A trained YOLO detector (ONNX) ran on every sampled frame, but no stable track formed (needs ≥3 linked points)."
         : "Bright, round-ish blob detection ran on every frame, but no stable track formed (needs ≥3 linked points).",
@@ -199,15 +187,15 @@ export function outputs(report) {
   if (hasBall3D) {
     ball.push({
       id: "ball3d",
-      label: "Ball flight",
-      stepLabel: "Tracked the ball",
-      how: "The ball's route through the air in 3D. The shape is useful; the exact distances aren't.",
+      label: "Object trajectory",
+      stepLabel: "Tracked the object",
+      how: "The object's route in 3D. The shape is useful; the exact distances aren't.",
       method: "Each tracked point gets a depth estimate z = sqrt(median_blob_area / blob_area) — a bigger blob is nearer (a monocular size cue) — combined with its screen (x, y) to plot a 3D path you can rotate. The direction of depth is meaningful; the absolute distance is not.",
       detail: "core/stages/measure/ball.py · trajectory3d()",
       local: true,
     });
   }
-  groups.push({ id: "ball", group: "The ball", items: ball });
+  groups.push({ id: "ball", group: "Tracked object", items: ball });
 
   return groups;
 }

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from topspin_review.domain import drills as drills_catalog
-from topspin_review.domain import evaluate
+from topspin_review.domain import evaluate, game_reading
 from topspin_review.integrations.storage import json_store, runtime, store
 
 
@@ -85,6 +85,7 @@ def get_report(stem: str) -> dict[str, Any] | None:
     report["score"] = evaluate.score(report)
     report["has_source"] = _exists(report.get("source"))
     report["drill_details"] = [drills_catalog.lookup(d) for d in (report.get("drills") or [])]
+    report["tt_reading"] = game_reading.summarize(report.get("metrics") or {})
     return report
 
 
