@@ -146,7 +146,9 @@
     {#if report.fallback}
       <span class="rounded-full border border-warn px-2 py-0.5 text-[11px] font-semibold text-warn" title="The live run failed; this is the last recorded result for this clip.">recorded run</span>
     {/if}
-    <button onclick={openTour} title="What am I looking at?" class="rounded-full border-2 border-line px-2.5 py-0.5 text-xs font-semibold text-muted">?</button>
+    {#if tab === "Review"}
+      <button onclick={openTour} title="What's in Review?" class="rounded-full border-2 border-line px-2.5 py-0.5 text-xs font-semibold text-muted">?</button>
+    {/if}
     <span
       class="ml-auto text-right"
       title="How trustworthy the report is (evidence coverage, confidence, no unsupported spin/speed claims) — not how well you played."
@@ -385,31 +387,41 @@
   </section>
 
   {#if tourOpen}
-    <div class="fixed inset-0 z-50 grid place-items-center bg-ink/70 p-4" role="presentation">
-      <div class="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-line bg-ink p-5 shadow-xl">
+    <div class="fixed inset-0 z-50 grid place-items-center bg-ink/70 p-4" role="presentation" onclick={closeTour}>
+      <div
+        class="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl border-2 border-line bg-ink p-5 shadow-xl"
+        role="presentation"
+        onclick={(e) => e.stopPropagation()}
+      >
         <div class="flex items-start justify-between gap-3">
-          <h2 class="font-display text-lg font-bold">What you're looking at</h2>
+          <h2 class="font-display text-lg font-bold">What's in Review</h2>
           <button onclick={closeTour} title="Close" class="rounded-lg border-2 border-line px-2 py-0.5 text-sm font-semibold">✕</button>
         </div>
         <p class="mt-1 text-sm text-muted">
-          Everything below is made on your device (no AI tokens) — the written report is the only part that uses the
-          model. Each item says how it was made; tap <b class="text-app">details</b> for the technical note.
+          Everything on the Review tab is made on your device (no AI tokens); only the written report uses the AI agent.
+          Tap <b class="text-app">details</b> under an item for the technical note.
         </p>
-        <div class="mt-4 space-y-3">
-          {#each outputGroups as g}
-            <div>
-              <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{g.group}</div>
-              <ul class="mt-1 space-y-1 text-sm">
-                {#each g.items as it}
-                  <li>
-                    <b class="text-app">{it.label}</b>
-                    <Provenance item={it} />
-                  </li>
-                {/each}
-              </ul>
-            </div>
-          {/each}
-        </div>
+        <table class="mt-4 w-full text-sm">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+              <th class="pb-1 pr-4 font-semibold">Item</th>
+              <th class="pb-1 font-semibold">How it's made</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each outputGroups as g}
+              <tr>
+                <td colspan="2" class="pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">{g.group}</td>
+              </tr>
+              {#each g.items as it}
+                <tr class="border-t border-line align-top">
+                  <td class="whitespace-nowrap py-1.5 pr-4 font-semibold text-app">{it.label}</td>
+                  <td class="py-1.5 text-muted">{it.how}</td>
+                </tr>
+              {/each}
+            {/each}
+          </tbody>
+        </table>
         <button onclick={closeTour} class="mt-5 w-full rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">Got it</button>
       </div>
     </div>
