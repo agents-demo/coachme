@@ -43,40 +43,58 @@ class Pipeline(
     private val settings: SettingsStore,
     private val json: Json,
 ) {
-    suspend fun analyze(videoPath: String, onStage: (String) -> Unit): Report {
+    suspend fun analyze(videoPath: String, regionBox: FloatArray? = null, onStage: (String) -> Unit): Report {
         val cfg = settings.flow.first()
 
         val stem = File(videoPath).nameWithoutExtension
-        tools.runStem = stem
+        tools.beginRun(stem)
+        client.calls.clear()
 
         fun since(ns: Long) = (System.nanoTime() - ns) / 1e9
         val timeline = linkedMapOf<String, Double>()
 
+        val isImage = sampler.isImage(videoPath)
+
         onStage("Pick frames")
         val tFrames = System.nanoTime()
-        val frames = sampler.sample(videoPath, cfg.maxFrames)
+        val frames = if (isImage) listOf(sampler.loadImage(videoPath)) else sampler.sample(videoPath, cfg.maxFrames)
         timeline["sampling frames"] = since(tFrames)
         require(frames.isNotEmpty()) { "No frames could be extracted." }
 
-        onStage("Measure movement")
-        val tMeasure = System.nanoTime()
-        val measured = Metrics.analyze(frames)
-        timeline["measuring motion"] = since(tMeasure)
+        val measured = if (isImage) null else {
+            onStage("Measure movement")
+            val t = System.nanoTime()
+            val m = Metrics.analyze(frames, regionBox)
+            timeline["measuring motion"] = since(t)
+            m
+        }
 
-        onStage("Estimate pose")
-        val tPose = System.nanoTime()
-        val poseSeq = pose.detect(frames)
-        timeline["estimating pose"] = since(tPose)
+        val poseSeq = if (isImage) emptyList() else {
+            onStage("Estimate pose")
+            val t = System.nanoTime()
+            val p = pose.detect(frames)
+            timeline["estimating pose"] = since(t)
+            p
+        }
 
-        onStage("Track ball")
-        val tBall = System.nanoTime()
-        val ballDets = ball.detect(frames)
-        val ballJson = ball.process(frames, ballDets, measured.activity)
-        timeline["tracking ball"] = since(tBall)
-        val metrics = JsonObject(
+        val ballJson = if (isImage || measured == null) JsonObject(emptyMap()) else {
+            onStage("Track ball")
+            val t = System.nanoTime()
+            // Dense pass: spread the ball budget across the whole clip (the ball is on screen briefly).
+            val ballFrames = sampler.sampleEven(videoPath, 60)
+            val b = if (ballFrames.isNotEmpty())
+                ball.process(ballFrames.map { it.t }, ball.detect(ballFrames), Metrics.activityPairs(ballFrames))
+            else JsonObject(emptyMap())
+            timeline["tracking ball"] = since(t)
+            b
+        }
+
+        val metrics = if (measured == null) JsonObject(emptyMap()) else JsonObject(
             measured.json + mapOf(
                 "pose_summary" to pose.summarize(poseSeq),
                 "pose3d_summary" to pose.summarize3d(poseSeq),
+                "pose3d" to pose.series3d(poseSeq),
+                "pose_angles" to pose.anglesSeries(poseSeq, frames.map { it.t }),
                 "strokes" to pose.strokes(poseSeq, frames),
                 "footwork" to pose.footwork(poseSeq),
                 "ball" to ballJson,
@@ -85,49 +103,93 @@ class Pipeline(
         val metricsText = Metrics.text(metrics)
 
         val quality = Quality.evaluate(sampler.meta(videoPath), frames.size, metrics)
+        val ttReading = com.topspinreview.android.domain.GameReading.summarize(metrics)
 
         val sheet = contactSheet(frames)
         val sheetB64 = sampler.toJpegBase64(sheet)
 
         onStage("Render images")
+        val motionBmp = measured?.motionMap
+        val poseBmp = if (poseSeq.isNotEmpty()) pose.overlay(frames, poseSeq) else null
         val artifacts = linkedMapOf<String, String>()
         artifacts["frames"] = store.saveArtifact(stem, "frames", sheet)
-        measured.motionMap?.let { artifacts["motion"] = store.saveArtifact(stem, "motion", it) }
-        measured.positionMap?.let { artifacts["heatmap"] = store.saveArtifact(stem, "heatmap", it) }
-        pose.overlay(frames, poseSeq)?.let { artifacts["pose"] = store.saveArtifact(stem, "pose", it) }
-        ball.overlay(frames, ballJson)?.let { artifacts["ball"] = store.saveArtifact(stem, "ball", it) }
+        motionBmp?.let { artifacts["motion"] = store.saveArtifact(stem, "motion", it) }
+        measured?.positionMap?.let { artifacts["heatmap"] = store.saveArtifact(stem, "heatmap", it) }
+        poseBmp?.let { artifacts["pose"] = store.saveArtifact(stem, "pose", it) }
+        if (ballJson.isNotEmpty()) ball.overlay(frames.getOrNull(frames.size / 2)?.bitmap, ballJson)?.let { artifacts["ball"] = store.saveArtifact(stem, "ball", it) }
 
-        val windows = try {
-            onStage("First look")
-            client.stage = "vision: overview"
-            val coarse = client.vision(
-                Prompts.VISION_AGENT_SYSTEM,
-                Prompts.coarse(frames.size, cfg.sport, cfg.level, cfg.hand, cfg.goal, metricsText, sampler.duration(videoPath)),
-                listOf(sheetB64),
-            )
-            extractJson(coarse)?.jsonObject?.get("attentive_windows")?.jsonArray ?: JsonArray(emptyList())
-        } catch (e: Exception) { JsonArray(emptyList()) }
-
-        onStage("Detailed findings")
-        val windowLabel = windows.joinToString(", ") {
-            val o = it.jsonObject
-            "${o["start"]}s-${o["end"]}s"
-        }.ifEmpty { "none" }
-        val observations = try {
-            client.stage = "vision: detail"
-            val fine = client.vision(
-                Prompts.VISION_AGENT_SYSTEM,
-                Prompts.fine(0, cfg.level, cfg.hand, cfg.goal, metricsText, windowLabel),
-                listOf(sheetB64),
-            )
-            extractJson(fine)?.jsonObject?.get("observations")?.jsonPrimitive?.content.orEmpty()
-        } catch (e: Exception) { "" }
+        val windows: JsonArray
+        val observations: String
+        var windowLabel = "none"
+        if (isImage) {
+            onStage("Review image")
+            client.stage = "vision: reviewing image"
+            windows = JsonArray(emptyList())
+            observations = try {
+                val out = client.vision(
+                    Prompts.VISION_AGENT_SYSTEM,
+                    Prompts.still(cfg.sport, cfg.level, cfg.hand, cfg.goal),
+                    listOf(sheetB64),
+                )
+                extractJson(out)?.jsonObject?.get("observations")?.jsonPrimitive?.content.orEmpty()
+            } catch (e: Exception) { "" }
+        } else {
+            windows = try {
+                onStage("First look")
+                client.stage = "vision: overview"
+                val coarse = client.vision(
+                    Prompts.VISION_AGENT_SYSTEM,
+                    Prompts.coarse(frames.size, cfg.sport, cfg.level, cfg.hand, cfg.goal, metricsText, sampler.duration(videoPath)),
+                    listOf(sheetB64),
+                )
+                extractJson(coarse)?.jsonObject?.get("attentive_windows")?.jsonArray ?: JsonArray(emptyList())
+            } catch (e: Exception) { JsonArray(emptyList()) }
+            windowLabel = windows.joinToString(", ") {
+                val o = it.jsonObject
+                "${o["start"]}s-${o["end"]}s"
+            }.ifEmpty { "none" }
+            val zoomB64 = windows.take(3).flatMap { w ->
+                val o = w.jsonObject
+                val s = o["start"]?.toString()?.toDoubleOrNull() ?: return@flatMap emptyList()
+                val e = o["end"]?.toString()?.toDoubleOrNull() ?: return@flatMap emptyList()
+                sampler.sampleRange(videoPath, s, e, 2).map { sampler.toJpegBase64(it.bitmap) }
+            }
+            observations = try {
+                onStage("Detailed findings")
+                client.stage = "vision: detail"
+                val fine = client.vision(
+                    Prompts.VISION_AGENT_SYSTEM,
+                    Prompts.fine(zoomB64.size, cfg.level, cfg.hand, cfg.goal, metricsText, windowLabel),
+                    listOf(sheetB64) + listOfNotNull(
+                        motionBmp?.let { sampler.toJpegBase64(it) },
+                        poseBmp?.let { sampler.toJpegBase64(it) },
+                    ) + zoomB64,
+                )
+                extractJson(fine)?.jsonObject?.get("observations")?.jsonPrimitive?.content.orEmpty()
+            } catch (e: Exception) { "" }
+        }
 
         onStage("Write report")
         runReportAgent(cfg.sport, cfg.level, cfg.hand, cfg.goal, frames.size, windowLabel, observations, metricsText)
 
         val savedStem = tools.lastSavedStem ?: stem
-        val loaded = store.load(savedStem)
+        var loaded = store.load(savedStem)
+        loaded?.let { rep ->
+            if (rep.issues.isNotEmpty()) {
+                onStage("Double-check")
+                client.stage = "verifying"
+                val issuesText = rep.issues.mapIndexed { i, it -> "$i: ${it.issue} (t=${it.evidence_times.joinToString(",")})" }.joinToString("\n")
+                val evidence = observations + "\n\n" + metricsText
+                runCatching {
+                    val resp = client.text(Prompts.VERIFY_SYSTEM, Prompts.verify(issuesText, evidence))
+                    val supported = extractJson(resp)?.jsonObject?.get("supported")?.jsonArray?.mapNotNull { it.toString().toIntOrNull() }?.toSet()
+                    if (supported != null) {
+                        val kept = rep.issues.filterIndexed { i, _ -> i in supported }
+                        if (kept.size != rep.issues.size) loaded = rep.copy(issues = kept)
+                    }
+                }
+            }
+        }
         val callsJson = buildJsonArray {
             client.calls.forEach { c ->
                 add(buildJsonObject {
@@ -152,7 +214,7 @@ class Pipeline(
         )).copy(
             stem = savedStem, metrics = metrics, artifacts = artifacts,
             usage = usageJson, calls = callsJson, tools = toolsJson, timeline = timelineJson,
-            quality = quality,
+            quality = quality, tt_reading = ttReading,
         )
         store.save(savedStem, report)
         return report
@@ -164,9 +226,12 @@ class Pipeline(
     ) {
         client.stage = "agent writing report"
         val profileLine = "level $level, $hand-handed, working on $goal"
+        val history = store.list().take(3)
+            .joinToString(" | ") { "${it.date}: focus ${it.focus}; ${it.issues.size} issue(s)" }
+            .ifEmpty { "No previous report." }
         val query = Prompts.reportQuery(
             SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
-            sport, profileLine, "No previous report.", n, windows, observations, metricsText,
+            sport, profileLine, history, n, windows, observations, metricsText,
             Prompts.rubric(sport),
         )
         val messages = mutableListOf(

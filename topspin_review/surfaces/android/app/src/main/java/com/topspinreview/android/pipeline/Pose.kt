@@ -11,6 +11,7 @@ import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -64,6 +65,34 @@ class Pose(context: Context) {
         return buildJsonObject {
             leans.takeIf { it.isNotEmpty() }?.let { put("torso_lean_mean", round(it.average())) }
             twists.takeIf { it.isNotEmpty() }?.let { put("shoulder_hip_twist_mean", round(it.average())) }
+        }
+    }
+
+    /** Per-frame world landmarks (3D), for the Body 3D view. */
+    fun series3d(poses: List<PoseFrame>): JsonArray = buildJsonArray {
+        poses.forEach { p ->
+            val w = p.world
+            if (w == null) add(kotlinx.serialization.json.JsonNull)
+            else add(buildJsonArray {
+                w.forEach { lm ->
+                    add(buildJsonArray { add(JsonPrimitive(lm[0].toDouble())); add(JsonPrimitive(lm[1].toDouble())); add(JsonPrimitive(lm[2].toDouble())) })
+                }
+            })
+        }
+    }
+
+    /** Per-frame joint angles (degrees), for the pose-angle chart. */
+    fun anglesSeries(poses: List<PoseFrame>, times: List<Double>): JsonArray = buildJsonArray {
+        poses.forEachIndexed { i, p ->
+            val lm = p.lm
+            if (lm == null || lm.size <= 28) add(kotlinx.serialization.json.JsonNull)
+            else add(buildJsonObject {
+                put("t", round(times.getOrElse(i) { i.toDouble() }, 2))
+                put("l_knee", round(angle(lm[23], lm[25], lm[27])))
+                put("r_knee", round(angle(lm[24], lm[26], lm[28])))
+                put("l_elbow", round(angle(lm[11], lm[13], lm[15])))
+                put("r_elbow", round(angle(lm[12], lm[14], lm[16])))
+            })
         }
     }
 

@@ -9,18 +9,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +41,9 @@ import coil.compose.AsyncImage
 import com.topspinreview.android.data.Report
 import com.topspinreview.android.data.ReportStore
 import com.topspinreview.android.ui.theme.Accent
+import com.topspinreview.android.ui.theme.Accent2
+import com.topspinreview.android.ui.theme.Good
+import com.topspinreview.android.ui.theme.Warn
 import com.topspinreview.android.llm.DeepSeekClient
 import com.topspinreview.android.llm.Prompts
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -105,9 +111,14 @@ fun ResultScreen(stem: String, onBack: () -> Unit, vm: ResultViewModel = hiltVie
 
     Scaffold(
         topBar = {
-            TopAppBar(title = {
-                Text(report?.stem?.ifBlank { stem } ?: stem)
-            })
+            TopAppBar(
+                title = { Text(report?.stem?.ifBlank { stem } ?: stem) },
+                navigationIcon = {
+                    androidx.compose.material3.IconButton(onClick = onBack) {
+                        Text("\u2190", style = MaterialTheme.typography.titleLarge)
+                    }
+                },
+            )
         },
     ) { pad ->
         val r = report
@@ -143,14 +154,20 @@ private fun Analysis(r: Report) {
     ) {
         r.artifacts["motion"]?.let {
             Text("Movement map", fontWeight = FontWeight.Bold)
+            Text("Red = where the picture changed most — where the action happened.", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.motionMap)
             AsyncImage(model = File(it), contentDescription = "Movement map", modifier = Modifier.fillMaxWidth())
         }
         r.artifacts["heatmap"]?.let {
             Text("Position map", fontWeight = FontWeight.Bold)
+            Text("Where you spent the most time within the frame.", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.positionMap)
             AsyncImage(model = File(it), contentDescription = "Position map", modifier = Modifier.fillMaxWidth())
         }
         if (foot != null && foot.size > 1) {
             Text("Side-to-side movement", fontWeight = FontWeight.Bold)
+            Text("Your lower body's left–right position through the clip; the shaded band is the travel range.", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.lateral)
             val lateral = (mech?.get("lower_lateral_range")?.toString()?.toDoubleOrNull() ?: 0.0) * 100
             val changes = mech?.get("lower_direction_changes")?.toString() ?: "0"
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -159,13 +176,32 @@ private fun Analysis(r: Report) {
             }
             FootworkChart(foot)
         }
+        val activity = m["activity"] as? kotlinx.serialization.json.JsonArray
+        if (activity != null && activity.size > 1) {
+            Text("Movement over time", fontWeight = FontWeight.Bold)
+            EnergyChart(activity)
+            Text("Energy moment-to-moment — a peak is a burst of action.", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.movement)
+        }
+        val segments = (m["ball"] as? kotlinx.serialization.json.JsonObject)?.get("segments") as? kotlinx.serialization.json.JsonArray
+        if (segments != null && segments.isNotEmpty()) {
+            Text("Active spans", fontWeight = FontWeight.Bold)
+            SegmentsBar(segments, activity?.let { lastT(it) } ?: 10.0)
+            Text("Stretches where the picture stayed consistently active.", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.segments)
+        }
         r.artifacts["pose"]?.let {
             Text("Skeleton", fontWeight = FontWeight.Bold)
+            Text("Your body's joints, detected on a sampled frame.", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.skeleton)
             AsyncImage(model = File(it), contentDescription = "Skeleton", modifier = Modifier.fillMaxWidth())
         }
         val poseSummary = m["pose_summary"] as? kotlinx.serialization.json.JsonObject
         if (poseSummary != null && poseSummary.isNotEmpty()) {
             Text("Body angles", fontWeight = FontWeight.Bold)
+            Text("Joint angles over the clip, in degrees (mean below).", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.angles)
+            (m["pose_angles"] as? kotlinx.serialization.json.JsonArray)?.let { PoseAngleChart(it) }
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                 poseSummary["l_knee_mean"]?.let { Stat(it.toString(), "L knee") }
                 poseSummary["r_knee_mean"]?.let { Stat(it.toString(), "R knee") }
@@ -173,9 +209,17 @@ private fun Analysis(r: Report) {
                 poseSummary["r_elbow_mean"]?.let { Stat(it.toString(), "R elbow") }
             }
         }
+        val pose3d = m["pose3d"] as? kotlinx.serialization.json.JsonArray
+        if (pose3d != null && pose3d.size > 0) {
+            Text("Body 3D", fontWeight = FontWeight.Bold)
+            Text("Your body as a 3D stick figure; depth from one camera is approximate.", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.pose3d)
+            Pose3DView(pose3d)
+        }
         val strokes = m["strokes"] as? kotlinx.serialization.json.JsonArray
         if (strokes != null && strokes.isNotEmpty()) {
             Text("Fast-hand events", fontWeight = FontWeight.Bold)
+            Prov(com.topspinreview.android.domain.Outputs.strokes)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 strokes.forEach { s ->
                     val o = s as? kotlinx.serialization.json.JsonObject
@@ -188,6 +232,8 @@ private fun Analysis(r: Report) {
         val ball = m["ball"] as? kotlinx.serialization.json.JsonObject
         r.artifacts["ball"]?.let {
             Text("Object path", fontWeight = FontWeight.Bold)
+            Text("The route the tracked object took — a rough guide.", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.objectPath)
             AsyncImage(model = File(it), contentDescription = "Object path", modifier = Modifier.fillMaxWidth())
         }
         ball?.get("stats")?.let { st ->
@@ -201,6 +247,13 @@ private fun Analysis(r: Report) {
                 }
             }
         }
+        val traj = (m["ball"] as? kotlinx.serialization.json.JsonObject)?.get("trajectory3d") as? kotlinx.serialization.json.JsonArray
+        if (traj != null && traj.size > 2) {
+            Text("Object trajectory", fontWeight = FontWeight.Bold)
+            Text("The object's route in 3D; the shape is useful, distances aren't.", style = MaterialTheme.typography.bodySmall)
+            Prov(com.topspinreview.android.domain.Outputs.trajectory3d)
+            Trajectory3DView(traj)
+        }
         if (foot == null && r.artifacts["motion"] == null && r.artifacts["pose"] == null && r.artifacts["ball"] == null) {
             Text("No measurements available for this run.", style = MaterialTheme.typography.bodyMedium)
         }
@@ -212,6 +265,21 @@ private fun Stat(value: String, label: String) {
     Column {
         Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text(label, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+/** A collapsible "details" line with the technical method + engine + source. */
+@Composable
+private fun Prov(info: com.topspinreview.android.domain.Outputs.Info) {
+    var open by remember { mutableStateOf(false) }
+    Column {
+        TextButton(onClick = { open = !open }, contentPadding = PaddingValues(0.dp)) {
+            Text(if (open) "hide details" else "details", style = MaterialTheme.typography.bodySmall)
+        }
+        if (open) {
+            Text(info.method, style = MaterialTheme.typography.bodySmall)
+            Text("${info.detail} · ${info.engine}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        }
     }
 }
 
@@ -242,14 +310,131 @@ private fun FootworkChart(series: kotlinx.serialization.json.JsonArray) {
     }
 }
 
+/** Movement energy over time (a peak is a burst of action). */
+@Composable
+private fun PoseAngleChart(series: kotlinx.serialization.json.JsonArray) {
+    val rows = series.mapNotNull { it as? kotlinx.serialization.json.JsonObject }.mapNotNull { o ->
+        val t = o["t"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
+        doubleArrayOf(
+            t,
+            o["l_knee"]?.toString()?.toDoubleOrNull() ?: Double.NaN,
+            o["r_knee"]?.toString()?.toDoubleOrNull() ?: Double.NaN,
+            o["l_elbow"]?.toString()?.toDoubleOrNull() ?: Double.NaN,
+            o["r_elbow"]?.toString()?.toDoubleOrNull() ?: Double.NaN,
+        )
+    }
+    if (rows.size < 2) return
+    val t0 = rows.first()[0]; val t1 = rows.last()[0]
+    val colors = listOf(Accent, Accent2, Good, Warn)
+    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(150.dp)) {
+        val w = size.width; val h = size.height
+        fun X(t: Double) = (((t - t0) / (if (t1 - t0 == 0.0) 1.0 else t1 - t0)) * w).toFloat()
+        fun Y(v: Double) = (h - (v / 180.0 * h)).toFloat()
+        for (k in 1..4) {
+            val path = androidx.compose.ui.graphics.Path()
+            var started = false
+            rows.forEach { row ->
+                val v = row[k]
+                if (!v.isNaN()) {
+                    val x = X(row[0]); val y = Y(v)
+                    if (!started) { path.moveTo(x, y); started = true } else path.lineTo(x, y)
+                }
+            }
+            drawPath(path, colors[k - 1], style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        listOf("L knee" to Accent, "R knee" to Accent2, "L elbow" to Good, "R elbow" to Warn).forEach { (label, c) ->
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                androidx.compose.foundation.Canvas(Modifier.height(6.dp).width(14.dp)) { drawRect(color = c) }
+                Text(" $label", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EnergyChart(activity: kotlinx.serialization.json.JsonArray) {
+    val pts = activity.mapNotNull {
+        val o = it as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+        val t = o["t"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
+        val e = o["energy"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
+        t to e
+    }
+    if (pts.size < 2) return
+    val t0 = pts.first().first; val t1 = pts.last().first
+    val maxE = maxOf(1e-3, pts.maxOf { it.second })
+    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(120.dp)) {
+        val w = size.width; val h = size.height
+        fun X(t: Double) = (((t - t0) / (if (t1 - t0 == 0.0) 1.0 else t1 - t0)) * w).toFloat()
+        fun Y(e: Double) = (h - (e / maxE * h)).toFloat()
+        val line = androidx.compose.ui.graphics.Path()
+        val area = androidx.compose.ui.graphics.Path()
+        pts.forEachIndexed { i, (t, e) ->
+            val px = X(t); val py = Y(e)
+            if (i == 0) { line.moveTo(px, py); area.moveTo(px, h); area.lineTo(px, py) } else { line.lineTo(px, py); area.lineTo(px, py) }
+        }
+        area.lineTo(X(t1), h); area.close()
+        drawPath(area, color = Accent.copy(alpha = 0.18f))
+        drawPath(line, color = Accent, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+    }
+}
+
+/** A timeline bar of active spans. */
+@Composable
+private fun SegmentsBar(segments: kotlinx.serialization.json.JsonArray, duration: Double) {
+    val spans = segments.mapNotNull {
+        val o = it as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+        val s = o["start"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
+        val e = o["end"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
+        s to e
+    }
+    if (spans.isEmpty() || duration <= 0) return
+    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(28.dp)) {
+        val w = size.width; val h = size.height
+        drawRect(color = Accent.copy(alpha = 0.15f), size = androidx.compose.ui.geometry.Size(w, h))
+        spans.forEach { (s, e) ->
+            val x = (s / duration * w).toFloat()
+            val ww = ((e - s) / duration * w).toFloat()
+            drawRect(color = Accent2, topLeft = androidx.compose.ui.geometry.Offset(x, 0f), size = androidx.compose.ui.geometry.Size(ww.coerceAtLeast(2f), h))
+        }
+    }
+}
+
+private fun lastT(activity: kotlinx.serialization.json.JsonArray): Double =
+    activity.mapNotNull { (it as? kotlinx.serialization.json.JsonObject)?.get("t")?.toString()?.toDoubleOrNull() }.maxOrNull() ?: 10.0
+
 @Composable
 private fun Observations(r: Report) {
+    val findings = (r.tt_reading?.get("findings") as? kotlinx.serialization.json.JsonArray)
+        ?: kotlinx.serialization.json.JsonArray(emptyList())
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (r.tt_reading != null) {
-            item {
-                Text("Table-tennis reading", fontWeight = FontWeight.Bold)
-                Text(r.tt_reading.toString(), style = MaterialTheme.typography.bodySmall)
+        listOf("Play", "Player", "Ball").forEach { grp ->
+            val rows = findings.filter { (it as? kotlinx.serialization.json.JsonObject)?.get("group")?.toString()?.trim('"') == grp }
+            if (rows.isNotEmpty()) {
+                item { Text(grp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }
+                items(rows) { f ->
+                    val o = f as kotlinx.serialization.json.JsonObject
+                    Column {
+                        Text("${o["label"]?.toString()?.trim('"')}: ${o["value"]?.toString()?.trim('"')}", fontWeight = FontWeight.SemiBold)
+                        Text(o["note"]?.toString()?.trim('"').orEmpty(), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
+        val moments = (r.tt_reading?.get("moments") as? kotlinx.serialization.json.JsonArray)
+            ?: kotlinx.serialization.json.JsonArray(emptyList())
+        if (moments.isNotEmpty()) {
+            item { Text("Notable moments", fontWeight = FontWeight.Bold) }
+            items(moments) { el ->
+                val o = el as? kotlinx.serialization.json.JsonObject ?: return@items
+                val t = o["t"]?.toString()?.toDoubleOrNull() ?: 0.0
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text("@ ${t}s · ${o["label"]?.toString()?.trim('"').orEmpty()}", Modifier.weight(1f))
+                    val ctx = androidx.compose.ui.platform.LocalContext.current
+                    androidx.compose.material3.TextButton(onClick = { clipAndShare(ctx, r.source, t - 1.0, t + 2.0) }) { Text("Clip") }
+                }
             }
         }
         item { Text("Key moments", fontWeight = FontWeight.Bold) }
@@ -278,6 +463,7 @@ private fun Coaching(r: Report, answers: List<Pair<String, String>>, onAsk: (Str
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (r.focus.isNotBlank()) item { Text("Focus next session", fontWeight = FontWeight.Bold); Text(r.focus) }
         if (r.summary.isNotBlank()) item { Text("Summary", fontWeight = FontWeight.Bold); Text(r.summary) }
+        if (r.progress.isNotBlank()) item { Text("Since last time", fontWeight = FontWeight.Bold); Text(r.progress) }
         if (r.strengths.isNotEmpty()) item {
             Text("What's working", fontWeight = FontWeight.Bold)
             r.strengths.forEach { Text("• $it") }
@@ -286,9 +472,29 @@ private fun Coaching(r: Report, answers: List<Pair<String, String>>, onAsk: (Str
             Text("What to improve", fontWeight = FontWeight.Bold)
             r.issues.forEach { Text("• ${it.issue}") }
         }
-        if (r.drills.isNotEmpty()) item {
-            Text("Practice", fontWeight = FontWeight.Bold)
-            r.drills.forEach { Text("• $it") }
+        if (r.drills.isNotEmpty()) {
+            item {
+                Text("Practice", fontWeight = FontWeight.Bold)
+                val done = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateMapOf<Int, Boolean>() }
+                val doneCount = done.count { it.value }
+                Text("$doneCount of ${r.drills.size} done", style = MaterialTheme.typography.bodySmall)
+                r.drills.forEachIndexed { i, d ->
+                    val det = com.topspinreview.android.domain.Drills.lookup(d)
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        androidx.compose.material3.Checkbox(
+                            checked = done[i] == true,
+                            onCheckedChange = { done[i] = it },
+                        )
+                        Column {
+                            Text(d, style = MaterialTheme.typography.bodyMedium)
+                            if (det != null) {
+                                Text("${det.name}: ${det.cue}", style = MaterialTheme.typography.bodySmall)
+                                Text("Next: ${det.progression}", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
+            }
         }
         if (r.limitations.isNotEmpty()) item {
             Text("Limits", fontWeight = FontWeight.Bold)
@@ -310,6 +516,13 @@ private fun Coaching(r: Report, answers: List<Pair<String, String>>, onAsk: (Str
                         Text("Highlight reel (share)")
                     }
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { com.topspinreview.android.domain.Reporting.share(ctx, r, "md") }, modifier = Modifier.weight(1f)) { Text("Export MD") }
+                    Button(onClick = { com.topspinreview.android.domain.Reporting.share(ctx, r, "html") }, modifier = Modifier.weight(1f)) { Text("Export HTML") }
+                }
+                Button(onClick = { com.topspinreview.android.domain.Reporting.printPdf(ctx, r) }, modifier = Modifier.fillMaxWidth()) { Text("Export PDF (print)") }
+                val gifStart = (r.issues.flatMap { it.evidence_times }.minOrNull()?.minus(1.0) ?: 0.0).coerceAtLeast(0.0)
+                Button(onClick = { exportGif(ctx, r.source, gifStart, gifStart + 3.0) }, modifier = Modifier.fillMaxWidth()) { Text("Export GIF (3s, share)") }
             }
         }
         item {

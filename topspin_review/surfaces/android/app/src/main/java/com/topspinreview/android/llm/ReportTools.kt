@@ -31,6 +31,13 @@ class ReportTools(
 
     /** Tool-call log for Diagnostics. */
     val toolCalls = mutableListOf<kotlinx.serialization.json.JsonObject>()
+
+    /** Reset per-run state (this object is a singleton). */
+    fun beginRun(stem: String) {
+        lastSavedStem = null
+        toolCalls.clear()
+        runStem = stem
+    }
     /** Name + JSON-schema for each tool, for the `tools` field of the request. */
     fun schemas(): JsonArray = buildJsonArray {
         add(fn("get_profile", "Return the player profile as JSON."))

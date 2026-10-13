@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,10 +25,12 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -48,10 +52,16 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.File
+import kotlin.math.hypot
+
+/** One drawn shape (normalized 0..1 coords). */
+private data class Shape(val type: String, val pts: List<Offset>)
+
+private val TOOLS = listOf("pen", "line", "arrow", "circle", "angle")
 
 /**
- * Video tab: the player, a freehand telestration overlay (saved as annotations), and a
- * trim-to-mp4 "export & share". GIF / vertical / highlight-reel / share-card are P6.
+ * Video tab: the player, a telestration tool (pen / line / arrow / circle / angle) saved as
+ * annotations, and a trim-to-mp4 export & share.
  */
 @Composable
 fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
@@ -64,54 +74,51 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
     val uri: Uri = if (source.startsWith("content:") || source.startsWith("http")) Uri.parse(source) else Uri.fromFile(File(source))
 
     val exo = remember {
-        ExoPlayer.Builder(ctx).build().apply {
-            setMediaItem(MediaItem.fromUri(uri)); prepare(); playWhenReady = true
-        }
+        ExoPlayer.Builder(ctx).build().apply { setMediaItem(MediaItem.fromUri(uri)); prepare(); playWhenReady = true }
     }
     DisposableEffect(Unit) { onDispose { exo.release() } }
 
-    val strokes = remember { mutableStateListOf<MutableList<Offset>>() } // normalized 0..1
+    val shapes = remember { mutableStateListOf<Shape>() }
+    var tool by remember { mutableStateOf("pen") }
+    var draft by remember { mutableStateOf<List<Offset>>(emptyList()) }
     var status by remember { mutableStateOf("") }
 
+    // Load existing annotations once.
+    remember(report.stem) {
+        shapeListOf(report.annotations).forEach { shapes.add(it) }
+        true
+    }
+
     Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(
-            Modifier.fillMaxWidth().height(240.dp).background(Color.Black),
-        ) {
+        Box(Modifier.fillMaxWidth().height(240.dp).background(Color.Black)) {
             AndroidView(factory = { PlayerView(it).apply { player = exo; useController = true } }, modifier = Modifier.matchParentSize())
             Canvas(
-                Modifier.matchParentSize().pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragStart = { strokes.add(mutableListOf(it)) },
-                        onDrag = { change, _ ->
-                            val s = strokes.lastOrNull() ?: return@detectDragGestures
-                            s.add(Offset(change.position.x / size.width, change.position.y / size.height))
-                        },
-                    )
-                },
+                Modifier.matchParentSize()
+                    .pointerInput(tool) {
+                        if (tool == "angle") {
+                            detectTapGestures { pos ->
+                                val p = Offset(pos.x / size.width, pos.y / size.height)
+                                val d = draft + p
+                                if (d.size >= 3) { shapes.add(Shape("angle", d.take(3))); draft = emptyList() } else draft = d
+                            }
+                        } else {
+                            detectDragGestures(
+                                onDragStart = { s -> draft = listOf(Offset(s.x / size.width, s.y / size.height)) },
+                                onDrag = { change, _ ->
+                                    val p = Offset(change.position.x / size.width, change.position.y / size.height)
+                                    draft = if (tool == "pen") draft + p else listOf(draft.firstOrNull() ?: p, p)
+                                },
+                                onDragEnd = {
+                                    if (tool == "pen" && draft.size > 1) shapes.add(Shape("pen", draft))
+                                    else if (draft.size >= 2) shapes.add(Shape(tool, draft))
+                                    draft = emptyList()
+                                },
+                            )
+                        }
+                    },
             ) {
-                strokes.forEach { s ->
-                    for (i in 1 until s.size) {
-                        drawLine(
-                            Color(0xFFF97316),
-                            Offset(s[i - 1].x * size.width, s[i - 1].y * size.height),
-                            Offset(s[i].x * size.width, s[i].y * size.height),
-                            strokeWidth = 6f,
-                        )
-                    }
-                }
-                // existing saved annotations (pen only)
-                (report.annotations).forEach { el ->
-                    val o = el as? kotlinx.serialization.json.JsonObject ?: return@forEach
-                    if (o["type"]?.toString()?.trim('"') != "pen") return@forEach
-                    val pts = o["points"] as? JsonArray ?: return@forEach
-                    val list = pts.mapNotNull { p ->
-                        val a = p as? JsonArray ?: return@mapNotNull null
-                        val x = a.getOrNull(0)?.toString()?.toFloatOrNull() ?: return@mapNotNull null
-                        val y = a.getOrNull(1)?.toString()?.toFloatOrNull() ?: return@mapNotNull null
-                        Offset(x * size.width, y * size.height)
-                    }
-                    for (i in 1 until list.size) drawLine(Color(0xFFF97316), list[i - 1], list[i], strokeWidth = 6f)
-                }
+                shapes.forEach { drawShape(it, size) }
+                if (draft.isNotEmpty()) drawShape(Shape(tool, draft), size)
             }
         }
 
@@ -123,30 +130,101 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
             TextButton(onClick = { exo.setPlaybackSpeed(1f) }) { Text("1×") }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { strokes.clear() }) { Text("Clear") }
-            Button(onClick = {
-                val annots = buildJsonArray {
-                    strokes.forEach { s ->
-                        add(buildJsonObject {
-                            put("type", "pen")
-                            put("color", "#f97316")
-                            put("points", buildJsonArray {
-                                s.forEach { pt -> add(buildJsonArray { add(JsonPrimitive(pt.x.toDouble())); add(JsonPrimitive(pt.y.toDouble())) }) }
-                            })
-                        })
-                    }
-                }
-                onSaveAnnotations(annots)
-                status = "Annotations saved"
-            }) { Text("Save drawings") }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            TOOLS.forEach { t ->
+                AssistChip(onClick = { tool = t; draft = emptyList() }, label = { Text(t) })
+            }
         }
 
-        Button(
-            onClick = { status = exportAndShare(ctx, exo, uri) },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("Trim first 10s → mp4 (then share)") }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { shapes.clear(); draft = emptyList() }) { Text("Clear") }
+            Button(onClick = { onSaveAnnotations(toJson(shapes)); status = "Annotations saved" }) { Text("Save drawings") }
+        }
+
+        Button(onClick = { status = exportAndShare(ctx, exo, uri) }, modifier = Modifier.fillMaxWidth()) {
+            Text("Trim first 10s → mp4 (then share)")
+        }
+        TextButton(onClick = { shareSource(ctx, source) }) { Text("Share original clip") }
+        TextButton(onClick = { exportVertical(ctx, source) }) { Text("Export vertical 9:16") }
         if (status.isNotBlank()) Text(status, style = MaterialTheme.typography.bodySmall)
+
+        report.artifacts["frames"]?.let {
+            Text("Frames read", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            Text("The exact stills the coach looked at.", style = MaterialTheme.typography.bodySmall)
+            coil.compose.AsyncImage(model = File(it), contentDescription = "Frames read", modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+private fun DrawScope.drawShape(shape: Shape, size: Size) {
+    val color = Color(0xFFF97316)
+    val stroke = Stroke(width = 6f)
+    fun o(p: Offset) = Offset(p.x * size.width, p.y * size.height)
+    when (shape.type) {
+        "pen" -> {
+            val path = Path()
+            shape.pts.forEachIndexed { i, p -> if (i == 0) path.moveTo(o(p).x, o(p).y) else path.lineTo(o(p).x, o(p).y) }
+            drawPath(path, color, style = stroke)
+        }
+        "line" -> if (shape.pts.size >= 2) drawLine(color, o(shape.pts[0]), o(shape.pts[1]), strokeWidth = 6f)
+        "arrow" -> if (shape.pts.size >= 2) {
+            val a = o(shape.pts[0]); val b = o(shape.pts[1])
+            drawLine(color, a, b, strokeWidth = 6f)
+            val ang = Math.atan2((b.y - a.y).toDouble(), (b.x - a.x).toDouble())
+            val len = 28.0
+            for (d in listOf(ang - 0.5, ang + 0.5)) {
+                drawLine(color, b, Offset((b.x - len * Math.cos(d)).toFloat(), (b.y - len * Math.sin(d)).toFloat()), strokeWidth = 6f)
+            }
+        }
+        "circle" -> if (shape.pts.size >= 2) {
+            val c = o(shape.pts[0]); val e = o(shape.pts[1])
+            drawCircle(color, radius = hypot((e.x - c.x).toDouble(), (e.y - c.y).toDouble()).toFloat(), center = c, style = stroke)
+        }
+        "angle" -> if (shape.pts.size >= 3) {
+            val v = o(shape.pts[0]); val a = o(shape.pts[1]); val b = o(shape.pts[2])
+            drawLine(color, v, a, strokeWidth = 6f); drawLine(color, v, b, strokeWidth = 6f)
+            drawCircle(color, radius = 5f, center = v)
+        }
+    }
+}
+
+private fun toJson(shapes: List<Shape>): JsonArray = buildJsonArray {
+    shapes.forEach { s ->
+        add(buildJsonObject {
+            put("type", s.type)
+            put("color", "#f97316")
+            when (s.type) {
+                "pen", "angle" -> put("points", buildJsonArray {
+                    s.pts.forEach { p -> add(buildJsonArray { add(JsonPrimitive(p.x.toDouble())); add(JsonPrimitive(p.y.toDouble())) }) }
+                })
+                else -> {
+                    val a = s.pts.getOrNull(0) ?: Offset.Zero
+                    val b = s.pts.getOrNull(1) ?: Offset.Zero
+                    put("x1", a.x.toDouble()); put("y1", a.y.toDouble())
+                    put("x2", b.x.toDouble()); put("y2", b.y.toDouble())
+                }
+            }
+        })
+    }
+}
+
+private fun shapeListOf(annots: JsonArray): List<Shape> = annots.mapNotNull { el ->
+    val o = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+    val type = o["type"]?.toString()?.trim('"') ?: return@mapNotNull null
+    if (type == "pen" || type == "angle") {
+        val pts = (o["points"] as? JsonArray)?.mapNotNull { p ->
+            val a = p as? JsonArray ?: return@mapNotNull null
+            val x = a.getOrNull(0)?.toString()?.toFloatOrNull() ?: return@mapNotNull null
+            val y = a.getOrNull(1)?.toString()?.toFloatOrNull() ?: return@mapNotNull null
+            Offset(x, y)
+        } ?: emptyList()
+        Shape(type, pts)
+    } else {
+        val x1 = o["x1"]?.toString()?.toFloatOrNull() ?: return@mapNotNull null
+        val y1 = o["y1"]?.toString()?.toFloatOrNull() ?: return@mapNotNull null
+        val x2 = o["x2"]?.toString()?.toFloatOrNull() ?: return@mapNotNull null
+        val y2 = o["y2"]?.toString()?.toFloatOrNull() ?: return@mapNotNull null
+        Shape(type, listOf(Offset(x1, y1), Offset(x2, y2)))
     }
 }
 
@@ -168,9 +246,7 @@ private fun exportAndShare(ctx: android.content.Context, exo: ExoPlayer, uri: Ur
                 }
                 ctx.startActivity(Intent.createChooser(send, "Share clip"))
             }
-            override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {
-                // best effort
-            }
+            override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {}
         })
         .build()
     return try {

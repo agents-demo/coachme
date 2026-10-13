@@ -46,6 +46,21 @@ Return ONLY a JSON object:
 Every signal must be supported by the frames. Do not claim spin, ball speed or exact angles. No prose outside the JSON.
 """.trim()
 
+    fun still(sport: String, level: String, hand: String, goal: String) =
+        """
+This is a single still photo of a $sport player.
+Player: level $level, $hand-handed, working on: $goal.
+
+Describe objectively what the STATIC posture shows: ready stance, balance, knee bend, torso lean, feet position and the racket/paddle position. You CANNOT assess movement, footwork timing, spin, ball speed, or exact angles from one still image — say so in "limitations".
+
+Return ONLY a JSON object:
+{
+  "observations": "a few sentences on the static posture",
+  "signals": [{"signal": "short finding", "evidence_times": [0], "confidence": "low|medium|high"}],
+  "limitations": ["single still image — motion and footwork cannot be assessed"]
+}
+""".trim()
+
     const val REPORT_AGENT_SYSTEM = """You are Topspin Review. You turn objective, measured observations
 from a time-ordered analysis of a racket-sport session into a practical coaching report.
 
@@ -91,6 +106,22 @@ Check the player against this technique rubric (issues should map to it):
 $rubric
 
 Save the report with save_report (schema with evidence_times and confidence), then give me a short summary.
+""".trim()
+
+    const val VERIFY_SYSTEM = "You verify coaching-report issues against evidence and reply with ONLY the requested JSON."
+
+    fun verify(issues: String, evidence: String) = """
+You are checking a coaching report against the evidence.
+
+Issues drafted:
+$issues
+
+What the measurements and observations actually show:
+$evidence
+
+Return ONLY JSON: {"supported": [list of issue indices, 0-based, that the evidence supports],
+"unsupported_reasons": {"<index>": "why"}}
+Be strict: an issue with no supporting evidence or evidence times must be dropped.
 """.trim()
 
     const val QA_SYSTEM =

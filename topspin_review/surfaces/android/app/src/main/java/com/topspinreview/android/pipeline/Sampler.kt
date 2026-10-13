@@ -2,9 +2,11 @@ package com.topspinreview.android.pipeline
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import java.io.ByteArrayOutputStream
 import kotlin.math.abs
+import kotlin.math.min
 
 /**
  * Frame sampling, ported from `core/stages/measure/sampling.py`.
@@ -31,6 +33,18 @@ class Sampler(private val context: Context) {
             Meta(30.0, 0.0, 0, 0)
         } finally { r.release() }
     }
+
+    /** A single still image as one frame (posture-only analysis). */
+    fun loadImage(path: String): Frame {
+        val bmp = BitmapFactory.decodeFile(path) ?: throw IllegalArgumentException("Could not read the image")
+        val max = 1000
+        val scale = min(max.toFloat() / bmp.width, max.toFloat() / bmp.height)
+        val scaled = if (scale < 1f) Bitmap.createScaledBitmap(bmp, (bmp.width * scale).toInt(), (bmp.height * scale).toInt(), true) else bmp
+        return Frame(0.0, scaled)
+    }
+
+    fun isImage(path: String): Boolean =
+        path.substringAfterLast('.', "").lowercase() in setOf("png", "jpg", "jpeg", "bmp", "webp", "gif")
 
     fun duration(path: String): Double {
         val r = MediaMetadataRetriever()
@@ -63,6 +77,21 @@ class Sampler(private val context: Context) {
             return chosen.sorted().mapNotNull { t ->
                 frameAt(r, t)?.let { Frame(t, it) }
             }
+        } finally { r.release() }
+    }
+
+    /** Up to [count] frames spread evenly inside a single time window. */
+    fun sampleRange(path: String, start: Double, end: Double, count: Int): List<Frame> {
+        if (count <= 0 || end <= start) return emptyList()
+        val r = MediaMetadataRetriever()
+        return try {
+            r.setDataSource(path)
+            (0 until count).mapNotNull { i ->
+                val t = start + (end - start) * i / count
+                frameAt(r, t)?.let { Frame(t, it) }
+            }
+        } catch (e: Exception) {
+            emptyList()
         } finally { r.release() }
     }
 

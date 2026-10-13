@@ -1,10 +1,12 @@
 package com.topspinreview.android.ui.compare
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -66,6 +68,10 @@ fun CompareScreen(onBack: () -> Unit, vm: CompareViewModel = hiltViewModel()) {
                 enabled = a != null && b != null,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Compare") }
+            val ra = a; val rb = b
+            if (ra != null && rb != null && ra.source.isNotBlank() && rb.source.isNotBlank()) {
+                ComparePlayers(ra.source, rb.source)
+            }
             diff?.let { d ->
                 Text(d.text.ifBlank { "no comparable change." }, fontWeight = FontWeight.SemiBold)
                 if (d.metricDeltas.isNotEmpty()) {
@@ -75,6 +81,31 @@ fun CompareScreen(onBack: () -> Unit, vm: CompareViewModel = hiltViewModel()) {
             }
         }
     }
+}
+
+@Composable
+private fun ComparePlayers(sourceA: String, sourceB: String) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    fun uriOf(s: String): Uri =
+        if (s.startsWith("content:") || s.startsWith("http")) Uri.parse(s) else Uri.fromFile(java.io.File(s))
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        PlayerBox(ctx, uriOf(sourceA))
+        PlayerBox(ctx, uriOf(sourceB))
+    }
+}
+
+@Composable
+private fun PlayerBox(ctx: android.content.Context, uri: Uri) {
+    val exo = androidx.compose.runtime.remember {
+        androidx.media3.exoplayer.ExoPlayer.Builder(ctx).build().apply {
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(uri)); prepare(); playWhenReady = false
+        }
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { exo.release() } }
+    androidx.compose.ui.viewinterop.AndroidView(
+        factory = { androidx.media3.ui.PlayerView(it).apply { player = exo; useController = true } },
+        modifier = Modifier.fillMaxWidth().height(200.dp),
+    )
 }
 
 @Composable

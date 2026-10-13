@@ -1,6 +1,7 @@
 package com.topspinreview.android.ui.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,11 +40,14 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val store: SettingsStore,
     private val client: DeepSeekClient,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
 ) : ViewModel() {
     var state by mutableStateOf(AppSettings())
         private set
     var status by mutableStateOf("")
         private set
+
+    fun assetExists(name: String): Boolean = runCatching { context.assets.open(name).close(); true }.getOrDefault(false)
 
     init { viewModelScope.launch { state = store.flow.first() } }
     fun update(transform: (AppSettings) -> AppSettings) { state = transform(state) }
@@ -78,11 +82,25 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = hiltViewModel()) 
             Text("Agentic mode", style = MaterialTheme.typography.titleSmall)
             Switch(checked = s.agentic, onCheckedChange = { v -> vm.update { it.copy(agentic = v) } })
 
+            Spacer(Modifier.height(8.dp))
+            Text("Theme", style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                listOf("system", "light", "dark").forEach { t ->
+                    androidx.compose.material3.AssistChip(
+                        onClick = { vm.update { it.copy(theme = t) } },
+                        label = { Text(t) },
+                    )
+                }
+            }
+
             Spacer(Modifier.height(12.dp))
             Text("Readiness", style = MaterialTheme.typography.titleSmall)
             ReadyRow("API key set", s.apiKey.isNotBlank())
             ReadyRow("Text model set", s.textModel.isNotBlank())
             ReadyRow("Vision model set", s.visionModel.isNotBlank())
+            ReadyRow("Pose model bundled", vm.assetExists("pose_landmarker_lite.task"))
+            ReadyRow("Ball model bundled", vm.assetExists("ball.onnx"))
+            ReadyRow("Sample clip bundled", vm.assetExists("sample.mp4"))
 
             Spacer(Modifier.height(16.dp))
             Button(onClick = vm::save, modifier = Modifier.fillMaxWidth()) { Text("Save") }

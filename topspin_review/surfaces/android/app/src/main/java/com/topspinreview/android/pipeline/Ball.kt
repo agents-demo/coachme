@@ -32,7 +32,7 @@ class Ball(private val context: Context) {
 
     data class Detection(val cx: Double, val cy: Double, val w: Double, val h: Double, val score: Double)
 
-    private data class TrackPoint(val frame: Int, val cx: Double, val cy: Double)
+    private data class TrackPoint(val frame: Int, val cx: Double, val cy: Double, val area: Double)
 
     /** Detections per frame (normalized to the video frame). */
     fun detect(frames: List<Sampler.Frame>, conf: Double = 0.25, iou: Double = 0.45): List<List<Detection>> =
@@ -55,9 +55,11 @@ class Ball(private val context: Context) {
         }
         val input = OnnxTensor.createTensor(env, FloatBuffer.wrap(chw), longArrayOf(1, 3, size.toLong(), size.toLong()))
         val name = session.inputNames.first()
-        val out = session.run(mapOf(name to input)).use { result ->
-            @Suppress("UNCHECKED_CAST")
-            (result[0].value as Array<Array<FloatArray>>)[0]
+        val out = input.use { tensor ->
+            session.run(mapOf(name to tensor)).use { result ->
+                @Suppress("UNCHECKED_CAST")
+                (result[0].value as Array<Array<FloatArray>>)[0]
+            }
         }
         val dets = ArrayList<Detection>()
         for (row in out) {
@@ -95,7 +97,7 @@ class Ball(private val context: Context) {
      * Link detections into the main track (constant velocity, max jump 0.16, tolerate 2 misses,
      * keep tracks ≥3 points and travel ≥0.05), then summarise.
      */
-    fun process(frames: List<Sampler.Frame>, dets: List<List<Detection>>, activity: List<Pair<Double, Double>>): JsonObject {
+    fun process(times: List<Double>, dets: List<List<Detection>>, activity: List<Pair<Double, Double>>): JsonObject {
         data class T(val pts: MutableList<TrackPoint>, var vx: Double = 0.0, var vy: Double = 0.0, var missed: Int = 0)
         val tracks = ArrayList<T>()
         val finished = ArrayList<T>()
@@ -109,11 +111,11 @@ class Ball(private val context: Context) {
                     val dx = best.cx - last.cx; val dy = best.cy - last.cy
                     t.vx = if (t.pts.size == 1) dx else 0.6 * dx + 0.4 * t.vx
                     t.vy = if (t.pts.size == 1) dy else 0.6 * dy + 0.4 * t.vy
-                    t.pts.add(TrackPoint(i, best.cx, best.cy)); t.missed = 0
+                    t.pts.add(TrackPoint(i, best.cx, best.cy, best.w * best.h)); t.missed = 0
                     remaining.remove(best)
                 } else { t.missed++ }
             }
-            for (d in remaining) tracks.add(T(mutableListOf(TrackPoint(i, d.cx, d.cy))))
+            for (d in remaining) tracks.add(T(mutableListOf(TrackPoint(i, d.cx, d.cy, d.w * d.h))))
             val iter = tracks.iterator()
             while (iter.hasNext()) { val t = iter.next(); if (t.missed > 2) { finished.add(t); iter.remove() } }
         }
@@ -125,14 +127,14 @@ class Ball(private val context: Context) {
         val main = usable.maxByOrNull { it.pts.size }
 
         val path = buildJsonArray {
-            main?.pts?.forEach { p -> add(buildJsonObject { put("t", round(frames[p.frame].t)); put("x", round(p.cx, 3)); put("y", round(p.cy, 3)) }) }
+            main?.pts?.forEach { p -> add(buildJsonObject { put("t", round(times.getOrElse(p.frame) { 0.0 })); put("x", round(p.cx, 3)); put("y", round(p.cy, 3)) }) }
         }
         val visible = main?.pts?.size ?: 0
         // speed in normalized units/second
         val speeds = main?.let { t ->
             (1 until t.pts.size).map { k ->
                 val a = t.pts[k - 1]; val b = t.pts[k]
-                val dt = (frames[b.frame].t - frames[a.frame].t).takeIf { it > 0 } ?: 1.0
+                val dt = (times.getOrElse(b.frame) { 0.0 } - times.getOrElse(a.frame) { 0.0 }).takeIf { it > 0 } ?: 1.0
                 sqrt((b.cx - a.cx).let { it * it } + (b.cy - a.cy).let { it * it }) / dt
             }
         } ?: emptyList()
@@ -141,12 +143,15 @@ class Ball(private val context: Context) {
             put("visible_frames", visible)
             put("max_speed", round(speeds.maxOrNull() ?: 0.0, 4))
             put("mean_speed", round(speeds.average().takeIf { !it.isNaN() } ?: 0.0, 4))
-            put("hits", buildJsonArray { })
-            put("bounces", buildJsonArray { })
+            put("hits", reversals(main?.pts ?: emptyList(), times) { it.cx })
+            put("bounces", reversals(main?.pts ?: emptyList(), times) { it.cy })
         }
         val trajectory = buildJsonArray {
+            val areas = main?.pts?.map { it.area }?.sorted() ?: emptyList()
+            val medianArea = if (areas.isEmpty()) 1.0 else areas[areas.size / 2]
             main?.pts?.forEach { p ->
-                add(buildJsonObject { put("x", round(p.cx, 3)); put("y", round(p.cy, 3)); put("z", round(0.5, 3)) })
+                val z = if (p.area > 0) sqrt(medianArea / p.area) else 1.0
+                add(buildJsonObject { put("x", round(p.cx, 3)); put("y", round(p.cy, 3)); put("z", round(z, 3)) })
             }
         }
         val segments = segments(activity)
@@ -156,6 +161,14 @@ class Ball(private val context: Context) {
             put("segments", segments)
             put("trajectory3d", trajectory)
             put("stats", stats)
+        }
+    }
+
+    /** Direction reversals of a coordinate along the track (contacts / bounces). */
+    private fun reversals(pts: List<TrackPoint>, times: List<Double>, axis: (TrackPoint) -> Double): JsonArray = buildJsonArray {
+        for (i in 1 until pts.size - 1) {
+            val d1 = axis(pts[i]) - axis(pts[i - 1]); val d2 = axis(pts[i + 1]) - axis(pts[i])
+            if (d1 * d2 < 0 && abs(d2) > 0.02) add(buildJsonObject { put("t", round(times.getOrElse(pts[i].frame) { 0.0 })) })
         }
     }
 
@@ -177,9 +190,9 @@ class Ball(private val context: Context) {
         }
     }
 
-    fun overlay(frames: List<Sampler.Frame>, ball: JsonObject): Bitmap? {
-        val base = frames.getOrNull(frames.size / 2)?.bitmap ?: return null
-        val out = base.copy(Bitmap.Config.ARGB_8888, true)
+    fun overlay(base: Bitmap?, ball: JsonObject): Bitmap? {
+        val b = base ?: return null
+        val out = b.copy(Bitmap.Config.ARGB_8888, true)
         val c = Canvas(out)
         val paint = Paint().apply { color = Color.rgb(251, 113, 133); strokeWidth = 4f; isAntiAlias = true }
         val w = out.width.toFloat(); val h = out.height.toFloat()

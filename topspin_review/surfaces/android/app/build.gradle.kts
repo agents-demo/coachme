@@ -50,9 +50,10 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Media (playback + cutting)
-    implementation("androidx.media3:media3-exoplayer:1.3.1")
-    implementation("androidx.media3:media3-ui:1.3.1")
-    implementation("androidx.media3:media3-transformer:1.3.1")
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
+    implementation("androidx.media3:media3-transformer:1.5.1")
+    implementation("androidx.media3:media3-effect:1.5.1")
 
     // HTTP + JSON
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

@@ -25,6 +25,7 @@ data class AppSettings(
     val level: String = "intermediate",
     val hand: String = "right",
     val goal: String = "improve",
+    val theme: String = "system",
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("topspin")
@@ -41,6 +42,7 @@ class SettingsStore(private val context: Context) {
         val level = stringPreferencesKey("level")
         val hand = stringPreferencesKey("hand")
         val goal = stringPreferencesKey("goal")
+        val theme = stringPreferencesKey("theme")
     }
 
     val flow: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -55,6 +57,7 @@ class SettingsStore(private val context: Context) {
             level = p[K.level] ?: "intermediate",
             hand = p[K.hand] ?: "right",
             goal = p[K.goal] ?: "improve",
+            theme = p[K.theme] ?: "system",
         )
     }
 
@@ -70,6 +73,7 @@ class SettingsStore(private val context: Context) {
             p[K.level] = s.level
             p[K.hand] = s.hand
             p[K.goal] = s.goal
+            p[K.theme] = s.theme
         }
     }
 }
