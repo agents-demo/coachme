@@ -56,8 +56,8 @@ fun exportReel(ctx: Context, source: String, times: List<Double>) {
     }
     if (clips.isEmpty()) return
     val out = File(ctx.cacheDir, "reel_${System.currentTimeMillis()}.mp4")
-    val sequence = EditedMediaItemSequence.Builder(*clips.toTypedArray()).build()
-    val composition = Composition.Builder(sequence).build()
+    val sequence = EditedMediaItemSequence(clips)
+    val composition: Composition = Composition.Builder(sequence).build()
     val transformer = Transformer.Builder(ctx)
         .addListener(object : Transformer.Listener {
             override fun onCompleted(composition: Composition, result: ExportResult) {

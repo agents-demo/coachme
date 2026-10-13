@@ -63,7 +63,7 @@ object Metrics {
             put("mean_energy", round(meanE, 2))
             put("max_energy", round(maxE, 2))
             put("peak_motion_time", round(peakT, 2))
-            put("net_shift", buildJsonArray { add(0.0); add(0.0) })
+            put("net_shift", buildJsonArray { add(JsonPrimitive(0.0)); add(JsonPrimitive(0.0)) })
             put("mechanics", mechJson)
             put("footwork_series", footSeries)
             put("subject_coverage", round(region.count { it }.toDouble() / (AW * AH), 3))
@@ -185,9 +185,9 @@ object Metrics {
             for (v in 0 until AW * AH) {
                 if (!region[v]) continue
                 if (abs(g[v] - bg[v]) > FG) {
-                    val band = (v / AW) / (AH / 3)
-                    val b = band.coerceIn(0, 2)
-                    sums[b] += (v % AW); counts[b]++
+                    val band = ((v / AW) / (AH / 3)).coerceIn(0, 2)
+                    sums[band] = sums[band] + (v % AW)
+                    counts[band] = counts[band] + 1
                 }
             }
             fun cx(b: Int): Double? = if (counts[b] < 10) null else sums[b] / counts[b] / AW

@@ -43,6 +43,7 @@ import androidx.media3.transformer.Transformer
 import androidx.media3.ui.PlayerView
 import com.topspinreview.android.data.Report
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -131,7 +132,7 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
                             put("type", "pen")
                             put("color", "#f97316")
                             put("points", buildJsonArray {
-                                s.forEach { pt -> add(buildJsonArray { add(pt.x.toDouble()); add(pt.y.toDouble()) }) }
+                                s.forEach { pt -> add(buildJsonArray { add(JsonPrimitive(pt.x.toDouble())); add(JsonPrimitive(pt.y.toDouble())) }) }
                             })
                         })
                     }
