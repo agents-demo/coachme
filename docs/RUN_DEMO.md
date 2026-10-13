@@ -108,10 +108,12 @@ Then open:
 http://127.0.0.1:8000/gui2/
 ```
 
-On the **Analyze** page: use the sample clip, upload a video/photo, or paste a path; then click
-**Analyze**. A live feed shows each stage; when it finishes it opens the **Result** — video on the
-left, **moments to review** on the right (tap one to jump the video), the movement chart under the
-video (click it to seek), and **Report / Movement / Details / Technical** tabs.
+Pick **＋ New analysis** in the header: use a sample clip, upload a video/photo, or paste a path;
+then click **Analyze**. A live feed shows each stage; when it finishes it opens the **Result** with
+**Video / Analysis / Observations / Coaching / Diagnostics** tabs. Video is the clip (+ the frames
+read); Analysis holds the measurements (Heat maps, Movement, Pose, Tracked object); Observations is
+the table-tennis reading (findings + notable moments + clips); Coaching is the plan. Browse — and
+compare pairwise — sessions from the **Sessions** page.
 
 ---
 

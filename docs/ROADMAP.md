@@ -21,30 +21,10 @@ them with our agentic, evidence-grounded, self-hosted angle.
 
 ---
 
-## 1. Where we are today (baseline)
+## 1. Where we are today
 
-**What ships now**
-- Automatic analysis of a racket-sport clip → LLM **coaching report**: `summary`, `focus`,
-  `strengths`, `issues[{issue, evidence_times, confidence}]`, `drills`, `progress`, `limitations`,
-  plus a deterministic `quality` score (`domain/evaluate.py`).
-- **Measured** signals (`core/video/metrics.py`): motion energy timeline, global shift, subject
-  box/track, upper/lower-body lateral range, direction changes, crouch trend, footwork events,
-  body-relative **calibration**, and phase **segments**.
-- **Pose** via mediapipe Tasks `PoseLandmarker` (`integrations/pose.py`): per-frame knee/elbow angles,
-  stance width, crouch, 2D landmarks, plus **3D biomechanics** (world-landmark angles, torso lean,
-  shoulder/hip twist) → pose hero/sheet, pose-angle chart, 3D pose view.
-- **Ball** tracking (`core/stages/measure/ball.py` + `integrations/ballmodel.py`): heuristic tracker or
-  a trained **ONNX** detector when installed; ball path, contact/bounce events, candidate rallies, a
-  monocular-depth 3D trajectory, and a segment bar.
-- Surfaces: **gui2** (FastAPI + SvelteKit SPA) — Analyze / Sessions / Result (Watch · Coaching · Notes ·
-  Diagnostics) / Progress; drawing + **angle tool** (telestration); frame-step + slow-mo; **compare
-  slider**; **voice-over**; **highlight reel**; **share card**; **trim + GIF/vertical export**; drill
-  cards; issue timeline; movement/pose charts; model + per-step grouped **Diagnostics** (calls/tools,
-  tokens incl. cached, stages); **gui** (Streamlit); **cli**; **api**; **mcp**.
-- Storage: one `<stem>_report.json` per video under `runtime/data/`; artifacts under
-  `runtime/data/artifacts/`; annotations stored in the report JSON; key-moment clips under
-  `<stem>_clips/`.
-- Progress: session table + `domain/compare.py` diff (improved / unchanged / regressed + metric deltas).
+What the app does today is documented in [architecture.md](architecture.md) and
+[USAGE.md](USAGE.md); this roadmap lists only the work that is **not** done.
 
 **What competitors have that we don't (summary)**
 - **3D biomechanics** kinematic sequence, **shot type/stats** (SB, Uplift, SV).
@@ -79,9 +59,9 @@ are worth anything.
 
 ### 0.1 Evaluation & prompt regression
 - **Goal:** a labeled benchmark + regression tests so issue quality and tokens don't silently drift.
-- **Where:** extend `tests/eval/expected.json`; a new `tests/integration/evaluate_reports.py`
-  already scores saved reports — add a **graded** suite (per-clip expected issues/metrics) and a
-  `pytest` marker that runs it offline on shipped reports.
+- **Where:** extend `tests/eval/expected.json` and add a **graded** suite to
+  `tests/integration/evaluate_reports.py` (per-clip expected issues/metrics), plus a `pytest` marker
+  that runs it offline on shipped reports.
 - **Acceptance:** `pytest -m eval` prints per-clip issue precision/recall vs labels; CI fails on
   regression below thresholds; a golden report snapshot test for the prompt.
 - **Effort:** `M`. **Risks:** label authoring (needs a coach or careful build).
@@ -113,7 +93,7 @@ are worth anything.
 - **Effort:** `M` (search/tags) + `M` (streaming). **Risks:** SSE plumbing with the job manager.
 
 ### 0.5 i18n / localization
-- **Goal:** localize the UI and the report (the prompts already carry Chinese safety text).
+- **Goal:** localize the UI and the report.
 - **Where:** `domain/` gets a message catalog; gui2 a `locale` param; report rendered in the chosen
   language; label the language in the report.
 - **Acceptance:** EN + ZH end-to-end (UI + generated report); switch without code changes.
@@ -122,9 +102,9 @@ are worth anything.
 ### 0.6 Model portability & offline
 - **Goal:** run against any provider (OpenAI / Anthropic / vLLM / Ollama) and, ideally, **fully
   offline** with a local model.
-- **Where:** `integrations/agents/settings.py` (provider, per-stage model names) — there is already
-  a `MODEL_PROVIDER`; verify all three model clients work; add per-**stage** model choice
-  (cheap model for verification, strong for the report).
+- **Where:** `integrations/agents/settings.py` (provider, per-stage model names) — verify all three
+  model clients work; add per-**stage** model choice (cheap model for verification, strong for the
+  report).
 - **Acceptance:** switch provider via `.env`; an offline/local run produces a report with no network.
 - **Effort:** `M`. **Risks:** provider quirks (tool-calling, vision).
 
@@ -140,7 +120,7 @@ are worth anything.
 ### 0.8 Deployment & ops
 - **Goal:** make gui2 safely hostable.
 - **Where:** optional **auth** + HTTPS behind a reverse proxy; a `Dockerfile`; CORS tightening;
-  structured logs + error tracking; a health/ready endpoint (exists) for orchestration.
+  structured logs + error tracking; a health/ready endpoint for orchestration.
 - **Acceptance:** one-command container run; auth-gated when exposed; errors surfaced with run ids.
 - **Effort:** `M`. **Risks:** auth scope creep — keep it minimal or behind a flag.
 
@@ -150,7 +130,7 @@ are worth anything.
 
 ### B4. Overlay compare (blend) + side-by-side
 - **Ref:** CE, V1, OF.
-- **Goal:** beyond the shipped slider: a 50% **blend/onion-skin** mode and a "ghost" overlay of an
+- **Goal:** beyond the basic slider: a 50% **blend/onion-skin** mode and a "ghost" overlay of an
   earlier session, plus a synchronized dual scrubber.
 - **Where:** gui2 client (canvas compositing), builds on the compare slider.
 - **Effort:** `M`.
@@ -161,8 +141,7 @@ are worth anything.
 
 ## 6. Phase B.5 — Measure-stage expansion (the analysis core)
 
-The `measure` stage is where signal quality is won or lost. Today: `sampling` → `metrics` →
-`ball` + `quality`, with calibration, pose-as-step and footwork events already in. Remaining below.
+The `measure` stage is where signal quality is won or lost. Remaining work below.
 
 ### Steps (in `core/stages/measure/`)
 - **M3. Stroke / repetition segmentation** — new `segment.py`. Strokes/reps from motion peaks + wrist
@@ -176,16 +155,14 @@ The `measure` stage is where signal quality is won or lost. Today: `sampling` �
 
 ### Integrations (in `integrations/`)
 - **I1. Person detection** — real **person** detection/tracking (`person.py`); enables multi-player
-  (C4). (Ball detection already ships via `ballmodel.py`.) **M**.
+  (C4). **M**.
 - **I2. Subject segmentation model** — mediapipe SelfieSegmentation or a small model to isolate the
   player (better than the current background-subtraction). **M**.
-- **I3. Optical flow (OpenCV)** — direction + magnitude motion (`integrations/flow.py`) → richer
-  footwork signal than frame-diff. **M**.
 - **I4. Monocular depth (MiDaS)** — rough depth/scale to assist calibration. **L**.
 - **I5. OCR** — read a **scoreboard/scoreline** from the video for match context. **S**.
 
 ### Priority within B.5
-1. **M3 segmentation** (correctness/enabler) → 2. **M5/M6** footage+rally → 3. **I1/I2/I3**
+1. **M3 segmentation** (correctness/enabler) → 2. **M5/M6** footage+rally → 3. **I1/I2**
    (raw-signal upgrades) → 4. **I4/I5/M7/M8**.
 
 All land in the existing layering (steps in `core/stages/measure/*`, engines in `integrations/*`) →
@@ -195,7 +172,7 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 
 ## 7. Phase C — Analysis depth (the hard moat)
 
-### C1. Ball: shot-type & pace (tracking already ships)
+### C1. Ball: shot-type & pace
 - **Ref:** SV (its whole product is this).
 - **Goal:** on top of the working ball tracker, classify **shot type** (forehand/backhand/serve) and
   estimate **pace** per contact; rally segmentation from contacts.
@@ -203,8 +180,6 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Effort:** `L`.
 - **Acceptance:** shot labels on a labeled set with a stated accuracy; graceful fallback.
 - **Risks:** dataset/licensing; generalization across sports.
-- **Note:** the trained detector path already exists — `integrations/ballmodel.py` + the MIT model via
-  `scripts/fetch_ball_model.py`, or train your own with `scripts/train_ball.py`.
 
 ### C2. Whole-session auto segmentation
 - **Ref:** SV, HL.
@@ -215,13 +190,12 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Effort:** `L` (after C1).
 - **Acceptance:** a long clip yields N rally reports + an aggregate; user can drill into one rally.
 - **Risks:** segmentation errors; cost (one LLM pass per rally — budget).
-- **Note:** single-clip phase segmentation already ships (`ball.phase_segments` → segment bar).
 
 ### C3. Real-time / live capture with instant feedback
 - **Ref:** HC, SV (live), OF.
 - **Goal:** stream from the device camera; on-device ball/pose; **instant** audio/text cue (e.g.
   "split-step", "too upright").
-- **Where:** mobile/desktop capture surface + a low-latency loop; pose already per-frame; ball needs C1.
+- **Where:** mobile/desktop capture surface + a low-latency loop (per-frame pose + ball).
 - **Effort:** `XL`.
 - **Acceptance:** <1s feedback latency for a pose-based cue; graceful when the device can't keep up.
 - **Risks:** latency, battery, platform permissions.
@@ -299,7 +273,7 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Ref:** SB, HC.
 - **Goal:** a per-skill rubric (footwork, preparation, transfer, recovery) with a score 1–5 and a
   "level" estimate; reassessed each session.
-- **Where:** `domain` rubric + coach prompt; chart in Progress.
+- **Where:** `domain` rubric + coach prompt; chart in the report / a progress view.
 - **Effort:** `M`.
 - **Acceptance:** 4 skill scores per session; a radar/line chart over time; explainable (evidence-linked).
 - **Risks:** subjective — must tie to measured evidence.
@@ -322,7 +296,7 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 
 ### D8. Integrations & ecosystem
 - **Ref:** HL, generic.
-- **Goal:** calendar/coach tools, wearables (HR/IMU), Apple Health, Strava-style export; MCP already done.
+- **Goal:** calendar/coach tools, wearables (HR/IMU), Apple Health, Strava-style export.
 - **Where:** `integrations/` adapters.
 - **Effort:** varies (`M`–`XL`).
 - **Acceptance:** per-integration.
@@ -350,7 +324,7 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
   vision "thorough" mode is opt-in.
 - **Testing:** unit tests for new `domain` schemas and `core/video` math; a `tests/integration/`
   harness for the ball/person/3D paths; keep `test_architecture.py` green.
-- **Accessibility & i18n:** captions for voice-over; keep copy short; the UI is already responsive.
+- **Accessibility & i18n:** captions for voice-over; keep copy short; keep the UI responsive.
 - **Privacy:** local-first stays the default; share is opt-in; never send more frames than needed.
 
 ---
@@ -365,9 +339,8 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | M6 | Scene / rally detection | — | M | Medium |
 | M7 | Handedness auto-detect | — | S | Low |
 | M8 | Thorough sampling mode | — | S | Low |
-| I1 | Person detection (ball done) | SV | M | Medium |
+| I1 | Person detection | SV | M | Medium |
 | I2 | Subject segmentation model | — | M | Medium |
-| I3 | Optical flow motion | — | M | Medium |
 | I4 | Monocular depth (MiDaS) | — | L | Low |
 | I5 | OCR scoreboard | — | S | Low |
 | B4 | Overlay compare (blend) | CE/V1 | M | Medium |
@@ -388,13 +361,13 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | D8 | Integrations & ecosystem | HL | M–XL | Medium |
 | D9 | Coach comments + drill assignments | HL/OF | M | Medium |
 
-**Build order:** 0.2 → 0.1 → 0.3 → **M3** → M5/M6 → I1 → I2 → I3 → B4 → **C1 (shot type)** → **C2** →
+**Build order:** 0.2 → 0.1 → 0.3 → **M3** → M5/M6 → I1 → I2 → B4 → **C1 (shot type)** → **C2** →
 C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9. (0.4–0.8 run alongside.)
 
 **Milestones (remaining)**
 - **M-foundations:** 0.1–0.8. Eval harness, feedback, session library + streaming, i18n, offline,
   privacy, deploy/ops.
-- **M-measure:** M3, M5–M8 + I1–I3. Stroke segmentation, footage check, rally detection, person/flow.
+- **M-measure:** M3, M5–M8 + I1–I2. Stroke segmentation, footage check, rally detection, person/segmentation.
 - **M-depth:** C1, C2, C5, C6, C7. Shot type + whole-session segmentation + line calls + thorough mode.
 - **M-platform:** D1–D9. Mobile, coach/team, plans, shares, skills, integrations.
 
@@ -406,13 +379,12 @@ How we know it's working (not vanity features):
 
 - **Report usefulness** — % of sessions with a 👍 on the focus/top issue (from 0.3). Target ≥ 70%.
 - **Issue precision / recall** — vs the labeled benchmark (0.1); tracked per release.
-- **Trust** — hallucination-flag rate must stay **0**; **100%** of issues must cite evidence
-  (`domain/evaluate.py` already enforces the pieces).
+- **Trust** — hallucination-flag rate must stay **0**; **100%** of issues must cite evidence.
 - **Adherence** — % of sessions where a drill was checked off and the athlete returned within 7 days.
 - **Retention** — sessions per user per week; week-2 return rate.
 - **Time-to-insight** — median analyze time (target ≲ 90 s for a ~10 s clip on a warm run).
 - **Demo reliability** — % of demo runs that complete or fall back cleanly. Target **100%**.
-- **Cost** — median tokens + $ per session, and cache-hit ratio (Diagnostics already shows these).
+- **Cost** — median tokens + $ per session, and cache-hit ratio.
 
 ---
 
@@ -433,7 +405,7 @@ Ask) — not just metrics.
 **Moat vs table stakes**
 - Moat: the agentic **plan + memory** (D3) over session history; the **local/open pipeline**; the
   evidence discipline; the run diagnostics.
-- Table stakes (competitors already have): tracking, pose, charts, compare, reels.
+- Table stakes (competitors have): tracking, pose, charts, compare, reels.
 
 **Business model (if productizing):** freemium (N sessions) → subscription; **coach/team seats** (D2);
 self-host with **bring-your-own-model** (0.6).
@@ -450,9 +422,9 @@ shareable demos (highlight reel / share card / D4) as the top of the funnel.
 
 - **Schema versioning.** Add `schema_version` to the report; a `domain/report.migrate()` so new
   blocks (`ball2`, `match`, `players`, `plan`) coexist with old reports; the reader tolerates missing
-  keys (`read.py` already does). Migrate on read, write the new version on next save.
+  keys. Migrate on read, write the new version on next save.
 - **Prompt & model versioning / reproducibility.** Record the **prompt id/hash + model + provider**
-  per run (Diagnostics shows the model today, not the prompt). Re-running with the same inputs should
+  per run (the prompt isn't recorded yet). Re-running with the same inputs should
   be explainable; keep a golden-report snapshot test (§0.1).
 - **Security.**
   - **Frame prompt-injection:** the vision model reads **OCR'd text from the video** — a user could

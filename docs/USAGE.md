@@ -47,7 +47,7 @@ So the frames follow the **action**, not the clock. (ffmpeg's only job is to han
 
 - **Session / report** — one analyzed video. Identified by the video file name; saved as
   `runtime/data/<stem>_report.json`.
-- **Metrics** — the measured numbers (`energy`, `shift`, `track`, `mechanics`, `ball`, `pose`).
+- **Metrics** — the measured numbers (`energy`, `shift`, `track`, `mechanics`, `footwork_series`, `ball`, `pose`).
 - **Issue** — a finding with `evidence_times` (where it was seen) and a `confidence`.
 - **Artifacts** — the contact sheet, motion map, pose overlay, metrics JSON, observability JSON.
 - **Usage** — the tokens/latency each model call used.
@@ -101,10 +101,12 @@ cd topspin_review\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\
 ```
 
 A FastAPI server (`server/`) serving a SvelteKit SPA (`client/`). Same engine, built for the
-**video** experience: scrub the source clip, tap a **moment** to jump to it, the **movement chart**
-follows the playhead (click it to seek), **Report / Movement / Details / Technical** tabs, an **Ask**
-box, a live stage feed with **Cancel/Retry**, and a **Progress** page that compares two sessions.
-The server also exposes the JSON API (§6).
+**video** experience: scrub the source clip; **Video / Analysis / Observations / Coaching /
+Diagnostics** tabs — Video is the plain clip (+ frames), Analysis is the measurements (Heat maps,
+Movement, Pose, Tracked object), Observations is the table-tennis reading (findings + notable
+moments + clips), Coaching is the plan; an **Ask** box; a live stage feed with **Cancel/Retry**.
+Sessions are browsed — and compared pairwise — from the **Sessions** page, and a new analysis is
+started from the header's **＋ New analysis**. The server also exposes the JSON API (§6).
 
 **CLI** — see §5.
 
@@ -122,7 +124,7 @@ The server also exposes the JSON API (§6).
 2. **Analyze** a clip (upload or sample).
 3. Watch the stages: measure → observe → coach (→ verify / export).
 4. Read the **Result**: focus, strengths, issues with timestamps, drills.
-5. **Practice** the drills; come back next session and watch **Progress**.
+5. **Practice** the drills; next session, compare the two on the **Sessions** page.
 
 ---
 

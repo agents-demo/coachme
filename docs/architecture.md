@@ -10,7 +10,7 @@ surfaces  ──▶  core  ──▶  integrations  ──▶  domain
 
 | Layer | Package | Responsibility | May depend on |
 |---|---|---|---|
-| Domain | `domain/` | Pure rules: report schema, progress, comparison, scoring, text rendering. No I/O, no third-party libs. | stdlib only |
+| Domain | `domain/` | Pure rules: report schema, game reading (CV→table-tennis translation), progress, comparison, scoring, drills, annotations, text rendering. No I/O, no third-party libs. | stdlib only |
 | Integrations | `integrations/` | Outbound adapters: the openjiuwen agentic machinery (`agents/`: settings, models, agent builder, rails, tools, runner, logs, telemetry), `storage/`, `reporting`, `media`. | stdlib, openjiuwen |
 | Core | `core/` | The pipeline: stages (`measure`, `observe`, `coach`), the strategies that run them, the shared video primitives (`video/`), the run machinery, jobs, config and the service facade. | integrations, domain |
 | Surfaces | `surfaces/` | Inbound adapters: CLI, Streamlit UI, web app (gui2), HTTP API, MCP, readiness checks. | anything |
@@ -24,13 +24,15 @@ constant matching the stage packages), so a violation fails CI.
 ```
 topspin_review/
 ├── __init__.py            # version only (no side effects)
-├── domain/                # report, progress, compare, evaluate, render
+├── domain/                # report, game_reading, progress, compare, evaluate, drills, annotations, render
 ├── integrations/          # outbound adapters
 │   ├── agents/            # provider access (see below)
 │   ├── storage/           # runtime, cache, json_store, store
 │   ├── reporting.py       # Markdown / HTML / PDF export
 │   ├── media.py           # highlight clips (ffmpeg)
-│   └── pose.py            # pose estimation (mediapipe PoseLandmarker + model download)
+│   ├── pose.py            # pose estimation (mediapipe PoseLandmarker + model download)
+│   ├── ballmodel.py       # ONNX ball detector (optional; heuristic fallback)
+│   └── cards.py           # share-card PNG rendering
 ├── core/                  # the pipeline (this package is the orchestrator)
 │   ├── bootstrap.py       # runtime dirs + logging; called by entry points
 │   ├── config.py          # application settings only (sampling, feature toggles)
@@ -113,7 +115,8 @@ core/
 │   ├── measure/             #   stage 1: video → frames + measurements
 │   │   ├── measure.py         # measure(): sample frames + compute metrics
 │   │   ├── sampling.py        # motion-weighted frame sampling
-│   │   ├── ball.py            # heuristic ball detection
+│   │   ├── ball.py            # ball detection/tracking (ONNX or heuristic)
+│   │   ├── strokes.py         # fast-hand events from pose wrists
 │   │   └── quality.py         # footage-quality gate
 │   ├── observe/             #   stage 2: frames → observations
 │   │   ├── build_agent.py     # build the vision DeepAgent
@@ -188,7 +191,7 @@ video ─▶ core.stages.measure.sampling (motion-weighted, cached in integratio
       ─▶ core.stages.measure.sampling.sample_window (zoom)
       ─▶ core.stages.observe.fine (frames + motion map + pose) ─▶ observations/signals
       ─▶ core.stages.coach.build_agent (DeepAgent + tools) ─▶ report.json
-      ─▶ integrations.reporting + domain.progress / domain.compare
+      ─▶ integrations.reporting + domain.game_reading / domain.progress / domain.compare
 ```
 
 ## Boundaries & conventions

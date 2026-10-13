@@ -110,7 +110,7 @@ topspin-review/
 │   └── data/                 # profile, <video>_report.json, cache/, artifacts/, exports/
 ├── topspin_review/
 │   ├── __init__.py           # version only (no side effects)
-│   ├── domain/               # pure: report, progress, compare, evaluate, render
+│   ├── domain/               # pure: report, game reading, progress, compare, evaluate, drills, render
 │   ├── integrations/         # outbound adapters (see below)
 │   │   ├── agents/           #   all agentic under-the-hood: settings, logs,
 │   │   │                     #     agent/ (builder, models, rails, tools, runner), telemetry/
@@ -227,9 +227,9 @@ result = analyze_video_sync("runtime/data/session.mp4")
   report lists its limitations, so hallucinated claims are easy to spot.
 - **Primary subject:** the foreground union is reduced to its largest connected blob, so other
   people in the hall are excluded from the motion map and metrics.
-- The **Progress** tab and report `progress` are computed from all saved reports
-  (`progress.py`): recurring themes, issue counts per session, focus history, and whether last
-  session's focus was **achieved**.
+- The report `progress` field is computed from all saved reports (`domain/progress.py`):
+  recurring themes, issue counts per session, focus history, and whether last session's focus was
+  **achieved**. In the web UI, comparing two sessions lives on the **Sessions** page.
 - **Export** a report to Markdown + self-contained HTML: `analyze` does it automatically, or run
   `python -m topspin_review.surfaces.cli export [video]`. Open the HTML and print to PDF if needed.
 - **Player region:** if the auto primary-subject pick is wrong, pass
@@ -241,6 +241,7 @@ result = analyze_video_sync("runtime/data/session.mp4")
 - Ball/rally detection is heuristic (blob + nearest-neighbour tracker, not a trained model) and is
   always labelled low confidence.
 - Every report is scored by `evaluate.py` (evidence coverage, confidence mix, hallucination flags
-  for spin/speed/angle claims); the score is shown in the UI and the benchmark.
+  for spin/speed/angle claims); the score feeds the benchmark / quality gate. It is no longer shown
+  in the player-facing UI, where it read like a performance rating.
 - Coaching quality depends on video quality and camera angle (side view of the player works best).
 - Not medical or professional coaching advice.
