@@ -84,6 +84,8 @@ class Pipeline(
         )
         val metricsText = Metrics.text(metrics)
 
+        val quality = Quality.evaluate(sampler.meta(videoPath), frames.size, metrics)
+
         val sheet = contactSheet(frames)
         val sheetB64 = sampler.toJpegBase64(sheet)
 
@@ -150,6 +152,7 @@ class Pipeline(
         )).copy(
             stem = savedStem, metrics = metrics, artifacts = artifacts,
             usage = usageJson, calls = callsJson, tools = toolsJson, timeline = timelineJson,
+            quality = quality,
         )
         store.save(savedStem, report)
         return report

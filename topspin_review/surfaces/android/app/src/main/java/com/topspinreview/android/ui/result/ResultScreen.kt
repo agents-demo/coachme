@@ -294,6 +294,12 @@ private fun Coaching(r: Report, answers: List<Pair<String, String>>, onAsk: (Str
             Text("Limits", fontWeight = FontWeight.Bold)
             r.limitations.forEach { Text("• $it") }
         }
+        (r.quality["warnings"] as? kotlinx.serialization.json.JsonArray)?.let { w ->
+            if (w.isNotEmpty()) item {
+                Text("About your clip", fontWeight = FontWeight.Bold)
+                w.forEach { Text("• ${it.toString().trim('"')}") }
+            }
+        }
         item {
             val ctx = androidx.compose.ui.platform.LocalContext.current
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

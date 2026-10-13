@@ -14,6 +14,23 @@ import kotlin.math.abs
  */
 class Sampler(private val context: Context) {
     data class Frame(val t: Double, val bitmap: Bitmap)
+    data class Meta(val fps: Double, val duration: Double, val width: Int, val height: Int)
+
+    fun meta(path: String): Meta {
+        val r = MediaMetadataRetriever()
+        return try {
+            r.setDataSource(path)
+            fun s(k: Int): String? = r.extractMetadata(k)
+            Meta(
+                fps = s(MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE)?.toDoubleOrNull() ?: 30.0,
+                duration = (s(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L) / 1000.0,
+                width = s(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0,
+                height = s(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0,
+            )
+        } catch (e: Exception) {
+            Meta(30.0, 0.0, 0, 0)
+        } finally { r.release() }
+    }
 
     fun duration(path: String): Double {
         val r = MediaMetadataRetriever()
