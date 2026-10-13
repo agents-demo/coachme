@@ -286,13 +286,17 @@ private fun Coaching(r: Report, answers: List<Pair<String, String>>, onAsk: (Str
             var q by remember { mutableStateOf("") }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(q, { q = it }, Modifier.weight(1f), label = { Text("Question") })
+                com.topspinreview.android.ui.MicButton { q = it }
                 Button(onClick = { if (q.isNotBlank()) { onAsk(q); q = "" } }) { Text("Ask") }
             }
         }
         items(answers) { (q, a) ->
             Column {
                 Text("You: $q", style = MaterialTheme.typography.bodySmall)
-                Text("Coach: $a")
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text("Coach: $a", Modifier.weight(1f))
+                    com.topspinreview.android.ui.SpeakButton(a)
+                }
             }
         }
     }

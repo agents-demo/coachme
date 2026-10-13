@@ -13,8 +13,9 @@ full **measure** stage (activity + subject/mechanics + `footwork_series` + motio
 **pose** (MediaPipe PoseLandmarker: skeleton, angles, 3D, fast-hand, footwork), **ball** (ONNX YOLO +
 tracker: path, stats, segments, 3D trajectory), the observe + coach passes, and a Compose shell
 (Sessions / New / Result with Analysis showing maps + charts + pose + tracked object, Observations,
-Coaching + Ask, Diagnostics). Not yet compiled; **P5/P6** (player + telestration, trim/GIF/reel/card,
-compare, key moments/clips, full Diagnostics, readiness, voice, localization) remain.
+Coaching + Ask (+ voice read-aloud & mic), Diagnostics). Not yet compiled; **P5/P6** (player +
+telestration, trim/GIF/reel/card, compare, key-moment clips, full Diagnostics, readiness,
+localization) remain.
 
 ## Models (required)
 
