@@ -143,12 +143,13 @@ class Pipeline(
             timeline.forEach { (s, secs) -> add(buildJsonObject { put("stage", s); put("seconds", secs) }) }
             client.calls.forEach { add(buildJsonObject { put("stage", it.stage); put("seconds", it.seconds) }) }
         }
+        val toolsJson = buildJsonArray { tools.toolCalls.forEach { add(it) } }
         val report = (loaded ?: Report(
             date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
             sport = cfg.sport, summary = observations, source = videoPath,
         )).copy(
             stem = savedStem, metrics = metrics, artifacts = artifacts,
-            usage = usageJson, calls = callsJson, timeline = timelineJson,
+            usage = usageJson, calls = callsJson, tools = toolsJson, timeline = timelineJson,
         )
         store.save(savedStem, report)
         return report

@@ -28,6 +28,9 @@ class ReportTools(
 
     /** The stem to save under (set by the pipeline so artifacts and report agree). */
     var runStem: String? = null
+
+    /** Tool-call log for Diagnostics. */
+    val toolCalls = mutableListOf<kotlinx.serialization.json.JsonObject>()
     /** Name + JSON-schema for each tool, for the `tools` field of the request. */
     fun schemas(): JsonArray = buildJsonArray {
         add(fn("get_profile", "Return the player profile as JSON."))
@@ -65,17 +68,29 @@ class ReportTools(
         })
     }
 
-    /** Run a tool by name; returns its text result. */
-    suspend fun execute(name: String, argumentsJson: String): String = when (name) {
-        "get_profile" -> json.encodeToString(JsonObject.serializer(), profileJson())
-        "recent_reports" -> {
-            val n = runCatching {
-                json.parseToJsonElement(argumentsJson).jsonObject["n"]?.jsonPrimitive?.intOrNull
-            }.getOrNull() ?: 5
-            store.recentJson(n)
+    /** Run a tool by name; returns its text result (and records it for Diagnostics). */
+    suspend fun execute(name: String, argumentsJson: String): String {
+        val started = System.nanoTime()
+        val result = when (name) {
+            "get_profile" -> json.encodeToString(JsonObject.serializer(), profileJson())
+            "recent_reports" -> {
+                val n = runCatching {
+                    json.parseToJsonElement(argumentsJson).jsonObject["n"]?.jsonPrimitive?.intOrNull
+                }.getOrNull() ?: 5
+                store.recentJson(n)
+            }
+            "save_report" -> saveReport(argumentsJson)
+            else -> "unknown tool: $name"
         }
-        "save_report" -> saveReport(argumentsJson)
-        else -> "unknown tool: $name"
+        toolCalls.add(
+            buildJsonObject {
+                put("name", name)
+                put("arguments", argumentsJson)
+                put("result", result)
+                put("seconds", (System.nanoTime() - started) / 1e9)
+            }
+        )
+        return result
     }
 
     private suspend fun profileJson(): JsonObject {

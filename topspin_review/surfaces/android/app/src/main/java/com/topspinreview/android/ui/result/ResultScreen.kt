@@ -349,5 +349,13 @@ private fun Diagnostics(r: Report) {
             val o = el as? kotlinx.serialization.json.JsonObject ?: return@forEach
             Text("${o["stage"]}: ${o["seconds"]}s", style = MaterialTheme.typography.bodySmall)
         }
+        if (r.tools.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text("Tools", fontWeight = FontWeight.Bold)
+            r.tools.forEach { el ->
+                val o = el as? kotlinx.serialization.json.JsonObject ?: return@forEach
+                Text("${o["name"]} (${o["seconds"]}s)", style = MaterialTheme.typography.bodySmall)
+            }
+        }
     }
 }
