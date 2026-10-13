@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- paddle head -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,20 a22,22 0 1,0 0.001,0 Z" />
+    <!-- handle -->
+    <path
+        android:fillColor="#F1F2FF"
+        android:pathData="M50,58 h8 v26 a4,4 0 0,1 -8,0 Z" />
+    <!-- ball -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M82,26 a8,8 0 1,0 0.001,0 Z" />
+</vector>
