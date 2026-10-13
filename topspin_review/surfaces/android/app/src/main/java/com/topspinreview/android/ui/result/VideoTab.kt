@@ -114,6 +114,14 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
             }
         }
 
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = { exo.seekTo((exo.currentPosition - 33).coerceAtLeast(0L)) }) { Text("−1f") }
+            TextButton(onClick = { exo.seekTo(exo.currentPosition + 33) }) { Text("+1f") }
+            TextButton(onClick = { exo.setPlaybackSpeed(0.25f) }) { Text("0.25×") }
+            TextButton(onClick = { exo.setPlaybackSpeed(0.5f) }) { Text("0.5×") }
+            TextButton(onClick = { exo.setPlaybackSpeed(1f) }) { Text("1×") }
+        }
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { strokes.clear() }) { Text("Clear") }
             Button(onClick = {
