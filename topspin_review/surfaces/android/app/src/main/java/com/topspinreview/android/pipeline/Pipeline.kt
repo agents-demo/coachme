@@ -212,7 +212,7 @@ class Pipeline(
             date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
             sport = cfg.sport, summary = observations, source = videoPath,
         )).copy(
-            stem = savedStem, metrics = metrics, artifacts = artifacts,
+            stem = savedStem, source = videoPath, metrics = metrics, artifacts = artifacts,
             usage = usageJson, calls = callsJson, tools = toolsJson, timeline = timelineJson,
             quality = quality, tt_reading = ttReading,
         )

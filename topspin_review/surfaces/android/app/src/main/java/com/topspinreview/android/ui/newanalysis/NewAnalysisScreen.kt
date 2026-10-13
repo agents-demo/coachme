@@ -95,7 +95,8 @@ class NewAnalysisViewModel @Inject constructor(
             _state.value = State(running = true, stage = "Preparing")
             try {
                 val file = withContext(Dispatchers.IO) {
-                    val out = File(context.cacheDir, "sample.mp4")
+                    val dir = File(context.filesDir, "media").apply { mkdirs() }
+                    val out = File(dir, "sample.mp4")
                     context.assets.open("sample.mp4").use { input -> out.outputStream().use { input.copyTo(it) } }
                     out
                 }
@@ -116,7 +117,8 @@ class NewAnalysisViewModel @Inject constructor(
     private suspend fun copyToCache(uri: Uri): File = withContext(Dispatchers.IO) {
         val mime = context.contentResolver.getType(uri).orEmpty()
         val ext = if (mime.startsWith("image")) "jpg" else "mp4"
-        val out = File(context.cacheDir, "input_${System.currentTimeMillis()}.$ext")
+        val dir = File(context.filesDir, "media").apply { mkdirs() }
+        val out = File(dir, "input_${System.currentTimeMillis()}.$ext")
         context.contentResolver.openInputStream(uri)?.use { input -> out.outputStream().use { input.copyTo(it) } }
         out
     }
