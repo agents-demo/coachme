@@ -27,6 +27,7 @@
   let ball3dRef = $state();
   let obsView = $state("Findings");
   let coachView = $state("Advice");
+  let videoView = $state("Motion");
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report?.source || ""));
   let question = $state("");
   let answers = $state([]);
@@ -55,8 +56,9 @@
       .map((id) => outputGroups.find((g) => g.id === id))
       .filter(Boolean),
   );
-  // Video tab = the motion / measured-from-video items, then the clip's own items (the player is rendered on its own).
-  const videoItems = $derived([...(motionGroup?.items || []), ...(videoGroup?.items || []).filter((i) => i.id !== "video")]);
+  // Video tab sub-tabs: "Motion" (player + measured-from-video items) and "Frames" (the stills read).
+  const videoMotionItems = $derived(motionGroup?.items || []);
+  const frameItems = $derived((videoGroup?.items || []).filter((i) => i.id === "frames"));
   const activeDetect = $derived(detectionGroups.find((g) => g.id === measureGroup) || detectionGroups[0]);
   const duration = $derived(Math.max(0.001, ...(report?.frame_times || [1])));
   const segments = $derived(report?.metrics?.ball?.segments || []);
@@ -144,16 +146,18 @@
       {/each}
     </div>
   {:else if it.id === "lateral"}
-    <FootworkChart series={report.metrics?.footwork_series || []} />
-    <div class="mt-4 flex flex-wrap gap-8">
+    <div class="flex flex-wrap gap-8">
       <div>
         <div class="font-display text-3xl font-bold">{Math.round((it.lateral ?? 0) * 100)}%</div>
-        <div class="text-[11px] uppercase tracking-wide text-muted">Side-to-side travel (of frame width)</div>
+        <div class="text-[11px] uppercase tracking-wide text-muted">Side-to-side travel (the band's height)</div>
       </div>
       <div>
         <div class="font-display text-3xl font-bold">{it.steps ?? 0}</div>
-        <div class="text-[11px] uppercase tracking-wide text-muted">Direction changes</div>
+        <div class="text-[11px] uppercase tracking-wide text-muted">Direction changes (the dots)</div>
       </div>
+    </div>
+    <div class="mt-4">
+      <FootworkChart series={report.metrics?.footwork_series || []} lateral={it.lateral} steps={it.steps} />
     </div>
   {:else if it.id === "pose_angles"}
     <PoseChart {report} />
@@ -223,24 +227,47 @@
 
   <div class="mt-3">
     {#if tab === "Video"}
-      {#if report.has_source && !isPhoto}
-        <div class="flex items-start justify-between gap-3">
-          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Clip</h3>
-          <TrimExport {report} />
-        </div>
-        <div class="mt-3"><VideoReview {report} bind:this={playerRef} bind:time={playTime} /></div>
-      {/if}
-      <div class="mt-8 space-y-14">
-        {#each videoItems as it (it.id)}
-          <section>
-            <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
-            <Provenance item={it} />
-            <div class="mt-3">{@render visual(it)}</div>
-          </section>
+      <div class="mb-5 flex gap-5 border-b-2 border-line pb-2">
+        {#each ["Motion", "Frames"] as v}
+          <button
+            onclick={() => (videoView = v)}
+            class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
+            class:border-accent={videoView === v}
+            class:text-app={videoView === v}
+            class:border-transparent={videoView !== v}
+            class:text-muted={videoView !== v}
+          >{v}</button>
         {/each}
       </div>
+      {#if videoView === "Motion"}
+        {#if report.has_source && !isPhoto}
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Clip</h3>
+            <TrimExport {report} />
+          </div>
+          <div class="mt-3"><VideoReview {report} bind:this={playerRef} bind:time={playTime} /></div>
+        {/if}
+        <div class="mt-8 space-y-14">
+          {#each videoMotionItems as it (it.id)}
+            <section>
+              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
+              <Provenance item={it} />
+              <div class="mt-3">{@render visual(it)}</div>
+            </section>
+          {/each}
+        </div>
+      {:else}
+        <div class="space-y-14">
+          {#each frameItems as it (it.id)}
+            <section>
+              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
+              <Provenance item={it} />
+              <div class="mt-3">{@render visual(it)}</div>
+            </section>
+          {/each}
+        </div>
+      {/if}
     {:else if tab === "Analysis"}
-      <p class="mb-5 text-xs text-muted">🖥 Results of analysing the clip, on your device — no AI tokens. Tap <b class="text-app">details</b> for the technical note.</p>
       {#if detectionGroups.length > 1}
         <div class="mb-5 flex flex-wrap gap-x-4 gap-y-1 border-b-2 border-line pb-2">
           {#each detectionGroups as g}
@@ -267,11 +294,7 @@
         </div>
       {/if}
     {:else if tab === "Observations"}
-      <h3 class="font-display font-bold">Observations</h3>
-      <p class="mt-1 text-sm text-muted">
-        Everything we saw, read in table-tennis terms — enough to plan from. No advice yet.
-      </p>
-      <div class="mb-5 mt-4 flex gap-5 border-b-2 border-line pb-2">
+      <div class="mb-5 flex gap-5 border-b-2 border-line pb-2">
         {#each ["Findings", "Key moments"] as v}
           <button
             onclick={() => (obsView = v)}

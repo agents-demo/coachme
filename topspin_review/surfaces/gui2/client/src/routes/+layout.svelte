@@ -49,11 +49,13 @@
           href={`${base}/?new=1`}
           class="rounded-full px-4 py-1.5 text-sm font-semibold text-muted transition"
         >＋ New analysis</a>
+        <!-- Theme toggle hidden for now (light/dark still applied automatically). Re-enable:
         <button
           onclick={toggle}
           title="Toggle theme"
           class="ml-1 grid h-9 w-9 place-items-center rounded-full border-2 border-line text-sm"
         >{theme === "dark" ? "☀️" : "🌙"}</button>
+        -->
       </nav>
     </div>
   </header>
