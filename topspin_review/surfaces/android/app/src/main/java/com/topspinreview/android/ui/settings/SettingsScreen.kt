@@ -78,6 +78,12 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = hiltViewModel()) 
             Text("Agentic mode", style = MaterialTheme.typography.titleSmall)
             Switch(checked = s.agentic, onCheckedChange = { v -> vm.update { it.copy(agentic = v) } })
 
+            Spacer(Modifier.height(12.dp))
+            Text("Readiness", style = MaterialTheme.typography.titleSmall)
+            ReadyRow("API key set", s.apiKey.isNotBlank())
+            ReadyRow("Text model set", s.textModel.isNotBlank())
+            ReadyRow("Vision model set", s.visionModel.isNotBlank())
+
             Spacer(Modifier.height(16.dp))
             Button(onClick = vm::save, modifier = Modifier.fillMaxWidth()) { Text("Save") }
             Spacer(Modifier.height(8.dp))
@@ -98,4 +104,9 @@ private fun Field(label: String, value: String, onChange: (String) -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         singleLine = true,
     )
+}
+
+@Composable
+private fun ReadyRow(label: String, ok: Boolean) {
+    Text("${if (ok) "✓" else "✗"} $label", color = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
 }

@@ -288,6 +288,10 @@ private fun Coaching(r: Report, answers: List<Pair<String, String>>, onAsk: (Str
             r.limitations.forEach { Text("• $it") }
         }
         item {
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            Button(onClick = { ShareCard.share(ctx, r) }, modifier = Modifier.fillMaxWidth()) { Text("Share card") }
+        }
+        item {
             Text("Ask", fontWeight = FontWeight.Bold)
             var q by remember { mutableStateOf("") }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
