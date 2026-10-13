@@ -296,7 +296,15 @@ private fun Coaching(r: Report, answers: List<Pair<String, String>>, onAsk: (Str
         }
         item {
             val ctx = androidx.compose.ui.platform.LocalContext.current
-            Button(onClick = { ShareCard.share(ctx, r) }, modifier = Modifier.fillMaxWidth()) { Text("Share card") }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { ShareCard.share(ctx, r) }, modifier = Modifier.fillMaxWidth()) { Text("Share card") }
+                val times = r.issues.flatMap { it.evidence_times }
+                if (times.isNotEmpty()) {
+                    Button(onClick = { exportReel(ctx, r.source, times) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Highlight reel (share)")
+                    }
+                }
+            }
         }
         item {
             Text("Ask", fontWeight = FontWeight.Bold)
