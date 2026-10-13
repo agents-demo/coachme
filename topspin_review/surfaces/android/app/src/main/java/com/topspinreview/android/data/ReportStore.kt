@@ -1,6 +1,7 @@
 package com.topspinreview.android.data
 
 import android.content.Context
+import android.graphics.Bitmap
 import kotlinx.serialization.json.Json
 import java.io.File
 
@@ -26,6 +27,14 @@ class ReportStore(private val context: Context) {
     fun saveRaw(stem: String, rawJson: String) = file(stem).writeText(rawJson)
 
     fun delete(stem: String) { file(stem).delete() }
+
+    /** Save a rendered artifact (PNG) for a stem; returns its absolute path. */
+    fun saveArtifact(stem: String, kind: String, bitmap: Bitmap): String {
+        val dir = File(context.filesDir, "artifacts").apply { mkdirs() }
+        val f = File(dir, "${stem}_$kind.png")
+        f.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        return f.absolutePath
+    }
 
     /** The last N reports as a compact JSON array (for the `recent_reports` tool). */
     fun recentJson(n: Int = 5): String =

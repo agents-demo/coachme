@@ -25,6 +25,9 @@ class ReportTools(
     /** Stem of the last report saved this run (read by the pipeline). */
     var lastSavedStem: String? = null
         private set
+
+    /** The stem to save under (set by the pipeline so artifacts and report agree). */
+    var runStem: String? = null
     /** Name + JSON-schema for each tool, for the `tools` field of the request. */
     fun schemas(): JsonArray = buildJsonArray {
         add(fn("get_profile", "Return the player profile as JSON."))
@@ -92,7 +95,8 @@ class ReportTools(
                 val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
                 obj = JsonObject(obj + ("date" to kotlinx.serialization.json.JsonPrimitive(today)))
             }
-            val stem = obj["source"]?.jsonPrimitive?.content?.substringAfterLast('/')?.substringBeforeLast('.')
+            val stem = runStem
+                ?: obj["source"]?.jsonPrimitive?.content?.substringAfterLast('/')?.substringBeforeLast('.')
                 ?: "session_" + System.currentTimeMillis()
             store.saveRaw(stem, json.encodeToString(JsonObject.serializer(), obj))
             lastSavedStem = stem

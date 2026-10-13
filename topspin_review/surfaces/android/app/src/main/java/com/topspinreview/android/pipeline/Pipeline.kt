@@ -24,6 +24,7 @@ import kotlinx.serialization.json.put
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.io.File
 import kotlin.math.ceil
 
 /**
@@ -43,16 +44,26 @@ class Pipeline(
     suspend fun analyze(videoPath: String, onStage: (String) -> Unit): Report {
         val cfg = settings.flow.first()
 
+        val stem = File(videoPath).nameWithoutExtension
+        tools.runStem = stem
+
         onStage("Pick frames")
         val frames = sampler.sample(videoPath, cfg.maxFrames)
         require(frames.isNotEmpty()) { "No frames could be extracted." }
 
         onStage("Measure movement")
-        val metrics = Metrics.analyze(frames)
+        val measured = Metrics.analyze(frames)
+        val metrics = measured.json
         val metricsText = Metrics.text(metrics)
 
         val sheet = contactSheet(frames)
         val sheetB64 = sampler.toJpegBase64(sheet)
+
+        onStage("Render images")
+        val artifacts = linkedMapOf<String, String>()
+        artifacts["frames"] = store.saveArtifact(stem, "frames", sheet)
+        measured.motionMap?.let { artifacts["motion"] = store.saveArtifact(stem, "motion", it) }
+        measured.positionMap?.let { artifacts["heatmap"] = store.saveArtifact(stem, "heatmap", it) }
 
         val windows = try {
             onStage("First look")
@@ -81,20 +92,14 @@ class Pipeline(
         onStage("Write report")
         runReportAgent(cfg.sport, cfg.level, cfg.hand, cfg.goal, frames.size, windowLabel, observations, metricsText)
 
-        val stem = tools.lastSavedStem
-        if (stem != null) {
-            val saved = store.load(stem)
-            if (saved != null) return saved.copy(stem = stem)
-        }
-        // The agent did not save one — persist a minimal report so the UI still has a session.
-        val fallbackStem = "session_" + System.currentTimeMillis()
-        val fallback = Report(
+        val savedStem = tools.lastSavedStem ?: stem
+        val loaded = store.load(savedStem)
+        val report = (loaded ?: Report(
             date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
-            sport = cfg.sport, summary = observations, metrics = metrics,
-            stem = fallbackStem, source = videoPath,
-        )
-        store.save(fallbackStem, fallback)
-        return fallback
+            sport = cfg.sport, summary = observations, source = videoPath,
+        )).copy(stem = savedStem, metrics = metrics, artifacts = artifacts)
+        store.save(savedStem, report)
+        return report
     }
 
     private suspend fun runReportAgent(

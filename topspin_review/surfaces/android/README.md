@@ -8,9 +8,12 @@ See the full plan: [`docs/ANDROID_PLAN.md`](../../docs/ANDROID_PLAN.md) (appendi
 
 ## Status
 
-**P0/P1 scaffold** — project setup, settings, DeepSeek client, report model + store, a first
-pipeline slice (sampling → metrics stub → vision → report), and a Compose shell (Sessions / New /
-Result). Not yet compiled; the CV (pose, ball) and the full UI are the next phases.
+**P0–P2 scaffold** — project setup, settings, DeepSeek client, report model + store, sampling, the
+**measure** stage (activity + subject region/track + mechanics + `footwork_series` + motion/position
+maps), the observe + coach passes, and a Compose shell (Sessions / New / Result with Analysis maps +
+side-to-side chart, Observations, Coaching+Ask, Diagnostics). Not yet compiled; **pose (MediaPipe)**
+and **ball (ONNX)** and the remaining UI (player/telestration, trim/reel/card, compare, moments) are
+the next phases.
 
 ## Build
 
