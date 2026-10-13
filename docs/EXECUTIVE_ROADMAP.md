@@ -8,6 +8,18 @@
 
 Film a training session and get back what to fix and how to practice — a coach you can replay.
 
+## The core idea — it is multimodal
+
+This is the heart of the product and how we beat the competition:
+
+- It **watches** your video — a vision model reads the frames.
+- It **reads** the numbers (movement, body, ball) it measured itself.
+- It **writes** the coaching in plain words — and can **speak** it.
+- It ties **pictures + numbers + words** together, and every point points to a moment.
+
+Most tools do one sense — pure computer vision, or pure text. This one does all of them at once,
+which is why the advice reads like a coach, not a chart.
+
 ## Where we are today
 
 - A working demo exists: video goes in, a coaching report comes out.

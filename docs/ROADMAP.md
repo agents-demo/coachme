@@ -6,6 +6,12 @@ open items, grouped by phase so we can cherry-pick.*
 Scope: close the remaining gap to commercial "film your sport → get coaching" apps, then extend past
 them with our agentic, evidence-grounded, self-hosted angle.
 
+> **North star — multimodal by design.** The product *watches* the clip (a vision model reads the
+> frames), *reads* the numbers it measured itself, *writes* the coaching in plain language, and can
+> *speak* it — fusing **pictures + numbers + words** into one coach, every claim tied to a moment.
+> Most tools do one sense (pure computer vision, or pure text); combining all three is the core
+> advantage. Keep it central in every feature and every demo.
+
 ---
 
 ## 0. Conventions used below
@@ -456,8 +462,9 @@ timestamp), **private/local by default**, and it writes a **plan you can questio
 Ask) — not just metrics.
 
 **Moat vs table stakes**
-- Moat: the agentic **plan + memory** (D3) over session history; the **local/open pipeline**; the
-  evidence discipline; the run diagnostics.
+- Moat: the **multimodal core** — *watches* (vision) + *reads* its own numbers + *writes* in language
+  (and speaks), fused and evidence-grounded — plus the agentic **plan + memory** (D3) over session
+  history, the **local/open pipeline**, the evidence discipline, and the run diagnostics.
 - Table stakes (competitors have): tracking, pose, charts, compare, reels.
 
 **Business model (if productizing):** freemium (N sessions) → subscription; **coach/team seats** (D2);
