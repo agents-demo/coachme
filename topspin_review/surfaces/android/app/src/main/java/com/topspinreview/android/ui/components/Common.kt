@@ -389,12 +389,14 @@ fun TspSegmented(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (options.size <= 1) return
     SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth()) {
         options.forEachIndexed { i, label ->
             SegmentedButton(
                 selected = i == selectedIndex,
                 onClick = { onSelect(i) },
                 shape = SegmentedButtonDefaults.itemShape(index = i, count = options.size),
+                modifier = Modifier.height(32.dp),
             ) {
                 Text(
                     label,

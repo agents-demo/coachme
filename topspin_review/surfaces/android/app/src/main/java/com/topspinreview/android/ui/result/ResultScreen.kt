@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +27,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayCircle
@@ -42,6 +44,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.Scaffold
@@ -55,9 +58,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,6 +85,7 @@ import com.topspinreview.android.ui.components.DividerLine
 import com.topspinreview.android.ui.components.MutedNote
 import com.topspinreview.android.ui.components.GhostButton
 import com.topspinreview.android.ui.components.MetaChip
+import com.topspinreview.android.ui.components.GradientProgress
 import com.topspinreview.android.ui.components.MediaImage
 import com.topspinreview.android.ui.components.TimeChip
 import com.topspinreview.android.ui.components.PrimaryButton
@@ -147,12 +154,6 @@ class ResultViewModel @Inject constructor(
 }
 
 private val TABS = listOf("Video", "Analysis", "Observations", "Coaching")
-private val TAB_HINTS = listOf(
-    "Your clip: watch it, step frame-by-frame, slow it down, and draw on it.",
-    "Everything measured from the video — the body, any tracked object, and the spatial maps.",
-    "What we saw, read in table-tennis terms, plus the notable moments.",
-    "What the coach says: your focus, what to fix, drills, and the flagged moments.",
-)
 private val MAIN_ICONS = listOf(
     Icons.Filled.PlayCircle,
     Icons.Filled.Insights,
@@ -170,6 +171,7 @@ fun ResultScreen(
     val report by vm.report.collectAsStateWithLifecycle()
     var tab by remember { mutableStateOf(0) } // Video
     val answers by vm.answers.collectAsStateWithLifecycle()
+    val haptics = LocalHapticFeedback.current
 
     androidx.compose.runtime.LaunchedEffect(stem) { vm.load(stem) }
 
@@ -187,7 +189,7 @@ fun ResultScreen(
                     Column(Modifier.weight(1f)) {
                         Text(
                             name,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -219,21 +221,31 @@ fun ResultScreen(
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.background) {
-                TABS.forEachIndexed { i, label ->
-                    NavigationBarItem(
-                        selected = tab == i,
-                        onClick = { tab = i },
-                        icon = { Icon(MAIN_ICONS[i], contentDescription = null) },
-                        label = {
-                            Text(
-                                label,
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                    )
+            Column {
+                DividerLine()
+                NavigationBar(containerColor = MaterialTheme.colorScheme.background) {
+                    TABS.forEachIndexed { i, label ->
+                        NavigationBarItem(
+                            selected = tab == i,
+                            onClick = { tab = i; haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove) },
+                            icon = { Icon(MAIN_ICONS[i], contentDescription = null) },
+                            label = {
+                                Text(
+                                    label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Accent,
+                                selectedTextColor = Accent,
+                                indicatorColor = Accent.copy(alpha = 0.16f),
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                        )
+                    }
                 }
             }
         },
@@ -247,12 +259,6 @@ fun ResultScreen(
             val clipWarnings = (r.quality["warnings"] as? JsonArray)?.mapNotNull { it.toString().trim('"') } ?: emptyList()
             val runCaveats = r.warnings.filter { it !in clipWarnings }
             if (runCaveats.isNotEmpty()) CaveatsBanner(runCaveats)
-            Text(
-                TAB_HINTS[tab],
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
             Crossfade(targetState = tab, modifier = Modifier.fillMaxSize(), label = "tab") { t ->
                 when (t) {
                     0 -> VideoTab(r, vm::saveAnnotations)
@@ -340,7 +346,7 @@ private val ANALYSIS_SUBTABS = listOf("Maps", "Motion", "Pose", "Object")
 private fun AnalysisTab(r: Report) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
-        TspSegmented(ANALYSIS_SUBTABS, sub, { sub = it })
+        TspSegmented(ANALYSIS_SUBTABS, sub, { sub = it }, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
         val m = r.metrics
         val mech = m["mechanics"] as? JsonObject
         val foot = m["footwork_series"] as? JsonArray
@@ -353,7 +359,7 @@ private fun AnalysisTab(r: Report) {
 
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             when (sub) {
                 0 -> {
@@ -473,7 +479,24 @@ private fun AnalysisTab(r: Report) {
 @Composable
 private fun NoData(text: String) {
     TspCard(modifier = Modifier.fillMaxWidth()) {
-        Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(
+            Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                Icons.Filled.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
@@ -485,7 +508,7 @@ private fun NoData(text: String) {
 private fun ObservationsTab(r: Report) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
-        TspSegmented(listOf("Findings", "Moments"), sub, { sub = it })
+        TspSegmented(listOf("Findings", "Moments"), sub, { sub = it }, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
         if (sub == 0) Findings(r) else KeyMoments(r)
     }
 }
@@ -512,14 +535,17 @@ private fun Findings(r: Report) {
                     rows.forEachIndexed { i, f ->
                         val o = f as JsonObject
                         if (i > 0) { Spacer(Modifier.height(12.dp)); DividerLine(); Spacer(Modifier.height(12.dp)) }
-                        Text(
-                            "${o["label"]?.toString()?.trim('"')}: ${o["value"]?.toString()?.trim('"')}",
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
+                        val label = o["label"]?.toString()?.trim('"').orEmpty()
+                        val value = o["value"]?.toString()?.trim('"').orEmpty()
                         val note = o["note"]?.toString()?.trim('"').orEmpty()
+                        Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                        if (value.isNotBlank()) {
+                            Spacer(Modifier.height(2.dp))
+                            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                         if (note.isNotBlank()) {
                             Spacer(Modifier.height(2.dp))
-                            Text(note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
                         }
                     }
                 }
@@ -610,7 +636,7 @@ private val COACH_SUBTABS = listOf("Advice", "Practice", "Details", "Ask")
 private fun CoachingTab(r: Report, answers: List<Pair<String, String>>, onAsk: (String) -> Unit) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
-        TspSegmented(COACH_SUBTABS, sub, { sub = it })
+        TspSegmented(COACH_SUBTABS, sub, { sub = it }, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
         when (sub) {
             0 -> Advice(r)
             1 -> Practice(r)
@@ -767,11 +793,7 @@ private fun Practice(r: Report) {
                 Spacer(Modifier.weight(1f))
             }
             Spacer(Modifier.height(8.dp))
-            Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(6.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                Box(
-                    Modifier.fillMaxWidth(doneCount.toFloat() / r.drills.size).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(Accent),
-                )
-            }
+            GradientProgress(doneCount.toFloat() / r.drills.size)
         }
         items(r.drills.size) { i ->
             val d = r.drills[i]
@@ -829,15 +851,17 @@ private fun Details(r: Report) {
             }
         }
         TspCard(modifier = Modifier.fillMaxWidth()) {
-            SectionLabel("Save / export")
+            SectionLabel("Share")
             Spacer(Modifier.height(12.dp))
-            PrimaryButton("Share card (PNG)", onClick = { ShareCard.share(ctx, r) })
-            Spacer(Modifier.height(10.dp))
+            PrimaryButton("Share card (PNG)", { ShareCard.share(ctx, r) }, Modifier.fillMaxWidth())
             val times = r.issues.flatMap { it.evidence_times }
             if (times.isNotEmpty()) {
-                PrimaryButton("Highlight reel (mp4)", onClick = { exportReel(ctx, r.source, times) })
                 Spacer(Modifier.height(10.dp))
+                GhostButton("Highlight reel (mp4)", { exportReel(ctx, r.source, times) }, Modifier.fillMaxWidth())
             }
+            Spacer(Modifier.height(18.dp))
+            SectionLabel("Export")
+            Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 GhostButton("Markdown", { Reporting.share(ctx, r, "md") }, Modifier.weight(1f))
                 GhostButton("HTML", { Reporting.share(ctx, r, "html") }, Modifier.weight(1f))
@@ -845,10 +869,10 @@ private fun Details(r: Report) {
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 GhostButton("Print PDF", { Reporting.printPdf(ctx, r) }, Modifier.weight(1f))
-                GhostButton("GIF", onClick = {
+                GhostButton("GIF", {
                     val start = (r.issues.flatMap { it.evidence_times }.minOrNull()?.minus(1.0) ?: 0.0).coerceAtLeast(0.0)
                     exportGif(ctx, r.source, start, start + 3.0)
-                })
+                }, Modifier.weight(1f))
             }
             Spacer(Modifier.height(10.dp))
             GhostButton("Share original clip", { shareSource(ctx, r.source) }, Modifier.fillMaxWidth())
@@ -1004,16 +1028,24 @@ private fun FootworkChart(series: JsonArray) {
     val lo = pts.minOf { it.second }; val hi = pts.maxOf { it.second }
     val span = maxOf(0.08, hi - lo)
     val dlo = lo - span * 0.4; val dhi = hi + span * 0.4
-    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(150.dp)) {
-        val w = size.width; val h = size.height
-        fun xOf(t: Double) = (((t - t0) / (if (t1 - t0 == 0.0) 1.0 else t1 - t0)) * w).toFloat()
-        fun yOf(x: Double) = ((dhi - x) / (dhi - dlo) * h).toFloat()
-        val path = androidx.compose.ui.graphics.Path()
-        pts.forEachIndexed { i, (t, x) ->
-            val px = xOf(t); val py = yOf(x)
-            if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Left–right position", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(150.dp)) {
+            val w = size.width; val h = size.height
+            fun xOf(t: Double) = (((t - t0) / (if (t1 - t0 == 0.0) 1.0 else t1 - t0)) * w).toFloat()
+            fun yOf(x: Double) = ((dhi - x) / (dhi - dlo) * h).toFloat()
+            val path = androidx.compose.ui.graphics.Path()
+            pts.forEachIndexed { i, (t, x) ->
+                val px = xOf(t); val py = yOf(x)
+                if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
+            }
+            drawPath(path, color = Accent, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f))
         }
-        drawPath(path, color = Accent, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("0s", style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("time (s)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("%.1fs".format(t1), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
@@ -1032,28 +1064,36 @@ private fun PoseAngleChart(series: JsonArray) {
     if (rows.size < 2) return
     val t0 = rows.first()[0]; val t1 = rows.last()[0]
     val colors = listOf(Accent, Accent2, Good, Warn)
-    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(150.dp)) {
-        val w = size.width; val h = size.height
-        fun xOf(t: Double) = (((t - t0) / (if (t1 - t0 == 0.0) 1.0 else t1 - t0)) * w).toFloat()
-        fun yOf(v: Double) = (h - (v / 180.0 * h)).toFloat()
-        for (k in 1..4) {
-            val path = androidx.compose.ui.graphics.Path()
-            var started = false
-            rows.forEach { row ->
-                val v = row[k]
-                if (!v.isNaN()) {
-                    val x = xOf(row[0]); val y = yOf(v)
-                    if (!started) { path.moveTo(x, y); started = true } else path.lineTo(x, y)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Joint angle (°)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(150.dp)) {
+            val w = size.width; val h = size.height
+            fun xOf(t: Double) = (((t - t0) / (if (t1 - t0 == 0.0) 1.0 else t1 - t0)) * w).toFloat()
+            fun yOf(v: Double) = (h - (v / 180.0 * h)).toFloat()
+            for (k in 1..4) {
+                val path = androidx.compose.ui.graphics.Path()
+                var started = false
+                rows.forEach { row ->
+                    val v = row[k]
+                    if (!v.isNaN()) {
+                        val x = xOf(row[0]); val y = yOf(v)
+                        if (!started) { path.moveTo(x, y); started = true } else path.lineTo(x, y)
+                    }
                 }
+                drawPath(path, colors[k - 1], style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
             }
-            drawPath(path, colors[k - 1], style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
         }
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        listOf("L knee" to Accent, "R knee" to Accent2, "L elbow" to Good, "R elbow" to Warn).forEach { (label, c) ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.foundation.Canvas(Modifier.height(6.dp).width(14.dp)) { drawRect(color = c) }
-                Text(" $label", style = MaterialTheme.typography.bodySmall)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("0s", style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("time (s)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("%.1fs".format(t1), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf("L knee" to Accent, "R knee" to Accent2, "L elbow" to Good, "R elbow" to Warn).forEach { (label, c) ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.foundation.Canvas(Modifier.height(6.dp).width(14.dp)) { drawRect(color = c) }
+                    Text(" $label", style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
     }
