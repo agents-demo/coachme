@@ -401,13 +401,13 @@ fun TspSegmented(
                 selected = i == selectedIndex,
                 onClick = { onSelect(i) },
                 shape = SegmentedButtonDefaults.itemShape(index = i, count = options.size),
-                modifier = Modifier.height(32.dp),
+                modifier = Modifier.height(42.dp),
             ) {
                 Text(
                     label,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }

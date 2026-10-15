@@ -786,7 +786,6 @@ private fun CapturePanel(
                     hint = "Pick from gallery",
                     onClick = onVideo,
                     modifier = Modifier.weight(1f),
-                    primary = true,
                 )
                 SourceTile(
                     icon = Icons.Filled.PhotoCamera,
@@ -825,18 +824,13 @@ private fun SourceTile(
     hint: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    primary: Boolean = false,
 ) {
     val shape = RoundedCornerShape(14.dp)
     Box(
         modifier
             .clip(shape)
-            .background(if (primary) Accent.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface)
-            .border(
-                2.dp,
-                if (primary) Accent.copy(alpha = 0.55f) else MaterialTheme.colorScheme.outline,
-                shape,
-            )
+            .background(MaterialTheme.colorScheme.surface)
+            .border(2.dp, MaterialTheme.colorScheme.outline, shape)
             .clickable { onClick() }
             .padding(14.dp),
     ) {
@@ -845,13 +839,13 @@ private fun SourceTile(
                 Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(11.dp))
-                    .background(if (primary) heroBrush() else SolidColor(Accent.copy(alpha = 0.14f))),
+                    .background(SolidColor(Accent.copy(alpha = 0.14f))),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = if (primary) Color.White else Accent,
+                    tint = Accent,
                     modifier = Modifier.size(20.dp),
                 )
             }
