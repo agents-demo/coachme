@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -301,7 +302,7 @@ fun TspTopBar(
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    Column(modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+    Column(modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
         Row(
             Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -315,11 +316,12 @@ fun TspTopBar(
                 LogoBadge(Modifier.padding(horizontal = 8.dp))
             }
             if (titleContent != null) {
+                // The content supplies its own flexible width; don't add a competing spacer.
                 titleContent()
-            } else if (title != null) {
-                Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1)
+            } else {
+                if (title != null) Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1)
+                Spacer(Modifier.weight(1f))
             }
-            Spacer(Modifier.weight(1f))
             actions()
         }
         DividerLine()
