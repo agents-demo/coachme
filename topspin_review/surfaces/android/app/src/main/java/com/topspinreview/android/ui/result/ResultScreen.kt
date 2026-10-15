@@ -36,7 +36,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
@@ -871,13 +873,17 @@ private fun Advice(r: Report) {
         if (r.strengths.isNotEmpty()) {
             item {
                 TintedCard(border = Good.copy(alpha = 0.3f), background = Good.copy(alpha = 0.05f)) {
-                    Text(
-                        "Γ£à What's working",
-                        fontFamily = SpaceGrotesk,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Good,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Good, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "What's working",
+                            fontFamily = SpaceGrotesk,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Good,
+                        )
+                    }
                     Spacer(Modifier.height(8.dp))
                     r.strengths.forEach { Bullet(it) }
                 }
@@ -886,13 +892,17 @@ private fun Advice(r: Report) {
         if (r.issues.isNotEmpty()) {
             item {
                 TintedCard(border = Warn.copy(alpha = 0.3f), background = Warn.copy(alpha = 0.05f)) {
-                    Text(
-                        "≡ƒÄ» What to improve",
-                        fontFamily = SpaceGrotesk,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Warn,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Bolt, contentDescription = null, tint = Warn, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "What to improve",
+                            fontFamily = SpaceGrotesk,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Warn,
+                        )
+                    }
                     Spacer(Modifier.height(8.dp))
                     r.issues.forEach { Bullet(it.issue) }
                 }
