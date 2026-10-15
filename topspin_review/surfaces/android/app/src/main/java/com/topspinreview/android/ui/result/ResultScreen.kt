@@ -20,23 +20,29 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -87,7 +93,6 @@ import com.topspinreview.android.ui.components.GhostButton
 import com.topspinreview.android.ui.components.MetaChip
 import com.topspinreview.android.ui.components.GradientProgress
 import com.topspinreview.android.ui.components.MediaImage
-import com.topspinreview.android.ui.components.TimeChip
 import com.topspinreview.android.ui.components.PrimaryButton
 import com.topspinreview.android.ui.components.SectionLabel
 import com.topspinreview.android.ui.components.TspCard
@@ -100,9 +105,11 @@ import com.topspinreview.android.ui.theme.Good
 import com.topspinreview.android.ui.theme.SpaceGrotesk
 import com.topspinreview.android.ui.theme.Warn
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -120,10 +127,17 @@ class ResultViewModel @Inject constructor(
 ) : ViewModel() {
     private val _report = MutableStateFlow<Report?>(null)
     val report = _report.asStateFlow()
+    private val _loading = MutableStateFlow(true)
+    val loading = _loading.asStateFlow()
     private val _answers = MutableStateFlow<List<Pair<String, String>>>(emptyList())
     val answers = _answers.asStateFlow()
 
-    fun load(stem: String) { _report.value = store.load(stem) }
+    fun load(stem: String) = viewModelScope.launch {
+        _loading.value = true
+        val r = withContext(Dispatchers.IO) { store.load(stem) }
+        _report.value = r
+        _loading.value = false
+    }
 
     fun saveAnnotations(annotations: JsonArray) {
         val r = _report.value ?: return
@@ -169,9 +183,12 @@ fun ResultScreen(
     vm: ResultViewModel = hiltViewModel(),
 ) {
     val report by vm.report.collectAsStateWithLifecycle()
+    val loading by vm.loading.collectAsStateWithLifecycle()
     var tab by remember { mutableStateOf(0) } // Video
     val answers by vm.answers.collectAsStateWithLifecycle()
     val haptics = LocalHapticFeedback.current
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val drillsDone = remember(stem) { mutableStateMapOf<Int, Boolean>() }
 
     androidx.compose.runtime.LaunchedEffect(stem) { vm.load(stem) }
 
@@ -211,6 +228,11 @@ fun ResultScreen(
                             Icon(Icons.Filled.MoreVert, contentDescription = "More options")
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Share card") },
+                                enabled = report != null,
+                                onClick = { menuOpen = false; report?.let { ShareCard.share(ctx, it) } },
+                            )
                             DropdownMenuItem(
                                 text = { Text("Diagnostics") },
                                 onClick = { menuOpen = false; onOpenDiagnostics(stem) },
@@ -252,19 +274,23 @@ fun ResultScreen(
     ) { pad ->
         val r = report
         Column(Modifier.fillMaxSize().padding(pad)) {
-            if (r == null) {
+            if (loading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Accent)
+                }
+            } else if (r == null) {
                 MutedNote("Report not found.", Modifier.padding(horizontal = 16.dp))
-                return@Column
-            }
-            val clipWarnings = (r.quality["warnings"] as? JsonArray)?.mapNotNull { it.toString().trim('"') } ?: emptyList()
-            val runCaveats = r.warnings.filter { it !in clipWarnings }
-            if (runCaveats.isNotEmpty()) CaveatsBanner(runCaveats)
-            Crossfade(targetState = tab, modifier = Modifier.fillMaxSize(), label = "tab") { t ->
-                when (t) {
-                    0 -> VideoTab(r, vm::saveAnnotations)
-                    1 -> AnalysisTab(r)
-                    2 -> ObservationsTab(r)
-                    else -> CoachingTab(r, answers, onAsk = vm::ask)
+            } else {
+                val clipWarnings = (r.quality["warnings"] as? JsonArray)?.mapNotNull { it.toString().trim('"') } ?: emptyList()
+                val runCaveats = r.warnings.filter { it !in clipWarnings }
+                if (runCaveats.isNotEmpty()) CaveatsBanner(runCaveats)
+                Crossfade(targetState = tab, modifier = Modifier.fillMaxSize(), label = "tab") { t ->
+                    when (t) {
+                        0 -> VideoTab(r, vm::saveAnnotations)
+                        1 -> AnalysisTab(r)
+                        2 -> ObservationsTab(r)
+                        else -> CoachingTab(r, answers, drillsDone, onAsk = vm::ask)
+                    }
                 }
             }
         }
@@ -340,7 +366,7 @@ private fun Prov(info: Outputs.Info) {
 // Analysis
 // ---------------------------------------------------------------------------
 
-private val ANALYSIS_SUBTABS = listOf("Maps", "Motion", "Pose", "Object")
+private val ANALYSIS_SUBTABS = listOf("Movement", "Pose", "Tracked object")
 
 @Composable
 private fun AnalysisTab(r: Report) {
@@ -350,7 +376,6 @@ private fun AnalysisTab(r: Report) {
         val m = r.metrics
         val mech = m["mechanics"] as? JsonObject
         val foot = m["footwork_series"] as? JsonArray
-        val activity = m["activity"] as? JsonArray
         val poseSummary = m["pose_summary"] as? JsonObject
         val poseAngles = m["pose_angles"] as? JsonArray
         val pose3d = m["pose3d"] as? JsonArray
@@ -363,21 +388,6 @@ private fun AnalysisTab(r: Report) {
         ) {
             when (sub) {
                 0 -> {
-                    r.artifacts["motion"]?.let {
-                        ItemCard("Movement map", "Red = where the picture changed most — where the action happened.", Outputs.motionMap) {
-                            MediaImage(File(it), "Movement map")
-                        }
-                    }
-                    r.artifacts["heatmap"]?.let {
-                        ItemCard("Position map", "Where you spent the most time within the frame.", Outputs.positionMap) {
-                            MediaImage(File(it), "Position map")
-                        }
-                    }
-                    if (r.artifacts["motion"] == null && r.artifacts["heatmap"] == null) {
-                        NoData("No spatial maps for this run.")
-                    }
-                }
-                1 -> {
                     if (foot != null && foot.size > 1) {
                         val lateral = (mech?.get("lower_lateral_range")?.toString()?.toDoubleOrNull() ?: 0.0) * 100
                         val changes = mech?.get("lower_direction_changes")?.toString() ?: "0"
@@ -394,20 +404,19 @@ private fun AnalysisTab(r: Report) {
                             FootworkChart(foot)
                         }
                     }
-                    if (activity != null && activity.size > 1) {
-                        ItemCard("Movement over time", "Energy moment-to-moment — a peak is a burst of action.", Outputs.movement) {
-                            EnergyChart(activity)
+                    r.artifacts["motion"]?.let {
+                        ItemCard("Movement map", "Red = where the picture changed most — where the action happened.", Outputs.motionMap) {
+                            MediaImage(File(it), "Movement map")
                         }
                     }
-                    val segments = ball?.get("segments") as? JsonArray
-                    if (segments != null && segments.isNotEmpty()) {
-                        ItemCard("Active spans", "Stretches where the picture stayed consistently active.", Outputs.segments) {
-                            SegmentsBar(segments, activity?.let { lastT(it) } ?: 10.0)
+                    r.artifacts["heatmap"]?.let {
+                        ItemCard("Position map", "Where you spent the most time within the frame.", Outputs.positionMap) {
+                            MediaImage(File(it), "Position map")
                         }
                     }
-                    if (foot == null && activity == null && segments == null) NoData("No movement data for this run.")
+                    if (foot == null && r.artifacts["motion"] == null && r.artifacts["heatmap"] == null) NoData("No movement data for this run.")
                 }
-                2 -> {
+                1 -> {
                     r.artifacts["pose"]?.let {
                         ItemCard("Skeleton", "Your body's joints, detected on a sampled frame.", Outputs.skeleton) {
                             MediaImage(File(it), "Skeleton")
@@ -428,6 +437,8 @@ private fun AnalysisTab(r: Report) {
                     if (pose3d != null && pose3d.size > 0) {
                         ItemCard("Body 3D", "Your body as a rotatable 3D stick figure; depth from one camera is approximate.", Outputs.pose3d) {
                             Pose3DView(pose3d)
+                            Spacer(Modifier.height(6.dp))
+                            Text("Drag to rotate.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     if (strokes != null && strokes.isNotEmpty()) {
@@ -466,6 +477,8 @@ private fun AnalysisTab(r: Report) {
                         if (traj.size > 2) {
                             ItemCard("Object trajectory", "The object's route in 3D; the shape is useful, distances aren't.", Outputs.trajectory3d) {
                                 Trajectory3DView(traj)
+                                Spacer(Modifier.height(6.dp))
+                                Text("Drag to rotate.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -508,7 +521,7 @@ private fun NoData(text: String) {
 private fun ObservationsTab(r: Report) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
-        TspSegmented(listOf("Findings", "Moments"), sub, { sub = it }, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        TspSegmented(listOf("Findings", "Key moments"), sub, { sub = it }, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
         if (sub == 0) Findings(r) else KeyMoments(r)
     }
 }
@@ -530,8 +543,12 @@ private fun Findings(r: Report) {
         present.forEach { (grp, rows) ->
             item {
                 TspCard(modifier = Modifier.fillMaxWidth()) {
-                    SectionLabel(grp, color = Accent)
-                    Spacer(Modifier.height(10.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(groupIcon(grp), contentDescription = null, tint = Accent, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        SectionLabel(grp, color = Accent)
+                    }
+                    Spacer(Modifier.height(12.dp))
                     rows.forEachIndexed { i, f ->
                         val o = f as JsonObject
                         if (i > 0) { Spacer(Modifier.height(12.dp)); DividerLine(); Spacer(Modifier.height(12.dp)) }
@@ -557,61 +574,44 @@ private fun Findings(r: Report) {
 @Composable
 private fun KeyMoments(r: Report) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
-    val moments = (r.tt_reading?.get("moments") as? JsonArray) ?: JsonArray(emptyList())
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        if (moments.isNotEmpty()) {
+        if (r.issues.isEmpty()) {
+            item { NoData("No timestamped issues in this report.") }
+        } else {
             item {
                 TspCard(modifier = Modifier.fillMaxWidth()) {
-                    SectionLabel("Notable moments")
+                    SectionLabel("Key moments")
                     Spacer(Modifier.height(4.dp))
-                    Text("Click a time to export just that moment.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(10.dp))
-                    moments.forEachIndexed { i, el ->
-                        val o = el as? JsonObject ?: return@forEachIndexed
-                        val t = o["t"]?.toString()?.toDoubleOrNull() ?: 0.0
-                        if (i > 0) { Spacer(Modifier.height(8.dp)) }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            TimeChip(fmtTime(t))
-                            Text(
-                                o["label"]?.toString()?.trim('"').orEmpty(),
-                                Modifier.weight(1f).padding(start = 10.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            GhostButton("Clip", onClick = { clipAndShare(ctx, r.source, t - 1.0, t + 2.0) })
-                        }
-                    }
+                    Text(
+                        "The notable seconds — tap a time to export that moment.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
-        }
-        if (r.issues.isNotEmpty()) {
-            item { SectionLabel("Key moments") }
             items(r.issues) { issue ->
                 TspCard(modifier = Modifier.fillMaxWidth()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(issue.issue, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                        confidenceChip(issue.confidence)
-                    }
+                    Text(issue.issue, style = MaterialTheme.typography.bodyLarge)
                     val times = issue.evidence_times
-                    if (times.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
+                    if (times.isNotEmpty() || issue.confidence.isNotBlank()) {
+                        Spacer(Modifier.height(10.dp))
                         Row(
                             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            times.forEach { TimeChip(fmtTime(it)) }
+                            confidenceChip(issue.confidence)
+                            times.forEach { t ->
+                                ClipChip("▶ ${fmtTime(t)}") { clipAndShare(ctx, r.source, t - 1.0, t + 2.0) }
+                            }
                         }
-                        Spacer(Modifier.height(10.dp))
-                        GhostButton("Clip & share", onClick = { clipAndShare(ctx, r.source, times.first() - 1.0, times.first() + 2.0) })
                     }
                 }
             }
-        }
-        if (moments.isEmpty() && r.issues.isEmpty()) {
-            item { NoData("No notable moments for this run.") }
         }
     }
 }
@@ -626,6 +626,37 @@ private fun confidenceChip(conf: String) {
     MetaChip(conf.ifBlank { "low" }, color = tone, border = tone.copy(alpha = 0.5f), borderWidth = 2.dp)
 }
 
+/** A small, tappable pill (lighter than a full ghost button). */
+@Composable
+private fun ClipChip(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .clip(CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                .padding(horizontal = 12.dp, vertical = 5.dp),
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+private fun groupIcon(name: String) = when (name) {
+    "Player" -> Icons.Filled.Person
+    "Ball" -> Icons.Filled.SportsTennis
+    else -> Icons.Filled.PlayArrow
+}
+
 // ---------------------------------------------------------------------------
 // Coaching
 // ---------------------------------------------------------------------------
@@ -633,13 +664,18 @@ private fun confidenceChip(conf: String) {
 private val COACH_SUBTABS = listOf("Advice", "Practice", "Details", "Ask")
 
 @Composable
-private fun CoachingTab(r: Report, answers: List<Pair<String, String>>, onAsk: (String) -> Unit) {
+private fun CoachingTab(
+    r: Report,
+    answers: List<Pair<String, String>>,
+    drillsDone: MutableMap<Int, Boolean>,
+    onAsk: (String) -> Unit,
+) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
         TspSegmented(COACH_SUBTABS, sub, { sub = it }, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
         when (sub) {
             0 -> Advice(r)
-            1 -> Practice(r)
+            1 -> Practice(r, drillsDone)
             2 -> Details(r)
             else -> Ask(answers, onAsk)
         }
@@ -728,12 +764,13 @@ private fun Advice(r: Report) {
 
 @Composable
 private fun TintedCard(border: Color, background: Color, content: @Composable ColumnScope.() -> Unit) {
+    val shape = MaterialTheme.shapes.large
     Box(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(shape)
             .background(background)
-            .border(2.dp, border, RoundedCornerShape(16.dp))
+            .border(2.dp, border, shape)
             .padding(16.dp),
     ) {
         Column(content = content)
@@ -775,12 +812,11 @@ private fun CaveatsBanner(warnings: List<String>) {
 }
 
 @Composable
-private fun Practice(r: Report) {
+private fun Practice(r: Report, done: MutableMap<Int, Boolean>) {
     if (r.drills.isEmpty()) {
         MutedNote("No practice items for this session.", Modifier.padding(16.dp))
         return
     }
-    val done = remember { mutableStateMapOf<Int, Boolean>() }
     val doneCount = done.count { it.value }
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -1029,7 +1065,10 @@ private fun FootworkChart(series: JsonArray) {
     val span = maxOf(0.08, hi - lo)
     val dlo = lo - span * 0.4; val dhi = hi + span * 0.4
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("Left–right position", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Left–right position", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("range %.2f–%.2f".format(lo, hi), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(150.dp)) {
             val w = size.width; val h = size.height
             fun xOf(t: Double) = (((t - t0) / (if (t1 - t0 == 0.0) 1.0 else t1 - t0)) * w).toFloat()
@@ -1065,7 +1104,10 @@ private fun PoseAngleChart(series: JsonArray) {
     val t0 = rows.first()[0]; val t1 = rows.last()[0]
     val colors = listOf(Accent, Accent2, Good, Warn)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("Joint angle (°)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Joint angle (°)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("0–180°", style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(150.dp)) {
             val w = size.width; val h = size.height
             fun xOf(t: Double) = (((t - t0) / (if (t1 - t0 == 0.0) 1.0 else t1 - t0)) * w).toFloat()
@@ -1117,11 +1159,19 @@ fun EnergyChart(activity: JsonArray, playhead: Double? = null, onSeek: ((Double)
         } else base
     }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            "Movement energy",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                "Movement energy",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "peak %.2f".format(maxE),
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         androidx.compose.foundation.Canvas(mod) {
             val w = size.width; val h = size.height
             fun xOf(t: Double) = (((t - t0) / span) * w).toFloat()
@@ -1163,21 +1213,28 @@ fun SegmentsBar(segments: JsonArray, duration: Double, playhead: Double? = null,
             detectTapGestures { pos -> onSeek(((pos.x / size.width) * duration).toDouble().coerceIn(0.0, duration)) }
         } else base
     }
-    androidx.compose.foundation.Canvas(mod) {
-        val w = size.width; val h = size.height
-        drawRect(color = Accent.copy(alpha = 0.15f), size = androidx.compose.ui.geometry.Size(w, h))
-        spans.forEach { (s, e) ->
-            val x = (s / duration * w).toFloat()
-            val ww = ((e - s) / duration * w).toFloat()
-            drawRect(
-                color = Accent2,
-                topLeft = androidx.compose.ui.geometry.Offset(x, 0f),
-                size = androidx.compose.ui.geometry.Size(ww.coerceAtLeast(2f), h),
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        androidx.compose.foundation.Canvas(mod) {
+            val w = size.width; val h = size.height
+            drawRect(color = Accent.copy(alpha = 0.15f), size = androidx.compose.ui.geometry.Size(w, h))
+            spans.forEach { (s, e) ->
+                val x = (s / duration * w).toFloat()
+                val ww = ((e - s) / duration * w).toFloat()
+                drawRect(
+                    color = Accent2,
+                    topLeft = androidx.compose.ui.geometry.Offset(x, 0f),
+                    size = androidx.compose.ui.geometry.Size(ww.coerceAtLeast(2f), h),
+                )
+            }
+            playhead?.let { ph ->
+                val px = ((ph / duration) * w).toFloat().coerceIn(0f, w)
+                drawLine(Accent2, androidx.compose.ui.geometry.Offset(px, 0f), androidx.compose.ui.geometry.Offset(px, h), strokeWidth = 2f)
+            }
         }
-        playhead?.let { ph ->
-            val px = ((ph / duration) * w).toFloat().coerceIn(0f, w)
-            drawLine(Accent2, androidx.compose.ui.geometry.Offset(px, 0f), androidx.compose.ui.geometry.Offset(px, h), strokeWidth = 2f)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("0s", style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("time (s)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("%.1fs".format(duration), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
