@@ -49,6 +49,7 @@ fun AppNav() {
                 stem = entry.arguments?.getString("stem").orEmpty(),
                 onBack = { nav.popBackStack() },
                 onOpenDiagnostics = { s -> nav.navigate("diagnostics/$s") },
+                onRetryAnalysis = { s -> nav.navigate("new?resume=$s") },
             )
         }
         composable(

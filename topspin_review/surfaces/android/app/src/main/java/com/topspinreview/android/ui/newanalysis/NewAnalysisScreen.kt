@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -24,6 +25,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +40,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -55,6 +60,7 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -95,6 +101,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -108,9 +115,7 @@ import com.topspinreview.android.pipeline.PendingRun
 import com.topspinreview.android.pipeline.Pipeline
 import com.topspinreview.android.pipeline.Sampler
 import com.topspinreview.android.pipeline.Stages
-import com.topspinreview.android.ui.components.EyebrowPill
 import com.topspinreview.android.ui.components.GhostButton
-import com.topspinreview.android.ui.components.MetaChip
 import com.topspinreview.android.ui.components.PrimaryButton
 import com.topspinreview.android.ui.components.SectionLabel
 import com.topspinreview.android.ui.components.TspCard
@@ -188,7 +193,37 @@ class NewAnalysisViewModel @Inject constructor(
     private var lastStageName: String? = null
     private var lastStageAt = 0L
 
-    init { refreshPending() }
+    private val _recent = MutableStateFlow<List<RecentClip>>(emptyList())
+    val recent = _recent.asStateFlow()
+
+    /** Clips already on the device (files/media), newest first, for quick re-analysis. */
+    data class RecentClip(val path: String, val name: String, val isImage: Boolean, val posterPath: String?)
+
+    init { refreshPending(); refreshRecent() }
+
+    private fun refreshRecent() {
+        viewModelScope.launch { _recent.value = listRecent() }
+    }
+
+    private suspend fun listRecent(): List<RecentClip> = withContext(Dispatchers.IO) {
+        val dir = File(context.filesDir, "media")
+        if (!dir.exists()) return@withContext emptyList()
+        val exts = setOf("mp4", "mov", "avi", "mkv", "webm", "jpg", "jpeg", "png", "bmp", "webp")
+        val images = setOf("jpg", "jpeg", "png", "bmp", "webp", "gif")
+        (dir.listFiles()?.toList() ?: emptyList())
+            .filter { it.isFile && !it.name.endsWith("_poster.jpg") && it.name != "sample.mp4" }
+            .filter { it.extension.lowercase() in exts }
+            .sortedByDescending { it.lastModified() }
+            .take(10)
+            .map { f ->
+                val isImage = f.extension.lowercase() in images
+                val poster = File(dir, "${f.nameWithoutExtension}_poster.jpg").takeIf { it.exists() }?.absolutePath
+                    ?: if (isImage) f.absolutePath else null
+                RecentClip(f.absolutePath, f.nameWithoutExtension, isImage, poster)
+            }
+    }
+
+    fun selectRecent(clip: RecentClip) = loadSelection(clip.name, clip.isImage) { File(clip.path) }
 
     /** Re-scan disk for an interrupted run (shown as a resume banner). */
     private fun refreshPending() {
@@ -286,6 +321,7 @@ class NewAnalysisViewModel @Inject constructor(
         job?.cancel()
         _state.value = State()
         refreshPending()
+        refreshRecent()
     }
 
     fun discardRun(stem: String) {
@@ -299,6 +335,7 @@ class NewAnalysisViewModel @Inject constructor(
         job?.cancel()
         _state.value = State()
         refreshPending()
+        refreshRecent()
     }
 
     private fun launchRun(regionBox: FloatArray?, isImage: Boolean, resume: Boolean = false, prepare: suspend () -> File) {
@@ -432,6 +469,8 @@ fun NewAnalysisScreen(
     vm: NewAnalysisViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val recent by vm.recent.collectAsStateWithLifecycle()
+    var confirmBack by remember { mutableStateOf(false) }
 
     val useRegion = state.useRegion
     val region = state.region
@@ -444,16 +483,16 @@ fun NewAnalysisScreen(
 
     LaunchedEffect(resumeStem) { if (resumeStem != null) vm.resumeStem(resumeStem) }
 
+    BackHandler(enabled = state.running) { confirmBack = true }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { TspTopBar(onBack = onBack) },
+        topBar = { TspTopBar(title = "Analyze a clip", onBack = { if (state.running) confirmBack = true else onBack() }) },
     ) { pad ->
         Column(
             Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Stagger(0) { AnalyzeHeader() }
-
             val sel = state.selection
             val finishedStem = state.finishedStem
             when {
@@ -495,6 +534,9 @@ fun NewAnalysisScreen(
                             )
                         }
                     }
+                    if (recent.isNotEmpty()) {
+                        Stagger(2) { RecentRow(recent = recent, onPick = { vm.selectRecent(it) }) }
+                    }
                 }
             }
 
@@ -511,6 +553,20 @@ fun NewAnalysisScreen(
                 }
             }
         }
+    }
+
+    if (confirmBack) {
+        AlertDialog(
+            onDismissRequest = { confirmBack = false },
+            title = { Text("Cancel analysis?") },
+            text = { Text("This stops the run. You can resume it later from the home screen.") },
+            confirmButton = {
+                TextButton(onClick = { confirmBack = false; vm.cancel(); onBack() }) { Text("Cancel analysis") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmBack = false }) { Text("Keep going") }
+            },
+        )
     }
 }
 
@@ -539,28 +595,52 @@ private fun Stagger(index: Int, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun AnalyzeHeader() {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        EyebrowPill("Topspin Review")
-        Text(
-            "Analyze a clip",
-            style = MaterialTheme.typography.displaySmall.copy(brush = heroBrush()),
-        )
-        Text(
-            "Frames are measured on your phone. Only the sampled frames and metrics ever reach the model.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+private fun RecentRow(recent: List<NewAnalysisViewModel.RecentClip>, onPick: (NewAnalysisViewModel.RecentClip) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionLabel("Recent")
         Row(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            MetaChip("Pose")
-            MetaChip("Ball")
-            MetaChip("Footwork")
-            MetaChip("Private", color = Good, border = Good.copy(alpha = 0.45f))
+            recent.forEach { clip -> RecentTile(clip) { onPick(clip) } }
         }
+    }
+}
+
+@Composable
+private fun RecentTile(clip: NewAnalysisViewModel.RecentClip, onClick: () -> Unit) {
+    TspCard(
+        modifier = Modifier.width(120.dp).clickable { onClick() },
+        padding = PaddingValues(0.dp),
+    ) {
+        Box(
+            Modifier.fillMaxWidth().height(68.dp)
+                .background(Brush.linearGradient(listOf(Accent.copy(alpha = 0.25f), Accent2.copy(alpha = 0.25f)))),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (clip.posterPath != null) {
+                AsyncImage(
+                    model = File(clip.posterPath),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Icon(
+                    if (clip.isImage) Icons.Filled.PhotoCamera else Icons.Filled.Movie,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+        Text(
+            clip.name,
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+        )
     }
 }
 
@@ -595,7 +675,7 @@ private fun CapturePanel(
                     Column(Modifier.weight(1f)) {
                         Text("Add footage", style = MaterialTheme.typography.titleLarge)
                         Text(
-                            "A full clip or a single still — analyzed end to end",
+                            "Analyzed on your phone — a full clip or a single still",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -780,6 +860,12 @@ private fun PreviewPanel(
     }
 }
 
+/** A row in the running checklist: a stage header, or a step within it. */
+private sealed interface StepRow {
+    data class Group(val name: String) : StepRow
+    data class Step(val name: String, val planIndex: Int) : StepRow
+}
+
 @Composable
 private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit) {
     val reduced = rememberReducedMotion()
@@ -794,6 +880,27 @@ private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit
         }
     }
     val elapsedSec = if (state.startedAtMs > 0) (nowMs - state.startedAtMs) / 1000 else 0L
+
+    val rows = remember(state.stages) {
+        val steps = buildList {
+            add("Prepare clip" to -1)
+            state.stages.forEachIndexed { i, name -> add(name to i) }
+        }
+        buildList {
+            STAGE_GROUP_ORDER.forEach { group ->
+                val items = steps.filter { stageGroupOf(it.first) == group }
+                if (items.isNotEmpty()) {
+                    add(StepRow.Group(group))
+                    items.forEach { add(StepRow.Step(it.first, it.second)) }
+                }
+            }
+        }
+    }
+    val listState = rememberLazyListState()
+    LaunchedEffect(index, rows) {
+        val i = rows.indexOfFirst { it is StepRow.Step && it.planIndex == index }
+        if (i >= 0) listState.animateScrollToItem(i)
+    }
 
     TspCard(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -812,35 +919,38 @@ private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit
         }
         Spacer(Modifier.height(12.dp))
         LiveProgress(progress)
-        if (state.stages.isNotEmpty()) {
-            Spacer(Modifier.height(14.dp))
-            val steps = buildList {
-                add("Prepare clip" to -1)
-                state.stages.forEachIndexed { i, name -> add(name to i) }
-            }
-            STAGE_GROUP_ORDER.forEach { group ->
-                val items = steps.filter { stageGroupOf(it.first) == group }
-                if (items.isNotEmpty()) {
-                    Spacer(Modifier.height(9.dp))
-                    Text(
-                        group.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.sp,
-                        color = Accent,
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    items.forEach { (name, planIndex) ->
-                        val phase = when {
-                            planIndex < 0 -> if (index < 0) 1 else 0
-                            index >= 0 && planIndex < index -> 0
-                            planIndex == index -> 1
-                            else -> 2
+
+        if (rows.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            LazyColumn(
+                Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                items(rows) { row ->
+                    when (row) {
+                        is StepRow.Group -> {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                row.name.uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                letterSpacing = 1.sp,
+                                color = Accent,
+                            )
                         }
-                        StageRow(
-                            label = name,
-                            phase = phase,
-                            seconds = if (phase == 0) state.stepSeconds[name] else null,
-                        )
+                        is StepRow.Step -> {
+                            val phase = when {
+                                row.planIndex < 0 -> if (index < 0) 1 else 0
+                                index >= 0 && row.planIndex < index -> 0
+                                row.planIndex == index -> 1
+                                else -> 2
+                            }
+                            StageRow(
+                                label = row.name,
+                                phase = phase,
+                                seconds = if (phase == 0) state.stepSeconds[row.name] else null,
+                            )
+                        }
                     }
                 }
             }
@@ -848,6 +958,7 @@ private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit
             Spacer(Modifier.height(12.dp))
             Text(state.stage.ifBlank { "Working" }, style = MaterialTheme.typography.titleSmall)
         }
+
         if (state.warnings.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -860,7 +971,7 @@ private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit
                 )
             }
         }
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(16.dp))
         GhostButton("Cancel", onCancel, Modifier.fillMaxWidth())
     }
 }
@@ -1009,7 +1120,7 @@ private fun CropSection(
                     ) {
                         Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Detect me", style = MaterialTheme.typography.labelLarge)
+                        Text("Center me", style = MaterialTheme.typography.labelLarge)
                     }
                     TextButton(
                         onClick = { onLeft(0f); onTop(0f); onRight(1f); onBottom(1f) },

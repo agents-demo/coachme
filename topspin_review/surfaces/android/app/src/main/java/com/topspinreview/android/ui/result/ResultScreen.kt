@@ -18,17 +18,24 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MoreVert
@@ -45,16 +52,23 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -131,6 +145,8 @@ class ResultViewModel @Inject constructor(
     val loading = _loading.asStateFlow()
     private val _answers = MutableStateFlow<List<Pair<String, String>>>(emptyList())
     val answers = _answers.asStateFlow()
+    private val _asking = MutableStateFlow(false)
+    val asking = _asking.asStateFlow()
 
     fun load(stem: String) = viewModelScope.launch {
         _loading.value = true
@@ -145,8 +161,18 @@ class ResultViewModel @Inject constructor(
         _report.value = r.copy(annotations = annotations)
     }
 
+    /** Clear the run caveats for this session (persisted, so they don't reappear). */
+    fun dismissWarnings() {
+        val r = _report.value ?: return
+        if (r.warnings.isEmpty()) return
+        val updated = r.copy(warnings = emptyList())
+        store.save(r.stem, updated)
+        _report.value = updated
+    }
+
     fun ask(question: String) = viewModelScope.launch {
         val r = _report.value ?: return@launch
+        _asking.value = true
         val context = buildJsonObject {
             put("summary", r.summary); put("focus", r.focus)
             put("issues", buildJsonArray {
@@ -164,10 +190,11 @@ class ResultViewModel @Inject constructor(
             client.text(Prompts.QA_SYSTEM, "Report:\n$context\n\nQuestion: $question")
         }.getOrElse { "Could not answer: ${it.message}" }
         _answers.value = _answers.value + (question to answer)
+        _asking.value = false
     }
 }
 
-private val TABS = listOf("Video", "Analysis", "Observations", "Coaching")
+private val TABS = listOf("Video", "Analysis", "Observe", "Coaching")
 private val MAIN_ICONS = listOf(
     Icons.Filled.PlayCircle,
     Icons.Filled.Insights,
@@ -180,12 +207,15 @@ fun ResultScreen(
     stem: String,
     onBack: () -> Unit,
     onOpenDiagnostics: (String) -> Unit = {},
+    onRetryAnalysis: (String) -> Unit = {},
     vm: ResultViewModel = hiltViewModel(),
 ) {
     val report by vm.report.collectAsStateWithLifecycle()
     val loading by vm.loading.collectAsStateWithLifecycle()
     var tab by remember { mutableStateOf(0) } // Video
     val answers by vm.answers.collectAsStateWithLifecycle()
+    val asking by vm.asking.collectAsStateWithLifecycle()
+    var askOpen by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val drillsDone = remember(stem) { mutableStateMapOf<Int, Boolean>() }
@@ -222,6 +252,9 @@ fun ResultScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { askOpen = true }) {
+                        Icon(Icons.Filled.Chat, contentDescription = "Ask the coach")
+                    }
                     var menuOpen by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { menuOpen = true }) {
@@ -283,17 +316,32 @@ fun ResultScreen(
             } else {
                 val clipWarnings = (r.quality["warnings"] as? JsonArray)?.mapNotNull { it.toString().trim('"') } ?: emptyList()
                 val runCaveats = r.warnings.filter { it !in clipWarnings }
-                if (runCaveats.isNotEmpty()) CaveatsBanner(runCaveats)
+                if (runCaveats.isNotEmpty()) {
+                    CaveatsBanner(
+                        warnings = runCaveats,
+                        onRetry = { onRetryAnalysis(stem) },
+                        onDismiss = vm::dismissWarnings,
+                    )
+                }
                 Crossfade(targetState = tab, modifier = Modifier.fillMaxSize(), label = "tab") { t ->
                     when (t) {
                         0 -> VideoTab(r, vm::saveAnnotations)
                         1 -> AnalysisTab(r)
                         2 -> ObservationsTab(r)
-                        else -> CoachingTab(r, answers, drillsDone, onAsk = vm::ask)
+                        else -> CoachingTab(r, drillsDone)
                     }
                 }
             }
         }
+    }
+
+    if (askOpen) {
+        AskSheet(
+            answers = answers,
+            asking = asking,
+            onAsk = vm::ask,
+            onDismiss = { askOpen = false },
+        )
     }
 }
 
@@ -366,7 +414,7 @@ private fun Prov(info: Outputs.Info) {
 // Analysis
 // ---------------------------------------------------------------------------
 
-private val ANALYSIS_SUBTABS = listOf("Movement", "Pose", "Tracked object")
+private val ANALYSIS_SUBTABS = listOf("Movement", "Pose", "Object")
 
 @Composable
 private fun AnalysisTab(r: Report) {
@@ -661,14 +709,12 @@ private fun groupIcon(name: String) = when (name) {
 // Coaching
 // ---------------------------------------------------------------------------
 
-private val COACH_SUBTABS = listOf("Advice", "Practice", "Details", "Ask")
+private val COACH_SUBTABS = listOf("Advice", "Practice", "Export")
 
 @Composable
 private fun CoachingTab(
     r: Report,
-    answers: List<Pair<String, String>>,
     drillsDone: MutableMap<Int, Boolean>,
-    onAsk: (String) -> Unit,
 ) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
@@ -676,8 +722,7 @@ private fun CoachingTab(
         when (sub) {
             0 -> Advice(r)
             1 -> Practice(r, drillsDone)
-            2 -> Details(r)
-            else -> Ask(answers, onAsk)
+            else -> Export(r)
         }
     }
 }
@@ -759,6 +804,27 @@ private fun Advice(r: Report) {
                 }
             }
         }
+        val clipWarnings = (r.quality["warnings"] as? JsonArray)?.mapNotNull { it.toString().trim('"') } ?: emptyList()
+        val caveats = r.limitations.filter { it !in clipWarnings }
+        if (clipWarnings.isNotEmpty() || caveats.isNotEmpty()) {
+            item {
+                TspCard(modifier = Modifier.fillMaxWidth()) {
+                    SectionLabel("About this analysis")
+                    if (clipWarnings.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Your clip", style = MaterialTheme.typography.titleSmall)
+                        Spacer(Modifier.height(2.dp))
+                        clipWarnings.forEach { Bullet(it) }
+                    }
+                    if (caveats.isNotEmpty()) {
+                        Spacer(Modifier.height(10.dp))
+                        Text("Limits", style = MaterialTheme.typography.titleSmall)
+                        Spacer(Modifier.height(2.dp))
+                        caveats.forEach { Bullet(it) }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -787,7 +853,7 @@ private fun Bullet(text: String) {
 
 /** A always-visible strip reminding the user why this report is lower-confidence. */
 @Composable
-private fun CaveatsBanner(warnings: List<String>) {
+private fun CaveatsBanner(warnings: List<String>, onRetry: () -> Unit, onDismiss: () -> Unit) {
     Box(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
         TintedCard(border = Warn.copy(alpha = 0.4f), background = Warn.copy(alpha = 0.08f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -804,9 +870,16 @@ private fun CaveatsBanner(warnings: List<String>) {
                     color = Warn,
                     border = Warn.copy(alpha = 0.5f),
                 )
+                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Filled.Close, contentDescription = "Dismiss", tint = Warn, modifier = Modifier.size(18.dp))
+                }
             }
             Spacer(Modifier.height(6.dp))
             warnings.forEach { Bullet(it) }
+            Spacer(Modifier.height(4.dp))
+            TextButton(onClick = onRetry, colors = ButtonDefaults.textButtonColors(contentColor = Warn)) {
+                Text("Retry the failed step", style = MaterialTheme.typography.labelLarge)
+            }
         }
     }
 }
@@ -864,28 +937,12 @@ private fun Practice(r: Report, done: MutableMap<Int, Boolean>) {
 }
 
 @Composable
-private fun Details(r: Report) {
+private fun Export(r: Report) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
-    val clipWarnings = (r.quality["warnings"] as? JsonArray)?.mapNotNull { it.toString().trim('"') } ?: emptyList()
-    val caveats = r.limitations.filter { it !in clipWarnings }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        if (clipWarnings.isNotEmpty()) {
-            TspCard(modifier = Modifier.fillMaxWidth()) {
-                SectionLabel("About your clip")
-                Spacer(Modifier.height(8.dp))
-                clipWarnings.forEach { Bullet(it) }
-            }
-        }
-        if (caveats.isNotEmpty()) {
-            TspCard(modifier = Modifier.fillMaxWidth()) {
-                SectionLabel("What limits the analysis")
-                Spacer(Modifier.height(8.dp))
-                caveats.forEach { Bullet(it) }
-            }
-        }
         TspCard(modifier = Modifier.fillMaxWidth()) {
             SectionLabel("Share")
             Spacer(Modifier.height(12.dp))
@@ -916,48 +973,147 @@ private fun Details(r: Report) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Ask(answers: List<Pair<String, String>>, onAsk: (String) -> Unit) {
+private fun AskSheet(
+    answers: List<Pair<String, String>>,
+    asking: Boolean,
+    onAsk: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var q by remember { mutableStateOf("") }
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+    val listState = rememberLazyListState()
+    LaunchedEffect(answers.size, asking) {
+        val target = answers.size + if (asking) 1 else 0
+        if (target > 0) listState.animateScrollToItem(target - 1)
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
-        item {
-            TspCard(modifier = Modifier.fillMaxWidth()) {
-                SectionLabel("Ask about this report")
-                Spacer(Modifier.height(4.dp))
-                Text("Type, or press the mic and speak — the answer is read aloud.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(12.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = q,
-                        onValueChange = { q = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("e.g. How do I fix my split-step?") },
-                        shape = RoundedCornerShape(14.dp),
-                        singleLine = true,
-                        maxLines = 1,
-                    )
-                    MicButton { q = it }
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 20.dp).imePadding()) {
+            Text("Ask the coach", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "Anything about this report — the coach answers and reads it aloud.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(14.dp))
+
+            if (answers.isEmpty() && !asking) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        "How do I fix my split-step?",
+                        "What should I focus on next session?",
+                        "Why is my footwork late?",
+                    ).forEach { s ->
+                        SuggestionChip(s) { q = s }
+                    }
                 }
-                Spacer(Modifier.height(10.dp))
-                PrimaryButton("Ask", { if (q.isNotBlank()) { onAsk(q); q = "" } }, Modifier.fillMaxWidth())
+            } else {
+                LazyColumn(
+                    Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    items(answers) { (question, answer) -> QA(question, answer) }
+                    if (asking) item { ThinkingBubble() }
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = q,
+                    onValueChange = { q = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Ask a question…") },
+                    shape = RoundedCornerShape(24.dp),
+                    singleLine = true,
+                    maxLines = 1,
+                )
+                MicButton { q = it }
+                FilledIconButton(
+                    onClick = { if (q.isNotBlank() && !asking) { onAsk(q); q = "" } },
+                    enabled = q.isNotBlank() && !asking,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = Accent,
+                        contentColor = Color.White,
+                        disabledContainerColor = Accent.copy(alpha = 0.3f),
+                        disabledContentColor = Color.White.copy(alpha = 0.6f),
+                    ),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                }
             }
         }
-        items(answers) { (question, answer) ->
-            TspCard(modifier = Modifier.fillMaxWidth()) {
-                Text("You", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** A question/answer pair as chat bubbles (you on the right, coach on the left). */
+@Composable
+private fun QA(question: String, answer: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Box(
+                Modifier
+                    .widthIn(max = 300.dp)
+                    .clip(RoundedCornerShape(16.dp, 16.dp, 4.dp, 16.dp))
+                    .background(Accent.copy(alpha = 0.15f))
+                    .padding(12.dp),
+            ) {
                 Text(question, style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(10.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Coach", style = MaterialTheme.typography.labelMedium, color = Accent2, modifier = Modifier.weight(1f))
-                    SpeakButton(answer)
-                }
-                Text(answer, style = MaterialTheme.typography.bodyLarge)
             }
         }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            Box(
+                Modifier
+                    .weight(1f, fill = false)
+                    .clip(RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(12.dp),
+            ) {
+                Text(answer, style = MaterialTheme.typography.bodyMedium)
+            }
+            Spacer(Modifier.width(4.dp))
+            SpeakButton(answer)
+        }
+    }
+}
+
+@Composable
+private fun ThinkingBubble() {
+    Row(Modifier.fillMaxWidth()) {
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+        ) {
+            Text("Coach is thinking…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun SuggestionChip(text: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

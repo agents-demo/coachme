@@ -425,7 +425,7 @@
       {/if}
     {:else if tab === "Coaching"}
       <div class="mb-5 flex gap-5 border-b-2 border-line pb-2">
-        {#each ["Advice", "Practice", "Details", "Ask"] as v}
+        {#each ["Advice", "Practice", "Export", "Ask"] as v}
           <button
             onclick={() => (coachView = v)}
             class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
@@ -482,18 +482,23 @@
           {#if report.progress}<p class="mt-3 text-sm text-muted"><b class="text-app">Since last time:</b> {report.progress}</p>{/if}
         </div>
       {/if}
-      {:else if coachView === "Details"}
-      <h3 class="font-display font-bold">Details</h3>
-      <p class="mt-1 text-sm text-muted">About this clip and how it was measured — not coaching.</p>
 
-      {#if clipWarnings.length}
-        <h4 class="mt-4 text-sm font-semibold text-app">About your clip</h4>
-        <ul class="mt-1 list-disc pl-5 text-sm">{#each clipWarnings as w}<li>{w}</li>{/each}</ul>
+      {#if clipWarnings.length || caveats.length}
+        <div class="mt-6 border-t-2 border-line pt-4">
+          <h4 class="text-[11px] font-semibold uppercase tracking-wide text-muted">About this analysis</h4>
+          {#if clipWarnings.length}
+            <h4 class="mt-3 text-sm font-semibold text-app">Your clip</h4>
+            <ul class="mt-1 list-disc pl-5 text-sm">{#each clipWarnings as w}<li>{w}</li>{/each}</ul>
+          {/if}
+          {#if caveats.length}
+            <h4 class="mt-3 text-sm font-semibold text-app">Limits</h4>
+            <ul class="mt-1 list-disc pl-5 text-sm">{#each caveats as l}<li>{l}</li>{/each}</ul>
+          {/if}
+        </div>
       {/if}
-      {#if caveats.length}
-        <h4 class="mt-4 text-sm font-semibold text-app">What limits the analysis</h4>
-        <ul class="mt-1 list-disc pl-5 text-sm">{#each caveats as l}<li>{l}</li>{/each}</ul>
-      {/if}
+      {:else if coachView === "Export"}
+      <h3 class="font-display font-bold">Export</h3>
+      <p class="mt-1 text-sm text-muted">Save or share this report.</p>
 
       <h4 class="mt-4 text-sm font-semibold text-app">Save / export</h4>
       <div class="mt-2 flex flex-wrap gap-3 text-sm">

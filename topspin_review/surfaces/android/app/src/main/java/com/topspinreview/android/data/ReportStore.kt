@@ -34,6 +34,9 @@ class ReportStore(private val context: Context) {
 
     fun delete(stem: String) { file(stem).delete() }
 
+    /** Whether a saved report exists for this stem. */
+    fun exists(stem: String): Boolean = file(stem).exists()
+
     /** Save a rendered artifact (PNG) for a stem; returns its absolute path. */
     fun saveArtifact(stem: String, kind: String, bitmap: Bitmap): String {
         val dir = File(context.filesDir, "artifacts").apply { mkdirs() }

@@ -17,6 +17,7 @@ import com.topspinreview.android.llm.DeepSeekClient
 import com.topspinreview.android.llm.Prompts
 import com.topspinreview.android.llm.ReportTools
 import com.topspinreview.android.llm.ToolCall
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -32,6 +33,11 @@ import java.util.Date
 import java.util.Locale
 import java.io.File
 import kotlin.math.ceil
+
+private const val CAVEAT_VISION_IMAGE = "The vision pass failed, so this photo's report may be less specific."
+private const val CAVEAT_VISION_OVERVIEW = "The overview pass failed, so findings are based on motion data only."
+private const val CAVEAT_VISION_DETAIL = "The detail pass failed, so the findings may be thinner than usual."
+private const val CAVEAT_VERIFY = "The double-check pass was skipped, so an issue may be flagged in error."
 
 /**
  * The pipeline: measure → observe → coach (mock-free MVP slice).
@@ -56,9 +62,11 @@ class Pipeline(
     /** Whether an interrupted run exists for this clip (drives the "Resume" affordance). */
     fun hasCheckpoint(videoPath: String): Boolean = runStore.exists(File(videoPath).nameWithoutExtension)
 
-    /** The newest interrupted run whose source still exists, or null. Drives the entry banner. */
+    /** The newest interrupted run whose source still exists and has no report yet (the entry banner). */
     fun pendingRun(): PendingRun? =
-        runStore.list().firstOrNull { File(it.videoPath).exists() }?.let { toPendingRun(it) }
+        runStore.list()
+            .firstOrNull { File(it.videoPath).exists() && !store.exists(it.stem) }
+            ?.let { toPendingRun(it) }
 
     /** A specific interrupted run by stem (used when resuming from the Sessions screen). */
     fun pendingRunFor(stem: String): PendingRun? =
@@ -286,6 +294,10 @@ class Pipeline(
         val poseBmp: Bitmap? = loadPath(artifacts["pose"])
 
         if (!done.contains("vision")) {
+            warnings.remove(CAVEAT_VISION_IMAGE)
+            warnings.remove(CAVEAT_VISION_OVERVIEW)
+            warnings.remove(CAVEAT_VISION_DETAIL)
+            var visionOk = true
             if (isImage) {
                 emit("Review image")
                 client.stage = "vision: reviewing image"
@@ -297,10 +309,12 @@ class Pipeline(
                         listOf(sheetB64),
                     )
                     extractJson(out)?.jsonObject?.get("observations")?.jsonPrimitive?.content.orEmpty()
-                } catch (e: Exception) {
-                    warn("The vision pass failed, so this photo's report may be less specific.")
-                    ""
-                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                visionOk = false
+                warn(CAVEAT_VISION_IMAGE)
+                ""
+            }
             } else {
                 windows = try {
                     emit("First look")
@@ -311,10 +325,12 @@ class Pipeline(
                         listOf(sheetB64),
                     )
                     extractJson(coarse)?.jsonObject?.get("attentive_windows")?.jsonArray ?: JsonArray(emptyList())
-                } catch (e: Exception) {
-                    warn("The overview pass failed, so findings are based on motion data only.")
-                    JsonArray(emptyList())
-                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                visionOk = false
+                warn(CAVEAT_VISION_OVERVIEW)
+                JsonArray(emptyList())
+            }
                 windowLabel = windows.joinToString(", ") {
                     val o = it.jsonObject
                     "${o["start"]}s-${o["end"]}s"
@@ -337,12 +353,14 @@ class Pipeline(
                         ) + zoomB64,
                     )
                     extractJson(fine)?.jsonObject?.get("observations")?.jsonPrimitive?.content.orEmpty()
-                } catch (e: Exception) {
-                    warn("The detail pass failed, so the findings may be thinner than usual.")
-                    ""
-                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                visionOk = false
+                warn(CAVEAT_VISION_DETAIL)
+                ""
             }
-            done += "vision"
+            }
+            if (visionOk) done += "vision"
             persist()
         }
 
@@ -356,6 +374,8 @@ class Pipeline(
         }
 
         if (!done.contains("verify")) {
+            warnings.remove(CAVEAT_VERIFY)
+            var verifyOk = true
             loaded?.let { rep ->
                 if (rep.issues.isNotEmpty()) {
                     emit("Double-check")
@@ -369,50 +389,54 @@ class Pipeline(
                             val kept = rep.issues.filterIndexed { i, _ -> i in supported }
                             if (kept.size != rep.issues.size) loaded = rep.copy(issues = kept)
                         }
-                    }.onFailure {
-                        warn("The double-check pass was skipped, so an issue may be flagged in error.")
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        verifyOk = false
+                        warn(CAVEAT_VERIFY)
                     }
                 }
             }
-            done += "verify"
+            if (verifyOk) done += "verify"
             persist()
         }
 
         val finalStem = savedStem ?: stem
-        if (!done.contains("finalize")) {
-            val callsJson = buildJsonArray {
-                client.calls.forEach { c ->
-                    add(buildJsonObject {
-                        put("stage", c.stage); put("model", c.model)
-                        put("prompt_tokens", c.promptTokens); put("completion_tokens", c.completionTokens)
-                        put("seconds", c.seconds)
-                    })
-                }
+        val callsJson = buildJsonArray {
+            client.calls.forEach { c ->
+                add(buildJsonObject {
+                    put("stage", c.stage); put("model", c.model)
+                    put("prompt_tokens", c.promptTokens); put("completion_tokens", c.completionTokens)
+                    put("seconds", c.seconds)
+                })
             }
-            val usageJson = buildJsonObject {
-                put("calls", client.calls.size)
-                put("total_tokens", client.calls.sumOf { it.promptTokens + it.completionTokens })
-            }
-            val timelineJson = buildJsonArray {
-                timeline.forEach { (s, secs) -> add(buildJsonObject { put("stage", s); put("seconds", secs) }) }
-                client.calls.forEach { add(buildJsonObject { put("stage", it.stage); put("seconds", it.seconds) }) }
-            }
-            val toolsJson = buildJsonArray { tools.toolCalls.forEach { add(it) } }
-            val report = (loaded ?: Report(
-                date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
-                sport = cfg.sport, summary = observations, source = videoPath,
-            )).copy(
-                stem = finalStem, source = videoPath, metrics = metrics, artifacts = artifacts,
-                usage = usageJson, calls = callsJson, tools = toolsJson, timeline = timelineJson,
-                quality = quality, tt_reading = ttReading, warnings = warnings.toList(),
-            )
-            store.save(finalStem, report)
-            runStore.clear(stem)
-            return report
         }
-
-        runStore.clear(stem)
-        return store.load(finalStem) ?: loaded ?: error("No report was produced.")
+        val usageJson = buildJsonObject {
+            put("calls", client.calls.size)
+            put("total_tokens", client.calls.sumOf { it.promptTokens + it.completionTokens })
+        }
+        val timelineJson = buildJsonArray {
+            timeline.forEach { (s, secs) -> add(buildJsonObject { put("stage", s); put("seconds", secs) }) }
+            client.calls.forEach { add(buildJsonObject { put("stage", it.stage); put("seconds", it.seconds) }) }
+        }
+        val toolsJson = buildJsonArray { tools.toolCalls.forEach { add(it) } }
+        val report = (loaded ?: Report(
+            date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
+            sport = cfg.sport, summary = observations, source = videoPath,
+        )).copy(
+            stem = finalStem, source = videoPath, metrics = metrics, artifacts = artifacts,
+            usage = usageJson, calls = callsJson, tools = toolsJson, timeline = timelineJson,
+            quality = quality, tt_reading = ttReading, warnings = warnings.toList(),
+        )
+        store.save(finalStem, report)
+        // If a supplementary stage still needs a retry, keep the checkpoint so the run can be
+        // resumed from that exact step; otherwise the run is complete — clean up.
+        val required = buildList {
+            add("frames")
+            if (!isImage) { add("measure"); add("pose"); add("ball") }
+            add("inputs"); add("render"); add("vision"); add("report"); add("verify")
+        }
+        if (required.all { it in done }) runStore.clear(stem)
+        return report
     }
 
     private suspend fun runReportAgent(
