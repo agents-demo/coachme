@@ -32,6 +32,12 @@ class ReportTools(
     /** Tool-call log for Diagnostics. */
     val toolCalls = mutableListOf<kotlinx.serialization.json.JsonObject>()
 
+    /** Seed the tool-call log when resuming a run. */
+    fun restoreToolCalls(list: List<kotlinx.serialization.json.JsonObject>) {
+        toolCalls.clear()
+        toolCalls.addAll(list)
+    }
+
     /** Reset per-run state (this object is a singleton). */
     fun beginRun(stem: String) {
         lastSavedStem = null

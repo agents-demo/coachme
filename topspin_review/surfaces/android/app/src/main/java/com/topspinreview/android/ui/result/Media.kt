@@ -3,6 +3,7 @@ package com.topspinreview.android.ui.result
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.core.content.FileProvider
@@ -151,4 +152,86 @@ fun exportReel(ctx: Context, source: String, times: List<Double>) {
         })
         .build()
     runCatching { transformer.start(composition, out.absolutePath) }
+}
+
+/** The clip's duration in seconds (0 if unknown). */
+fun videoDurationSec(ctx: Context, source: String): Double {
+    if (source.isBlank()) return 0.0
+    val r = MediaMetadataRetriever()
+    return try {
+        if (source.startsWith("content:") || source.startsWith("http")) r.setDataSource(ctx, Uri.parse(source)) else r.setDataSource(source)
+        (r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L) / 1000.0
+    } catch (_: Exception) {
+        0.0
+    } finally {
+        r.release()
+    }
+}
+
+/** The source's real aspect ratio (w/h), so the draw overlay lines up with the picture. */
+fun mediaAspect(ctx: Context, source: String): Float {
+    if (source.isBlank()) return 16f / 9f
+    val isPhoto = source.substringAfterLast('.', "").lowercase() in setOf("png", "jpg", "jpeg", "bmp", "webp", "gif")
+    return try {
+        if (isPhoto) {
+            val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            if (source.startsWith("content:") || source.startsWith("http")) {
+                ctx.contentResolver.openInputStream(Uri.parse(source))?.use { BitmapFactory.decodeStream(it, null, opts) }
+            } else {
+                BitmapFactory.decodeFile(source, opts)
+            }
+            if (opts.outWidth > 0 && opts.outHeight > 0) (opts.outWidth.toFloat() / opts.outHeight).coerceIn(0.5f, 2.2f) else 16f / 9f
+        } else {
+            val r = MediaMetadataRetriever()
+            try {
+                if (source.startsWith("content:") || source.startsWith("http")) r.setDataSource(ctx, Uri.parse(source)) else r.setDataSource(source)
+                val w = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
+                val h = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
+                if (w > 0 && h > 0) (w.toFloat() / h).coerceIn(0.5f, 2.2f) else 16f / 9f
+            } finally {
+                r.release()
+            }
+        }
+    } catch (_: Exception) {
+        16f / 9f
+    }
+}
+
+/** Trim a range and share it as mp4 (optionally vertical 9:16) or an animated GIF. */
+fun trimShare(ctx: Context, source: String, startSec: Double, endSec: Double, vertical: Boolean, gif: Boolean) {
+    if (source.isBlank()) return
+    if (gif) {
+        exportGif(ctx, source, startSec, endSec)
+        return
+    }
+    val uri: Uri = if (source.startsWith("content:") || source.startsWith("http")) Uri.parse(source) else Uri.fromFile(File(source))
+    val startMs = (startSec * 1000).toLong().coerceAtLeast(0)
+    val endMs = (endSec * 1000).toLong().coerceAtLeast(startMs + 500)
+    val mediaItem = MediaItem.Builder().setUri(uri)
+        .setClippingConfiguration(
+            MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs).setEndPositionMs(endMs).build(),
+        ).build()
+    val out = File(ctx.cacheDir, "trim_${System.currentTimeMillis()}.mp4")
+    val builder = Transformer.Builder(ctx)
+    if (vertical) {
+        builder.setVideoEffects(
+            listOf(
+                androidx.media3.effect.Crop(0.34f, 0.34f, 0f, 0f),
+                androidx.media3.effect.Presentation.createForHeight(1280),
+            ),
+        )
+    }
+    builder.addListener(object : Transformer.Listener {
+        override fun onCompleted(composition: Composition, result: ExportResult) {
+            val content = FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", out)
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "video/mp4"
+                putExtra(Intent.EXTRA_STREAM, content)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            ctx.startActivity(Intent.createChooser(send, "Share clip"))
+        }
+        override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {}
+    })
+    runCatching { builder.build().start(EditedMediaItem.Builder(mediaItem).setRemoveAudio(true).build(), out.absolutePath) }
 }

@@ -10,21 +10,17 @@ import kotlinx.serialization.json.put
 object Quality {
     fun evaluate(meta: Sampler.Meta, frameCount: Int, metrics: JsonObject): JsonObject {
         val warnings = ArrayList<String>()
-        var score = 100
 
-        if (meta.height in 1 until 480) { warnings.add("low resolution"); score -= 20 }
-        if (meta.fps > 0.1 && meta.fps < 25) { warnings.add("low frame rate (${meta.fps.toInt()} fps) — fast footwork may be missed"); score -= 25 }
-        if (meta.duration > 0.1 && meta.duration < 3) { warnings.add("very short clip (a few rallies are better)"); score -= 15 }
-        if (frameCount < 8) { warnings.add("few frames sampled"); score -= 10 }
+        if (meta.height in 1 until 480) warnings.add("low resolution")
+        if (meta.fps > 0.1 && meta.fps < 25) warnings.add("low frame rate (${meta.fps.toInt()} fps) — fast footwork may be missed")
+        if (meta.duration > 0.1 && meta.duration < 3) warnings.add("very short clip (a few rallies are better)")
+        if (frameCount < 8) warnings.add("few frames sampled")
         val meanEnergy = (metrics["mean_energy"]?.toString()?.toDoubleOrNull() ?: 0.0)
-        if (meanEnergy <= 0.0) { warnings.add("little visible movement detected"); score -= 30 }
+        if (meanEnergy <= 0.0) warnings.add("little visible movement detected")
         val coverage = metrics["subject_coverage"]?.toString()?.toDoubleOrNull()
-        if (coverage == null) { warnings.add("could not isolate the player from the background"); score -= 20 }
+        if (coverage == null) warnings.add("could not isolate the player from the background")
 
-        score = score.coerceAtLeast(0)
         return buildJsonObject {
-            put("score", score)
-            put("usable", score >= 40)
             put("warnings", buildJsonArray { warnings.forEach { add(JsonPrimitive(it)) } })
         }
     }

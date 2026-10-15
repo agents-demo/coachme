@@ -38,5 +38,6 @@ data class Report(
     val timeline: JsonArray = JsonArray(emptyList()),
     val tt_reading: JsonObject? = null,
     val quality: JsonObject = JsonObject(emptyMap()),
+    val warnings: List<String> = emptyList(),
     val annotations: JsonArray = JsonArray(emptyList()),
 )

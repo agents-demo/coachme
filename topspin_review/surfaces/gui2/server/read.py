@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from topspin_review.domain import drills as drills_catalog
-from topspin_review.domain import evaluate, game_reading
+from topspin_review.domain import game_reading
 from topspin_review.integrations.storage import json_store, runtime, store
 
 
@@ -37,7 +37,6 @@ def _flag_probes(calls: list[dict]) -> list[dict]:
 def _summary(report: dict) -> dict[str, Any]:
     """One dict per report for the history list."""
     source = report.get("source", "")
-    score = evaluate.score(report)
     returns = (report.get("metrics") or {}).get("mechanics") or {}
     return {
         "stem": Path(source).stem or "report",
@@ -47,7 +46,6 @@ def _summary(report: dict) -> dict[str, Any]:
         "focus": report.get("focus", ""),
         "summary": report.get("summary", ""),
         "issue_count": len(report.get("issues") or []),
-        "score": round(float(score.get("score", 0)), 1),
         "is_photo": Path(source).suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif"},
         "has_source": _exists(source),
         "has_frames": _exists((report.get("artifacts") or {}).get("frames")),
@@ -82,7 +80,6 @@ def get_report(stem: str) -> dict[str, Any] | None:
     report["timeline"] = [
         {**t, "stage": "startup" if t.get("stage") == "starting" else t.get("stage")} for t in timeline
     ]
-    report["score"] = evaluate.score(report)
     report["has_source"] = _exists(report.get("source"))
     report["drill_details"] = [drills_catalog.lookup(d) for d in (report.get("drills") or [])]
     report["tt_reading"] = game_reading.summarize(report.get("metrics") or {})

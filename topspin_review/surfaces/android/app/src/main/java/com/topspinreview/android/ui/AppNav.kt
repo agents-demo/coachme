@@ -23,10 +23,19 @@ fun AppNav() {
                 onNew = { nav.navigate("new") },
                 onSettings = { nav.navigate("settings") },
                 onCompare = { nav.navigate("compare") },
+                onResume = { stem -> nav.navigate("new?resume=$stem") },
             )
         }
-        composable("new") {
+        composable(
+            "new?resume={resume}",
+            arguments = listOf(navArgument("resume") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            }),
+        ) { entry ->
             NewAnalysisScreen(
+                resumeStem = entry.arguments?.getString("resume"),
                 onDone = { stem -> nav.navigate("result/$stem") { popUpTo("sessions") } },
                 onBack = { nav.popBackStack() },
             )

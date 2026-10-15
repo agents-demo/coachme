@@ -1,52 +1,68 @@
 package com.topspinreview.android.ui.result
 
-import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.FileProvider
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.transformer.Composition
-import androidx.media3.transformer.EditedMediaItem
-import androidx.media3.transformer.ExportException
-import androidx.media3.transformer.ExportResult
-import androidx.media3.transformer.Transformer
 import androidx.media3.ui.PlayerView
+import coil.compose.AsyncImage
 import com.topspinreview.android.data.Report
+import com.topspinreview.android.ui.components.MediaImage
+import com.topspinreview.android.ui.components.SectionLabel
+import com.topspinreview.android.ui.components.TspCard
+import com.topspinreview.android.ui.components.TspTabBar
+import com.topspinreview.android.ui.theme.Accent
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -57,11 +73,33 @@ import kotlin.math.hypot
 /** One drawn shape (normalized 0..1 coords). */
 private data class Shape(val type: String, val pts: List<Offset>)
 
-private val TOOLS = listOf("pen", "line", "arrow", "circle", "angle")
+private val TOOLS = listOf("arrow", "circle", "pen", "angle")
+private fun toolLabel(t: String) = t.replaceFirstChar { it.uppercase() }
+private fun rateLabel(r: Float) = when (r) {
+    0.25f -> "0.25×"
+    0.5f -> "0.5×"
+    else -> "1×"
+}
+private fun isPhotoSource(s: String) =
+    s.substringAfterLast('.', "").lowercase() in setOf("png", "jpg", "jpeg", "bmp", "webp", "gif")
+
+private fun clockLabel(ms: Long): String {
+    val s = (ms / 1000).coerceAtLeast(0)
+    return "%d:%02d".format(s / 60, s % 60)
+}
+
+/** Angle at [b] from normalized points, corrected for the stage's aspect ratio. */
+private fun angleDegrees(a: Offset, b: Offset, c: Offset, aspect: Float): Int {
+    val v1x = (a.x - b.x) * aspect; val v1y = a.y - b.y
+    val v2x = (c.x - b.x) * aspect; val v2y = c.y - b.y
+    val dot = v1x * v2x + v1y * v2y
+    val n = hypot(v1x.toDouble(), v1y.toDouble()).toFloat() * hypot(v2x.toDouble(), v2y.toDouble()).toFloat()
+    return if (n == 0f) 0 else Math.round(Math.acos((dot / n).coerceIn(-1f, 1f).toDouble()) * 180.0 / Math.PI).toInt()
+}
 
 /**
- * Video tab: the player, a telestration tool (pen / line / arrow / circle / angle) saved as
- * annotations, and a trim-to-mp4 export & share.
+ * Video tab (gui2 parity): a Motion / Frames switch. Motion = the clip (paused), a compact
+ * drawing + playback control row, and the motion/segments charts. Frames = the stills read.
  */
 @Composable
 fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
@@ -71,89 +109,259 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
         Text("No source clip for this session.", Modifier.padding(24.dp))
         return
     }
-    val uri: Uri = if (source.startsWith("content:") || source.startsWith("http")) Uri.parse(source) else Uri.fromFile(File(source))
+    val isPhoto = isPhotoSource(source)
+    val framesKind = report.artifacts["frames"]
+    var view by remember { mutableStateOf(0) } // 0 Motion, 1 Frames
 
-    val exo = remember {
-        ExoPlayer.Builder(ctx).build().apply { setMediaItem(MediaItem.fromUri(uri)); prepare(); playWhenReady = true }
+    val sourceUri: Uri = if (source.startsWith("content:") || source.startsWith("http")) Uri.parse(source) else Uri.fromFile(File(source))
+    val stageAspect = remember(source) { mediaAspect(ctx, source) }
+
+    val exo = remember(source) {
+        if (isPhoto) null
+        else ExoPlayer.Builder(ctx).build().apply {
+            setMediaItem(MediaItem.fromUri(sourceUri))
+            prepare()
+            playWhenReady = false
+        }
     }
-    DisposableEffect(Unit) { onDispose { exo.release() } }
+    DisposableEffect(Unit) { onDispose { exo?.release() } }
 
     val shapes = remember { mutableStateListOf<Shape>() }
-    var tool by remember { mutableStateOf("pen") }
+    var tool by remember { mutableStateOf("arrow") }
+    var drawMode by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf<List<Offset>>(emptyList()) }
     var status by remember { mutableStateOf("") }
+    var dirty by remember { mutableStateOf(false) }
+    remember(report.stem) { shapeListOf(report.annotations).forEach { shapes.add(it) }; dirty = false; true }
 
-    // Load existing annotations once.
-    remember(report.stem) {
-        shapeListOf(report.annotations).forEach { shapes.add(it) }
-        true
-    }
+    Column(Modifier.fillMaxWidth()) {
+        if (framesKind != null) TspTabBar(listOf("Motion", "Frames"), view, { view = it })
 
-    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(Modifier.fillMaxWidth().height(240.dp).background(Color.Black)) {
-            AndroidView(factory = { PlayerView(it).apply { player = exo; useController = true } }, modifier = Modifier.matchParentSize())
-            Canvas(
-                Modifier.matchParentSize()
-                    .pointerInput(tool) {
-                        if (tool == "angle") {
-                            detectTapGestures { pos ->
-                                val p = Offset(pos.x / size.width, pos.y / size.height)
-                                val d = draft + p
-                                if (d.size >= 3) { shapes.add(Shape("angle", d.take(3))); draft = emptyList() } else draft = d
-                            }
-                        } else {
-                            detectDragGestures(
-                                onDragStart = { s -> draft = listOf(Offset(s.x / size.width, s.y / size.height)) },
-                                onDrag = { change, _ ->
-                                    val p = Offset(change.position.x / size.width, change.position.y / size.height)
-                                    draft = if (tool == "pen") draft + p else listOf(draft.firstOrNull() ?: p, p)
-                                },
-                                onDragEnd = {
-                                    if (tool == "pen" && draft.size > 1) shapes.add(Shape("pen", draft))
-                                    else if (draft.size >= 2) shapes.add(Shape(tool, draft))
-                                    draft = emptyList()
-                                },
-                            )
-                        }
-                    },
+        Column(
+            Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            if (view == 1 && framesKind != null) {
+                SectionLabel("Frames read")
+                Text(
+                    "The exact stills the coach looked at.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TspCard(modifier = Modifier.fillMaxWidth()) { MediaImage(File(framesKind), "Frames read") }
+            } else {
+            var trimOpen by remember { mutableStateOf(false) }
+            var posMs by remember { mutableStateOf(0L) }
+            var rate by remember { mutableStateOf(1f) }
+            LaunchedEffect(exo) { while (exo != null) { posMs = exo.currentPosition; delay(250) } }
+            if (!isPhoto) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionLabel("Clip")
+                    Spacer(Modifier.weight(1f))
+                    Chip("✂ Trim & export") { trimOpen = true }
+                }
+                if (trimOpen) TrimDialog(report, onDismiss = { trimOpen = false })
+            }
+
+            Box(
+                Modifier.fillMaxWidth().aspectRatio(stageAspect)
+                    .clip(MaterialTheme.shapes.medium)
+                    .border(2.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
+                    .background(Color.Black),
             ) {
-                shapes.forEach { drawShape(it, size) }
-                if (draft.isNotEmpty()) drawShape(Shape(tool, draft), size)
+                if (isPhoto) {
+                    AsyncImage(
+                        model = File(source),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                } else {
+                    AndroidView(
+                        factory = { PlayerView(it).apply { player = exo; useController = true } },
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
+                Canvas(
+                    Modifier.matchParentSize().then(
+                        if (drawMode) {
+                            Modifier.pointerInput(tool) {
+                                if (tool == "angle") {
+                                    detectTapGestures { pos ->
+                                        exo?.pause()
+                                        val p = Offset(pos.x / size.width, pos.y / size.height)
+                                        val d = draft + p
+                                        if (d.size >= 3) {
+                                            shapes.add(Shape("angle", d.take(3))); draft = emptyList(); dirty = true
+                                        } else draft = d
+                                    }
+                                } else {
+                                    detectDragGestures(
+                                        onDragStart = { s -> exo?.pause(); draft = listOf(Offset(s.x / size.width, s.y / size.height)) },
+                                        onDrag = { change, _ ->
+                                            val p = Offset(change.position.x / size.width, change.position.y / size.height)
+                                            draft = if (tool == "pen") draft + p else listOf(draft.firstOrNull() ?: p, p)
+                                        },
+                                        onDragEnd = {
+                                            if (tool == "pen" && draft.size > 1) { shapes.add(Shape("pen", draft)); dirty = true }
+                                            else if (tool != "pen" && draft.size >= 2) { shapes.add(Shape(tool, draft)); dirty = true }
+                                            draft = emptyList()
+                                        },
+                                    )
+                                }
+                            }
+                        } else Modifier
+                    ),
+                ) {
+                    shapes.forEach { drawShape(it, size) }
+                    if (draft.isNotEmpty()) drawShape(Shape(tool, draft), size)
+                }
             }
-        }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            TextButton(onClick = { exo.seekTo((exo.currentPosition - 33).coerceAtLeast(0L)) }) { Text("−1f") }
-            TextButton(onClick = { exo.seekTo(exo.currentPosition + 33) }) { Text("+1f") }
-            TextButton(onClick = { exo.setPlaybackSpeed(0.25f) }) { Text("0.25×") }
-            TextButton(onClick = { exo.setPlaybackSpeed(0.5f) }) { Text("0.5×") }
-            TextButton(onClick = { exo.setPlaybackSpeed(1f) }) { Text("1×") }
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            TOOLS.forEach { t ->
-                AssistChip(onClick = { tool = t; draft = emptyList() }, label = { Text(t) })
+            // Draw controls (tool row only while drawing; arrow is the default tool).
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Chip(if (drawMode) "✏ Drawing" else "✏ Draw", selected = drawMode) {
+                    drawMode = !drawMode; draft = emptyList(); if (drawMode) exo?.pause()
+                }
+                if (drawMode) {
+                    TOOLS.forEach { t ->
+                        Chip(toolLabel(t), selected = tool == t) { tool = t; draft = emptyList() }
+                    }
+                    Chip("Undo") { if (shapes.isNotEmpty()) { shapes.removeAt(shapes.size - 1); dirty = true } }
+                    Chip("Clear") { shapes.clear(); draft = emptyList(); dirty = true }
+                    Chip("Save", enabled = dirty) { onSaveAnnotations(toJson(shapes)); status = "Saved"; dirty = false }
+                    if (status.isNotBlank()) {
+                        Text(status, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
-        }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { shapes.clear(); draft = emptyList() }) { Text("Clear") }
-            Button(onClick = { onSaveAnnotations(toJson(shapes)); status = "Annotations saved" }) { Text("Save drawings") }
-        }
+            // Playback controls (framing + slow-mo), like gui2's single small control row.
+            if (!isPhoto) {
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Chip("⏮") { exo?.let { p -> p.seekTo((p.currentPosition - 33).coerceAtLeast(0L)) } }
+                    Chip("⏭") { exo?.let { p -> p.seekTo(p.currentPosition + 33) } }
+                    listOf(0.25f, 0.5f, 1f).forEach { r ->
+                        Chip(rateLabel(r), selected = rate == r) { rate = r; exo?.setPlaybackSpeed(r) }
+                    }
+                    Text(
+                        clockLabel(posMs),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
 
-        Button(onClick = { status = exportAndShare(ctx, exo, uri) }, modifier = Modifier.fillMaxWidth()) {
-            Text("Trim first 10s → mp4 (then share)")
-        }
-        TextButton(onClick = { shareSource(ctx, source) }) { Text("Share original clip") }
-        TextButton(onClick = { exportVertical(ctx, source) }) { Text("Export vertical 9:16") }
-        if (status.isNotBlank()) Text(status, style = MaterialTheme.typography.bodySmall)
-
-        report.artifacts["frames"]?.let {
-            Text("Frames read", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            Text("The exact stills the coach looked at.", style = MaterialTheme.typography.bodySmall)
-            coil.compose.AsyncImage(model = File(it), contentDescription = "Frames read", modifier = Modifier.fillMaxWidth())
+            // Motion items (gui2's Motion sub-view): movement over time + active spans.
+            val activity = report.metrics["activity"] as? JsonArray
+            if (activity != null && activity.size > 1) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SectionLabel("Movement over time")
+                    Text(
+                        "Energy moment-to-moment — a peak is a burst of action.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TspCard(modifier = Modifier.fillMaxWidth()) {
+                        EnergyChart(activity, playhead = posMs / 1000.0, onSeek = { exo?.seekTo((it * 1000).toLong()) })
+                    }
+                }
+            }
+            val segs = (report.metrics["ball"] as? JsonObject)?.get("segments") as? JsonArray
+            if (segs != null && segs.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SectionLabel("Active spans")
+                    TspCard(modifier = Modifier.fillMaxWidth()) {
+                        SegmentsBar(segs, lastT(activity ?: JsonArray(emptyList())), playhead = posMs / 1000.0, onSeek = { exo?.seekTo((it * 1000).toLong()) })
+                    }
+                }
+            }
+            }
         }
     }
+}
+
+@Composable
+private fun Chip(label: String, selected: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) Accent.copy(alpha = 0.16f) else Color.Transparent)
+            .border(2.dp, if (selected) Accent else MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+            .clickable(enabled = enabled) { onClick() }
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            color = when {
+                !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                selected -> Accent
+                else -> MaterialTheme.colorScheme.onSurface
+            },
+        )
+    }
+}
+
+@Composable
+private fun TrimDialog(report: Report, onDismiss: () -> Unit) {
+    val ctx = LocalContext.current
+    val duration = remember(report.stem) { videoDurationSec(ctx, report.source).coerceAtLeast(1.0) }
+    var start by remember { mutableStateOf(0f) }
+    var end by remember { mutableStateOf(duration.toFloat()) }
+    var gif by remember { mutableStateOf(false) }
+    var vertical by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Trim & export") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    "Pick a range and share it as a clip.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text("Start  %.1fs".format(start), style = MaterialTheme.typography.labelSmall)
+                Slider(
+                    value = start,
+                    onValueChange = { start = it.coerceIn(0f, (end - 0.5f).coerceAtLeast(0f)) },
+                    valueRange = 0f..duration.toFloat(),
+                )
+                Text("End  %.1fs".format(end), style = MaterialTheme.typography.labelSmall)
+                Slider(
+                    value = end,
+                    onValueChange = { end = it.coerceIn(start + 0.5f, duration.toFloat()) },
+                    valueRange = 0f..duration.toFloat(),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = gif, onCheckedChange = { gif = it })
+                    Text("GIF", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.width(12.dp))
+                    Checkbox(checked = vertical, onCheckedChange = { vertical = it }, enabled = !gif)
+                    Text("Vertical 9:16", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                trimShare(ctx, report.source, start.toDouble(), end.toDouble(), vertical, gif)
+                onDismiss()
+            }) { Text("Export") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 private fun DrawScope.drawShape(shape: Shape, size: Size) {
@@ -181,9 +389,19 @@ private fun DrawScope.drawShape(shape: Shape, size: Size) {
             drawCircle(color, radius = hypot((e.x - c.x).toDouble(), (e.y - c.y).toDouble()).toFloat(), center = c, style = stroke)
         }
         "angle" -> if (shape.pts.size >= 3) {
-            val v = o(shape.pts[0]); val a = o(shape.pts[1]); val b = o(shape.pts[2])
-            drawLine(color, v, a, strokeWidth = 6f); drawLine(color, v, b, strokeWidth = 6f)
-            drawCircle(color, radius = 5f, center = v)
+            val m = o(shape.pts[1]); val a = o(shape.pts[0]); val c = o(shape.pts[2])
+            drawLine(color, m, a, strokeWidth = 6f); drawLine(color, m, c, strokeWidth = 6f)
+            drawCircle(color, radius = 5f, center = m)
+            val deg = angleDegrees(shape.pts[0], shape.pts[1], shape.pts[2], size.width / size.height)
+            val paint = android.graphics.Paint().apply {
+                this.color = 0xFFF97316.toInt()
+                textSize = (size.height * 0.06f).coerceIn(24f, 64f)
+                isAntiAlias = true
+                textAlign = android.graphics.Paint.Align.CENTER
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                setShadowLayer(4f, 0f, 0f, android.graphics.Color.BLACK)
+            }
+            drawContext.canvas.nativeCanvas.drawText("$deg°", m.x, m.y - 22f, paint)
         }
     }
 }
@@ -209,7 +427,7 @@ private fun toJson(shapes: List<Shape>): JsonArray = buildJsonArray {
 }
 
 private fun shapeListOf(annots: JsonArray): List<Shape> = annots.mapNotNull { el ->
-    val o = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+    val o = el as? JsonObject ?: return@mapNotNull null
     val type = o["type"]?.toString()?.trim('"') ?: return@mapNotNull null
     if (type == "pen" || type == "angle") {
         val pts = (o["points"] as? JsonArray)?.mapNotNull { p ->
@@ -225,34 +443,5 @@ private fun shapeListOf(annots: JsonArray): List<Shape> = annots.mapNotNull { el
         val x2 = o["x2"]?.toString()?.toFloatOrNull() ?: return@mapNotNull null
         val y2 = o["y2"]?.toString()?.toFloatOrNull() ?: return@mapNotNull null
         Shape(type, listOf(Offset(x1, y1), Offset(x2, y2)))
-    }
-}
-
-private fun exportAndShare(ctx: android.content.Context, exo: ExoPlayer, uri: Uri): String {
-    val endMs = (if (exo.duration > 0) exo.duration else 10_000L).coerceAtMost(10_000L)
-    val mediaItem = MediaItem.Builder().setUri(uri)
-        .setClippingConfiguration(
-            MediaItem.ClippingConfiguration.Builder().setStartPositionMs(0).setEndPositionMs(endMs).build(),
-        ).build()
-    val out = File(ctx.cacheDir, "trim_${System.currentTimeMillis()}.mp4")
-    val transformer = Transformer.Builder(ctx)
-        .addListener(object : Transformer.Listener {
-            override fun onCompleted(composition: Composition, result: ExportResult) {
-                val content = FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", out)
-                val send = Intent(Intent.ACTION_SEND).apply {
-                    type = "video/mp4"
-                    putExtra(Intent.EXTRA_STREAM, content)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                ctx.startActivity(Intent.createChooser(send, "Share clip"))
-            }
-            override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {}
-        })
-        .build()
-    return try {
-        transformer.start(EditedMediaItem.Builder(mediaItem).setRemoveAudio(true).build(), out.absolutePath)
-        "Exported: ${out.name}"
-    } catch (e: Exception) {
-        "Export failed: ${e.message}"
     }
 }

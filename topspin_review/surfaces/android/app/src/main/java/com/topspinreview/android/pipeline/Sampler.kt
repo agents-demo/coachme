@@ -46,6 +46,39 @@ class Sampler(private val context: Context) {
     fun isImage(path: String): Boolean =
         path.substringAfterLast('.', "").lowercase() in setOf("png", "jpg", "jpeg", "bmp", "webp", "gif")
 
+    /** Cheap pre-flight facts + a poster frame, shown on the confirm screen before analysis. */
+    data class ClipInspection(
+        val durationSec: Double = 0.0,
+        val width: Int = 0,
+        val height: Int = 0,
+        val fps: Double = 0.0,
+        val poster: Bitmap? = null,
+        val warnings: List<String> = emptyList(),
+    )
+
+    fun inspect(path: String): ClipInspection {
+        val m = meta(path)
+        val poster = if (isImage(path)) runCatching { loadImage(path).bitmap }.getOrNull() else posterFrame(path)
+        val warnings = ArrayList<String>()
+        if (m.height in 1 until 480) warnings.add("Low resolution — pose detail may be limited.")
+        if (m.fps > 0.1 && m.fps < 25) warnings.add("Low frame rate (${m.fps.toInt()} fps) — fast footwork may be missed.")
+        if (m.duration > 0.1 && m.duration < 3) warnings.add("Very short clip — a few rallies work better.")
+        return ClipInspection(m.duration, m.width, m.height, m.fps, poster, warnings)
+    }
+
+    private fun posterFrame(path: String): Bitmap? {
+        val r = MediaMetadataRetriever()
+        return try {
+            r.setDataSource(path)
+            r.getFrameAtTime(500_000L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                ?: r.getFrameAtTime(0L, MediaMetadataRetriever.OPTION_CLOSEST)
+        } catch (e: Exception) {
+            null
+        } finally {
+            r.release()
+        }
+    }
+
     fun duration(path: String): Double {
         val r = MediaMetadataRetriever()
         return try {

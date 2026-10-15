@@ -15,7 +15,7 @@
   import TrimExport from "$lib/components/TrimExport.svelte";
   import Provenance from "$lib/components/Provenance.svelte";
   import { outputs } from "$lib/outputs";
-  import { movementSeries, scoreTone, issueText, fmtTime, CONF_TONE, CONF_HELP, POSE_SERIES } from "$lib/format";
+  import { movementSeries, issueText, fmtTime, CONF_TONE, CONF_HELP, POSE_SERIES } from "$lib/format";
 
   const stem = $derived($page.url.searchParams.get("stem") || "");
   let report = $state(null);

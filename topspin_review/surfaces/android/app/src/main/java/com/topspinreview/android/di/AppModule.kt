@@ -2,6 +2,7 @@ package com.topspinreview.android.di
 
 import android.content.Context
 import com.topspinreview.android.data.ReportStore
+import com.topspinreview.android.data.RunStore
 import com.topspinreview.android.data.SettingsStore
 import com.topspinreview.android.llm.DeepSeekClient
 import com.topspinreview.android.llm.ReportTools
@@ -39,6 +40,9 @@ object AppModule {
     fun reportStore(@ApplicationContext ctx: Context) = ReportStore(ctx)
 
     @Provides @Singleton
+    fun runStore(@ApplicationContext ctx: Context) = RunStore(ctx)
+
+    @Provides @Singleton
     fun client(http: OkHttpClient, json: Json, settings: SettingsStore) = DeepSeekClient(http, json, settings)
 
     @Provides @Singleton
@@ -56,6 +60,6 @@ object AppModule {
     @Provides @Singleton
     fun pipeline(
         sampler: Sampler, pose: Pose, ball: Ball, client: DeepSeekClient, tools: ReportTools,
-        store: ReportStore, settings: SettingsStore, json: Json,
-    ) = Pipeline(sampler, pose, ball, client, tools, store, settings, json)
+        store: ReportStore, settings: SettingsStore, json: Json, runStore: RunStore,
+    ) = Pipeline(sampler, pose, ball, client, tools, store, settings, json, runStore)
 }

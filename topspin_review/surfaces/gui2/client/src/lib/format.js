@@ -12,12 +12,6 @@ export const pretty = (v) => {
   return JSON.stringify(v, null, 2);
 };
 
-export function scoreTone(score) {
-  if (score >= 80) return "text-good";
-  if (score >= 60) return "text-warn";
-  return "text-bad";
-}
-
 // How sure the model is that a finding is real (from the sampled frames + measured motion).
 export const CONF_TONE = { high: "text-bad", medium: "text-warn", low: "text-muted" };
 export const CONF_HELP =

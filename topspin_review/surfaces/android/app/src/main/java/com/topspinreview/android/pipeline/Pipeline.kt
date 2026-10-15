@@ -1,11 +1,18 @@
 package com.topspinreview.android.pipeline
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import com.topspinreview.android.data.CallRecord
+import com.topspinreview.android.data.FrameRef
+import com.topspinreview.android.data.LandmarkFrame
 import com.topspinreview.android.data.Report
 import com.topspinreview.android.data.ReportStore
+import com.topspinreview.android.data.RunCheckpoint
+import com.topspinreview.android.data.RunStore
 import com.topspinreview.android.data.SettingsStore
+import com.topspinreview.android.llm.CallInfo
 import com.topspinreview.android.llm.DeepSeekClient
 import com.topspinreview.android.llm.Prompts
 import com.topspinreview.android.llm.ReportTools
@@ -14,7 +21,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -32,6 +38,9 @@ import kotlin.math.ceil
  *
  * Renders a contact sheet, does the two vision passes, then runs the report agent loop
  * (tools from [ReportTools]) and returns the saved [Report]. See docs/ANDROID_PLAN.md §7.
+ *
+ * Every stage checkpoints its outputs to a [RunStore]; pass `resume = true` to continue a
+ * previously interrupted run from the first unfinished stage instead of starting over.
  */
 class Pipeline(
     private val sampler: Sampler,
@@ -42,182 +51,368 @@ class Pipeline(
     private val store: ReportStore,
     private val settings: SettingsStore,
     private val json: Json,
+    private val runStore: RunStore,
 ) {
-    suspend fun analyze(videoPath: String, regionBox: FloatArray? = null, onStage: (String) -> Unit): Report {
+    /** Whether an interrupted run exists for this clip (drives the "Resume" affordance). */
+    fun hasCheckpoint(videoPath: String): Boolean = runStore.exists(File(videoPath).nameWithoutExtension)
+
+    /** The newest interrupted run whose source still exists, or null. Drives the entry banner. */
+    fun pendingRun(): PendingRun? =
+        runStore.list().firstOrNull { File(it.videoPath).exists() }?.let { toPendingRun(it) }
+
+    /** A specific interrupted run by stem (used when resuming from the Sessions screen). */
+    fun pendingRunFor(stem: String): PendingRun? =
+        runStore.load(stem)?.takeIf { File(it.videoPath).exists() }?.let { toPendingRun(it) }
+
+    private fun toPendingRun(cp: RunCheckpoint): PendingRun {
+        val plan = Stages.plan(cp.isImage)
+        return PendingRun(
+            videoPath = cp.videoPath,
+            stem = cp.stem,
+            isImage = cp.isImage,
+            region = cp.region,
+            doneCount = plan.count { it in cp.completed },
+            totalCount = plan.size,
+        )
+    }
+
+    /** Forget an interrupted run (the "Discard" action). */
+    fun discardRun(stem: String) = runStore.clear(stem)
+
+    suspend fun analyze(
+        videoPath: String,
+        regionBox: FloatArray? = null,
+        onStage: (StageInfo) -> Unit = {},
+        onWarning: (String) -> Unit = {},
+        resume: Boolean = false,
+    ): Report {
         val cfg = settings.flow.first()
 
         val stem = File(videoPath).nameWithoutExtension
+        val cp = if (resume) runStore.load(stem) else null
+        if (!resume && cp == null) runStore.clear(stem)
+        val done = (cp?.completed ?: emptyList()).toMutableSet()
+
         tools.beginRun(stem)
         client.calls.clear()
+        cp?.let { c ->
+            client.restoreCalls(c.calls.map { CallInfo(it.stage, it.model, it.promptTokens, it.completionTokens, it.seconds) })
+            tools.restoreToolCalls(c.toolCalls.mapNotNull { it as? JsonObject })
+        }
 
         fun since(ns: Long) = (System.nanoTime() - ns) / 1e9
         val timeline = linkedMapOf<String, Double>()
+        cp?.timeline?.let { timeline.putAll(it) }
 
-        val isImage = sampler.isImage(videoPath)
+        val isImage = cp?.isImage ?: sampler.isImage(videoPath)
+        val plan = Stages.plan(isImage)
+        fun emit(name: String) {
+            val idx = plan.indexOf(name).coerceAtLeast(0)
+            onStage(StageInfo(name, idx, plan.size, (idx + 1f) / plan.size, plan.getOrNull(idx + 1)))
+        }
 
-        onStage("Pick frames")
-        val tFrames = System.nanoTime()
-        val frames = if (isImage) listOf(sampler.loadImage(videoPath)) else sampler.sample(videoPath, cfg.maxFrames)
-        timeline["sampling frames"] = since(tFrames)
-        require(frames.isNotEmpty()) { "No frames could be extracted." }
+        val warnings = (cp?.warnings ?: emptyList()).toMutableList()
+        fun warn(message: String) {
+            if (message !in warnings) {
+                warnings += message
+                onWarning(message)
+            }
+        }
 
-        val measured = if (isImage) null else {
-            onStage("Measure movement")
+        // Reflect already-completed progress in the UI when resuming.
+        plan.lastOrNull { it in done }?.let { emit(it) }
+        warnings.forEach { onWarning(it) }
+
+        // --- run state (restored from the checkpoint where available) -------------
+        var frames: List<Sampler.Frame> =
+            cp?.frames?.mapNotNull { ref -> runStore.loadBitmap(stem, ref.file)?.let { Sampler.Frame(ref.t, it) } } ?: emptyList()
+        if (frames.isEmpty() && done.contains("frames")) done.remove("frames")
+
+        var frameRefs: List<FrameRef> = cp?.frames ?: emptyList()
+        var motionFile: String? = cp?.motionFile
+        var positionFile: String? = cp?.positionFile
+
+        var measured: Measured? = cp?.let { c ->
+            if (c.measuredJson.isEmpty()) null
+            else Measured(
+                json = c.measuredJson,
+                motionMap = runStore.loadBitmap(stem, c.motionFile),
+                positionMap = runStore.loadBitmap(stem, c.positionFile),
+                activity = c.activity.map { it.getOrElse(0) { 0.0 } to it.getOrElse(1) { 0.0 } },
+            )
+        }
+
+        var poseSeq: List<Pose.PoseFrame> = cp?.pose?.map { it.toPoseFrame() } ?: emptyList()
+        var ballJson: JsonObject = cp?.ballJson ?: JsonObject(emptyMap())
+        var metrics: JsonObject = cp?.metrics ?: JsonObject(emptyMap())
+        var metricsText: String = cp?.metricsText ?: ""
+        var quality: JsonObject = cp?.quality ?: JsonObject(emptyMap())
+        var ttReading: JsonObject = cp?.ttReading ?: JsonObject(emptyMap())
+        var sheetB64: String = cp?.sheetB64 ?: ""
+        var sheetBitmap: Bitmap? = null
+        var artifacts: LinkedHashMap<String, String> = LinkedHashMap(cp?.artifacts ?: emptyMap())
+        var windows: JsonArray = cp?.windows ?: JsonArray(emptyList())
+        var windowLabel: String = cp?.windowLabel ?: "none"
+        var observations: String = cp?.observations ?: ""
+        var savedStem: String? = cp?.savedStem
+        var loaded: Report? = cp?.loadedReport
+
+        fun persist() {
+            runStore.save(
+                RunCheckpoint(
+                    videoPath = videoPath,
+                    stem = stem,
+                    isImage = isImage,
+                    region = regionBox?.toList() ?: emptyList(),
+                    completed = done.toList(),
+                    frames = frameRefs,
+                    measuredJson = measured?.json ?: JsonObject(emptyMap()),
+                    activity = measured?.activity?.map { listOf(it.first, it.second) } ?: emptyList(),
+                    motionFile = motionFile,
+                    positionFile = positionFile,
+                    pose = poseSeq.map { it.toLandmarkFrame() },
+                    ballJson = ballJson,
+                    metrics = metrics,
+                    metricsText = metricsText,
+                    quality = quality,
+                    ttReading = ttReading,
+                    sheetB64 = sheetB64,
+                    artifacts = artifacts,
+                    windows = windows,
+                    windowLabel = windowLabel,
+                    observations = observations,
+                    savedStem = savedStem,
+                    loadedReport = loaded,
+                    warnings = warnings.toList(),
+                    timeline = timeline,
+                    calls = client.calls.map { CallRecord(it.stage, it.model, it.promptTokens, it.completionTokens, it.seconds) },
+                    toolCalls = buildJsonArray { tools.toolCalls.forEach { add(it) } },
+                ),
+            )
+        }
+
+        // --- stages ----------------------------------------------------------------
+        if (!done.contains("frames")) {
+            emit("Pick frames")
+            val tFrames = System.nanoTime()
+            val f = if (isImage) listOf(sampler.loadImage(videoPath)) else sampler.sample(videoPath, cfg.maxFrames)
+            timeline["sampling frames"] = since(tFrames)
+            require(f.isNotEmpty()) { "No frames could be extracted." }
+            frames = f
+            frameRefs = f.mapIndexed { i, fr -> FrameRef(fr.t, runStore.saveBitmap(stem, "frame_$i", fr.bitmap)) }
+            done += "frames"
+            persist()
+        }
+
+        if (!isImage && !done.contains("measure")) {
+            emit("Measure movement")
             val t = System.nanoTime()
             val m = Metrics.analyze(frames, regionBox)
             timeline["measuring motion"] = since(t)
-            m
+            measured = m
+            motionFile = m.motionMap?.let { runStore.saveBitmap(stem, "motion_map", it) }
+            positionFile = m.positionMap?.let { runStore.saveBitmap(stem, "position_map", it) }
+            done += "measure"
+            persist()
         }
 
-        val poseSeq = if (isImage) emptyList() else {
-            onStage("Estimate pose")
+        if (!isImage && !done.contains("pose")) {
+            emit("Estimate pose")
             val t = System.nanoTime()
-            val p = pose.detect(frames)
+            poseSeq = pose.detect(frames)
             timeline["estimating pose"] = since(t)
-            p
+            done += "pose"
+            persist()
         }
 
-        val ballJson = if (isImage || measured == null) JsonObject(emptyMap()) else {
-            onStage("Track ball")
+        if (!isImage && measured != null && !done.contains("ball")) {
+            emit("Track ball")
             val t = System.nanoTime()
             // Dense pass: spread the ball budget across the whole clip (the ball is on screen briefly).
             val ballFrames = sampler.sampleEven(videoPath, 60)
-            val b = if (ballFrames.isNotEmpty())
+            ballJson = if (ballFrames.isNotEmpty())
                 ball.process(ballFrames.map { it.t }, ball.detect(ballFrames), Metrics.activityPairs(ballFrames))
             else JsonObject(emptyMap())
             timeline["tracking ball"] = since(t)
-            b
+            done += "ball"
+            persist()
         }
 
-        val metrics = if (measured == null) JsonObject(emptyMap()) else JsonObject(
-            measured.json + mapOf(
-                "pose_summary" to pose.summarize(poseSeq),
-                "pose3d_summary" to pose.summarize3d(poseSeq),
-                "pose3d" to pose.series3d(poseSeq),
-                "pose_angles" to pose.anglesSeries(poseSeq, frames.map { it.t }),
-                "strokes" to pose.strokes(poseSeq, frames),
-                "footwork" to pose.footwork(poseSeq),
-                "ball" to ballJson,
+        if (!done.contains("inputs")) {
+            val m = measured
+            metrics = if (m == null) JsonObject(emptyMap()) else JsonObject(
+                m.json + mapOf(
+                    "pose_summary" to pose.summarize(poseSeq),
+                    "pose3d_summary" to pose.summarize3d(poseSeq),
+                    "pose3d" to pose.series3d(poseSeq),
+                    "pose_angles" to pose.anglesSeries(poseSeq, frames.map { it.t }),
+                    "strokes" to pose.strokes(poseSeq, frames),
+                    "footwork" to pose.footwork(poseSeq),
+                    "ball" to ballJson,
+                ),
             )
-        )
-        val metricsText = Metrics.text(metrics)
-
-        val quality = Quality.evaluate(sampler.meta(videoPath), frames.size, metrics)
-        val ttReading = com.topspinreview.android.domain.GameReading.summarize(metrics)
-
-        val sheet = contactSheet(frames)
-        val sheetB64 = sampler.toJpegBase64(sheet)
-
-        onStage("Render images")
-        val motionBmp = measured?.motionMap
-        val poseBmp = if (poseSeq.isNotEmpty()) pose.overlay(frames, poseSeq) else null
-        val artifacts = linkedMapOf<String, String>()
-        artifacts["frames"] = store.saveArtifact(stem, "frames", sheet)
-        motionBmp?.let { artifacts["motion"] = store.saveArtifact(stem, "motion", it) }
-        measured?.positionMap?.let { artifacts["heatmap"] = store.saveArtifact(stem, "heatmap", it) }
-        poseBmp?.let { artifacts["pose"] = store.saveArtifact(stem, "pose", it) }
-        if (ballJson.isNotEmpty()) ball.overlay(frames.getOrNull(frames.size / 2)?.bitmap, ballJson)?.let { artifacts["ball"] = store.saveArtifact(stem, "ball", it) }
-
-        val windows: JsonArray
-        val observations: String
-        var windowLabel = "none"
-        if (isImage) {
-            onStage("Review image")
-            client.stage = "vision: reviewing image"
-            windows = JsonArray(emptyList())
-            observations = try {
-                val out = client.vision(
-                    Prompts.VISION_AGENT_SYSTEM,
-                    Prompts.still(cfg.sport, cfg.level, cfg.hand, cfg.goal),
-                    listOf(sheetB64),
-                )
-                extractJson(out)?.jsonObject?.get("observations")?.jsonPrimitive?.content.orEmpty()
-            } catch (e: Exception) { "" }
-        } else {
-            windows = try {
-                onStage("First look")
-                client.stage = "vision: overview"
-                val coarse = client.vision(
-                    Prompts.VISION_AGENT_SYSTEM,
-                    Prompts.coarse(frames.size, cfg.sport, cfg.level, cfg.hand, cfg.goal, metricsText, sampler.duration(videoPath)),
-                    listOf(sheetB64),
-                )
-                extractJson(coarse)?.jsonObject?.get("attentive_windows")?.jsonArray ?: JsonArray(emptyList())
-            } catch (e: Exception) { JsonArray(emptyList()) }
-            windowLabel = windows.joinToString(", ") {
-                val o = it.jsonObject
-                "${o["start"]}s-${o["end"]}s"
-            }.ifEmpty { "none" }
-            val zoomB64 = windows.take(3).flatMap { w ->
-                val o = w.jsonObject
-                val s = o["start"]?.toString()?.toDoubleOrNull() ?: return@flatMap emptyList()
-                val e = o["end"]?.toString()?.toDoubleOrNull() ?: return@flatMap emptyList()
-                sampler.sampleRange(videoPath, s, e, 2).map { sampler.toJpegBase64(it.bitmap) }
+            metricsText = Metrics.text(metrics)
+            quality = Quality.evaluate(sampler.meta(videoPath), frames.size, metrics)
+            (quality["warnings"] as? JsonArray)?.forEach { el ->
+                val text = el.toString().trim('"')
+                if (text.isNotBlank()) warn(text)
             }
-            observations = try {
-                onStage("Detailed findings")
-                client.stage = "vision: detail"
-                val fine = client.vision(
-                    Prompts.VISION_AGENT_SYSTEM,
-                    Prompts.fine(zoomB64.size, cfg.level, cfg.hand, cfg.goal, metricsText, windowLabel),
-                    listOf(sheetB64) + listOfNotNull(
-                        motionBmp?.let { sampler.toJpegBase64(it) },
-                        poseBmp?.let { sampler.toJpegBase64(it) },
-                    ) + zoomB64,
-                )
-                extractJson(fine)?.jsonObject?.get("observations")?.jsonPrimitive?.content.orEmpty()
-            } catch (e: Exception) { "" }
+            ttReading = com.topspinreview.android.domain.GameReading.summarize(metrics)
+            val sheet = contactSheet(frames)
+            sheetBitmap = sheet
+            sheetB64 = sampler.toJpegBase64(sheet)
+            done += "inputs"
+            persist()
         }
 
-        onStage("Write report")
-        runReportAgent(cfg.sport, cfg.level, cfg.hand, cfg.goal, frames.size, windowLabel, observations, metricsText)
+        if (!done.contains("render")) {
+            emit("Render images")
+            val m = measured
+            val sheet = sheetBitmap ?: contactSheet(frames)
+            sheetBitmap = sheet
+            if (sheetB64.isBlank()) sheetB64 = sampler.toJpegBase64(sheet)
+            val poseOverlay = if (poseSeq.isNotEmpty()) pose.overlay(frames, poseSeq) else null
+            artifacts = linkedMapOf()
+            artifacts["frames"] = store.saveArtifact(stem, "frames", sheet)
+            m?.motionMap?.let { artifacts["motion"] = store.saveArtifact(stem, "motion", it) }
+            m?.positionMap?.let { artifacts["heatmap"] = store.saveArtifact(stem, "heatmap", it) }
+            poseOverlay?.let { artifacts["pose"] = store.saveArtifact(stem, "pose", it) }
+            if (ballJson.isNotEmpty()) ball.overlay(frames.getOrNull(frames.size / 2)?.bitmap, ballJson)?.let { artifacts["ball"] = store.saveArtifact(stem, "ball", it) }
+            done += "render"
+            persist()
+        }
 
-        val savedStem = tools.lastSavedStem ?: stem
-        var loaded = store.load(savedStem)
-        loaded?.let { rep ->
-            if (rep.issues.isNotEmpty()) {
-                onStage("Double-check")
-                client.stage = "verifying"
-                val issuesText = rep.issues.mapIndexed { i, it -> "$i: ${it.issue} (t=${it.evidence_times.joinToString(",")})" }.joinToString("\n")
-                val evidence = observations + "\n\n" + metricsText
-                runCatching {
-                    val resp = client.text(Prompts.VERIFY_SYSTEM, Prompts.verify(issuesText, evidence))
-                    val supported = extractJson(resp)?.jsonObject?.get("supported")?.jsonArray?.mapNotNull { it.toString().toIntOrNull() }?.toSet()
-                    if (supported != null) {
-                        val kept = rep.issues.filterIndexed { i, _ -> i in supported }
-                        if (kept.size != rep.issues.size) loaded = rep.copy(issues = kept)
+        val motionBmp: Bitmap? = loadPath(artifacts["motion"])
+        val poseBmp: Bitmap? = loadPath(artifacts["pose"])
+
+        if (!done.contains("vision")) {
+            if (isImage) {
+                emit("Review image")
+                client.stage = "vision: reviewing image"
+                windows = JsonArray(emptyList())
+                observations = try {
+                    val out = client.vision(
+                        Prompts.VISION_AGENT_SYSTEM,
+                        Prompts.still(cfg.sport, cfg.level, cfg.hand, cfg.goal),
+                        listOf(sheetB64),
+                    )
+                    extractJson(out)?.jsonObject?.get("observations")?.jsonPrimitive?.content.orEmpty()
+                } catch (e: Exception) {
+                    warn("The vision pass failed, so this photo's report may be less specific.")
+                    ""
+                }
+            } else {
+                windows = try {
+                    emit("First look")
+                    client.stage = "vision: overview"
+                    val coarse = client.vision(
+                        Prompts.VISION_AGENT_SYSTEM,
+                        Prompts.coarse(frames.size, cfg.sport, cfg.level, cfg.hand, cfg.goal, metricsText, sampler.duration(videoPath)),
+                        listOf(sheetB64),
+                    )
+                    extractJson(coarse)?.jsonObject?.get("attentive_windows")?.jsonArray ?: JsonArray(emptyList())
+                } catch (e: Exception) {
+                    warn("The overview pass failed, so findings are based on motion data only.")
+                    JsonArray(emptyList())
+                }
+                windowLabel = windows.joinToString(", ") {
+                    val o = it.jsonObject
+                    "${o["start"]}s-${o["end"]}s"
+                }.ifEmpty { "none" }
+                val zoomB64 = windows.take(3).flatMap { w ->
+                    val o = w.jsonObject
+                    val s = o["start"]?.toString()?.toDoubleOrNull() ?: return@flatMap emptyList()
+                    val e = o["end"]?.toString()?.toDoubleOrNull() ?: return@flatMap emptyList()
+                    sampler.sampleRange(videoPath, s, e, 2).map { sampler.toJpegBase64(it.bitmap) }
+                }
+                observations = try {
+                    emit("Detailed findings")
+                    client.stage = "vision: detail"
+                    val fine = client.vision(
+                        Prompts.VISION_AGENT_SYSTEM,
+                        Prompts.fine(zoomB64.size, cfg.level, cfg.hand, cfg.goal, metricsText, windowLabel),
+                        listOf(sheetB64) + listOfNotNull(
+                            motionBmp?.let { sampler.toJpegBase64(it) },
+                            poseBmp?.let { sampler.toJpegBase64(it) },
+                        ) + zoomB64,
+                    )
+                    extractJson(fine)?.jsonObject?.get("observations")?.jsonPrimitive?.content.orEmpty()
+                } catch (e: Exception) {
+                    warn("The detail pass failed, so the findings may be thinner than usual.")
+                    ""
+                }
+            }
+            done += "vision"
+            persist()
+        }
+
+        if (!done.contains("report")) {
+            emit("Write report")
+            runReportAgent(cfg.sport, cfg.level, cfg.hand, cfg.goal, frames.size, windowLabel, observations, metricsText)
+            savedStem = tools.lastSavedStem ?: stem
+            loaded = store.load(savedStem)
+            done += "report"
+            persist()
+        }
+
+        if (!done.contains("verify")) {
+            loaded?.let { rep ->
+                if (rep.issues.isNotEmpty()) {
+                    emit("Double-check")
+                    client.stage = "verifying"
+                    val issuesText = rep.issues.mapIndexed { i, it -> "$i: ${it.issue} (t=${it.evidence_times.joinToString(",")})" }.joinToString("\n")
+                    val evidence = observations + "\n\n" + metricsText
+                    runCatching {
+                        val resp = client.text(Prompts.VERIFY_SYSTEM, Prompts.verify(issuesText, evidence))
+                        val supported = extractJson(resp)?.jsonObject?.get("supported")?.jsonArray?.mapNotNull { it.toString().toIntOrNull() }?.toSet()
+                        if (supported != null) {
+                            val kept = rep.issues.filterIndexed { i, _ -> i in supported }
+                            if (kept.size != rep.issues.size) loaded = rep.copy(issues = kept)
+                        }
+                    }.onFailure {
+                        warn("The double-check pass was skipped, so an issue may be flagged in error.")
                     }
                 }
             }
+            done += "verify"
+            persist()
         }
-        val callsJson = buildJsonArray {
-            client.calls.forEach { c ->
-                add(buildJsonObject {
-                    put("stage", c.stage); put("model", c.model)
-                    put("prompt_tokens", c.promptTokens); put("completion_tokens", c.completionTokens)
-                    put("seconds", c.seconds)
-                })
+
+        val finalStem = savedStem ?: stem
+        if (!done.contains("finalize")) {
+            val callsJson = buildJsonArray {
+                client.calls.forEach { c ->
+                    add(buildJsonObject {
+                        put("stage", c.stage); put("model", c.model)
+                        put("prompt_tokens", c.promptTokens); put("completion_tokens", c.completionTokens)
+                        put("seconds", c.seconds)
+                    })
+                }
             }
+            val usageJson = buildJsonObject {
+                put("calls", client.calls.size)
+                put("total_tokens", client.calls.sumOf { it.promptTokens + it.completionTokens })
+            }
+            val timelineJson = buildJsonArray {
+                timeline.forEach { (s, secs) -> add(buildJsonObject { put("stage", s); put("seconds", secs) }) }
+                client.calls.forEach { add(buildJsonObject { put("stage", it.stage); put("seconds", it.seconds) }) }
+            }
+            val toolsJson = buildJsonArray { tools.toolCalls.forEach { add(it) } }
+            val report = (loaded ?: Report(
+                date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
+                sport = cfg.sport, summary = observations, source = videoPath,
+            )).copy(
+                stem = finalStem, source = videoPath, metrics = metrics, artifacts = artifacts,
+                usage = usageJson, calls = callsJson, tools = toolsJson, timeline = timelineJson,
+                quality = quality, tt_reading = ttReading, warnings = warnings.toList(),
+            )
+            store.save(finalStem, report)
+            runStore.clear(stem)
+            return report
         }
-        val usageJson = buildJsonObject {
-            put("calls", client.calls.size)
-            put("total_tokens", client.calls.sumOf { it.promptTokens + it.completionTokens })
-        }
-        val timelineJson = buildJsonArray {
-            timeline.forEach { (s, secs) -> add(buildJsonObject { put("stage", s); put("seconds", secs) }) }
-            client.calls.forEach { add(buildJsonObject { put("stage", it.stage); put("seconds", it.seconds) }) }
-        }
-        val toolsJson = buildJsonArray { tools.toolCalls.forEach { add(it) } }
-        val report = (loaded ?: Report(
-            date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
-            sport = cfg.sport, summary = observations, source = videoPath,
-        )).copy(
-            stem = savedStem, source = videoPath, metrics = metrics, artifacts = artifacts,
-            usage = usageJson, calls = callsJson, tools = toolsJson, timeline = timelineJson,
-            quality = quality, tt_reading = ttReading,
-        )
-        store.save(savedStem, report)
-        return report
+
+        runStore.clear(stem)
+        return store.load(finalStem) ?: loaded ?: error("No report was produced.")
     }
 
     private suspend fun runReportAgent(
@@ -287,8 +482,24 @@ class Pipeline(
         return bmp
     }
 
+    private fun loadPath(path: String?): Bitmap? {
+        if (path.isNullOrBlank()) return null
+        val f = File(path)
+        return if (f.exists()) BitmapFactory.decodeFile(f.absolutePath) else null
+    }
+
     private fun extractJson(text: String): kotlinx.serialization.json.JsonElement? = runCatching {
         val start = text.indexOf('{'); val end = text.lastIndexOf('}')
         if (start < 0 || end <= start) null else json.parseToJsonElement(text.substring(start, end + 1))
     }.getOrNull()
+
+    private fun Pose.PoseFrame.toLandmarkFrame() = LandmarkFrame(
+        lm = lm?.map { it.toList() },
+        world = world?.map { it.toList() },
+    )
+
+    private fun LandmarkFrame.toPoseFrame() = Pose.PoseFrame(
+        lm = lm?.map { it.toFloatArray() },
+        world = world?.map { it.toFloatArray() },
+    )
 }

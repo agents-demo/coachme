@@ -7,25 +7,82 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Design tokens from the web app (docs/ANDROID_PLAN.md · Appendix H).
-val Accent = Color(0xFF4F46E5)
-val Accent2 = Color(0xFF818CF8)
-val Good = Color(0xFF34D399)
-val Bad = Color(0xFFFB7185)
-val Warn = Color(0xFFFBBF24)
-
+/**
+ * The gui2 palette mapped onto Material 3 roles:
+ * background = ink, surface = panel, surfaceVariant = raised panel,
+ * outline = line, onSurfaceVariant = muted, primary = accent.
+ */
 private val DarkScheme = darkColorScheme(
-    primary = Accent, secondary = Accent2, background = Color(0xFF0B0B0F),
-    surface = Color(0xFF15151D), onBackground = Color(0xFFECECF2), onSurface = Color(0xFFECECF2),
+    primary = Accent,
+    onPrimary = Color.White,
+    primaryContainer = AccentContainerDark,
+    onPrimaryContainer = Color(0xFFDDE1FF),
+    secondary = Accent2,
+    onSecondary = Color.White,
+    secondaryContainer = Accent2ContainerDark,
+    onSecondaryContainer = Color(0xFFE0E3FF),
+    tertiary = Good,
+    onTertiary = InkDark,
+    tertiaryContainer = GoodContainerDark,
+    onTertiaryContainer = Color(0xFFB6F0DC),
     error = Bad,
+    onError = Color.White,
+    errorContainer = Color(0xFF4C1D24),
+    onErrorContainer = Color(0xFFFFD9DE),
+    background = InkDark,
+    onBackground = TextDark,
+    surface = PanelDark,
+    onSurface = TextDark,
+    surfaceVariant = Panel2Dark,
+    onSurfaceVariant = MutedDark,
+    inverseSurface = TextDark,
+    inverseOnSurface = InkDark,
+    outline = LineDark,
+    outlineVariant = LineDark,
+    scrim = Color(0xCC000000),
+    surfaceTint = Accent,
 )
+
 private val LightScheme = lightColorScheme(
-    primary = Accent, secondary = Accent2, background = Color(0xFFFBFBFD),
-    surface = Color(0xFFF4F4F8), onBackground = Color(0xFF12121A), onSurface = Color(0xFF12121A),
+    primary = Accent,
+    onPrimary = Color.White,
+    primaryContainer = AccentContainerLight,
+    onPrimaryContainer = Color(0xFF1E1B4B),
+    secondary = Accent2,
+    onSecondary = Color.White,
+    secondaryContainer = Accent2ContainerLight,
+    onSecondaryContainer = Color(0xFF23264D),
+    tertiary = Good,
+    onTertiary = Color.White,
+    tertiaryContainer = GoodContainerLight,
+    onTertiaryContainer = Color(0xFF075040),
     error = Bad,
+    onError = Color.White,
+    errorContainer = Color(0xFFFFD9DE),
+    onErrorContainer = Color(0xFF7A1626),
+    background = InkLight,
+    onBackground = TextLight,
+    surface = PanelLight,
+    onSurface = TextLight,
+    surfaceVariant = Panel2Light,
+    onSurfaceVariant = MutedLight,
+    inverseSurface = TextLight,
+    inverseOnSurface = InkLight,
+    outline = LineLight,
+    outlineVariant = LineLight,
+    scrim = Color(0x33000000),
+    surfaceTint = Accent,
 )
 
 @Composable
-fun TopspinTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (darkTheme) DarkScheme else LightScheme, content = content)
+fun TopspinTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
+    MaterialTheme(
+        colorScheme = if (darkTheme) DarkScheme else LightScheme,
+        typography = TspTypography,
+        shapes = TspShapes,
+        content = content,
+    )
 }

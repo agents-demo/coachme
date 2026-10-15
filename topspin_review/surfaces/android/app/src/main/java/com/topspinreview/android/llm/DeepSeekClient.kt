@@ -45,6 +45,12 @@ class DeepSeekClient(
     var stage: String = ""
     val calls = mutableListOf<CallInfo>()
 
+    /** Seed the call log when resuming a run (so usage/cost reflects the whole session). */
+    fun restoreCalls(list: List<CallInfo>) {
+        calls.clear()
+        calls.addAll(list)
+    }
+
     private suspend fun cfg(): AppSettings = settings.flow.first()
 
     suspend fun vision(system: String, promptText: String, imagesBase64Jpeg: List<String>): String {

@@ -46,7 +46,10 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
-    packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+    packaging {
+        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        jniLibs { useLegacyPackaging = false }
+    }
 }
 
 dependencies {
@@ -60,7 +63,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
     implementation("androidx.core:core-ktx:1.13.1")
 
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Media (playback + cutting)
@@ -74,9 +77,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("io.coil-kt:coil-compose:2.6.0")
 
-    // On-device ML
-    implementation("com.google.mediapipe:tasks-vision:0.10.14")
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
+    // On-device ML (versions chosen for Android 16 KB page-size alignment)
+    implementation("com.google.mediapipe:tasks-vision:0.10.35")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.31.0")
 
     implementation("com.google.dagger:hilt-android:2.51.1")
     kapt("com.google.dagger:hilt-android-compiler:2.51.1")

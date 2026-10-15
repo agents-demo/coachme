@@ -1,7 +1,6 @@
 <script>
   import { base } from "$app/paths";
   import { deleteReport, thumb } from "$lib/api";
-  import { scoreTone } from "$lib/format";
 
   let { report, ondeleted } = $props();
 
@@ -45,10 +44,6 @@
       {:else}
         <div class="grid h-full w-full place-items-center text-5xl">🏓</div>
       {/if}
-      <span
-        class="absolute bottom-2 left-2 rounded-full bg-ink/75 px-2 py-0.5 text-[11px] font-semibold backdrop-blur {scoreTone(report.score)}"
-        title="Report quality (trustworthiness), not a performance score."
-      >{report.score}/100</span>
       {#if report.is_photo}
         <span class="absolute bottom-2 right-2 rounded-full bg-ink/75 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted backdrop-blur">photo</span>
       {/if}
