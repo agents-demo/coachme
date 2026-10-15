@@ -1,5 +1,6 @@
 package com.topspinreview.android.ui.result
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -24,11 +25,23 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.Scaffold
@@ -71,7 +84,7 @@ import com.topspinreview.android.ui.components.TimeChip
 import com.topspinreview.android.ui.components.PrimaryButton
 import com.topspinreview.android.ui.components.SectionLabel
 import com.topspinreview.android.ui.components.TspCard
-import com.topspinreview.android.ui.components.TspTabBar
+import com.topspinreview.android.ui.components.TspSegmented
 import com.topspinreview.android.ui.components.TspTopBar
 import com.topspinreview.android.ui.theme.Accent
 import com.topspinreview.android.ui.theme.Accent2
@@ -133,17 +146,27 @@ class ResultViewModel @Inject constructor(
     }
 }
 
-private val TABS = listOf("Video", "Analysis", "Observations", "Coaching", "Diagnostics")
+private val TABS = listOf("Video", "Analysis", "Observations", "Coaching")
 private val TAB_HINTS = listOf(
     "Your clip: watch it, step frame-by-frame, slow it down, and draw on it.",
     "Everything measured from the video — the body, any tracked object, and the spatial maps.",
     "What we saw, read in table-tennis terms, plus the notable moments.",
     "What the coach says: your focus, what to fix, drills, and the flagged moments.",
-    "Raw run detail — model calls, tokens and the stage timeline. For debugging.",
+)
+private val MAIN_ICONS = listOf(
+    Icons.Filled.PlayCircle,
+    Icons.Filled.Insights,
+    Icons.Filled.Visibility,
+    Icons.Filled.School,
 )
 
 @Composable
-fun ResultScreen(stem: String, onBack: () -> Unit, vm: ResultViewModel = hiltViewModel()) {
+fun ResultScreen(
+    stem: String,
+    onBack: () -> Unit,
+    onOpenDiagnostics: (String) -> Unit = {},
+    vm: ResultViewModel = hiltViewModel(),
+) {
     val report by vm.report.collectAsStateWithLifecycle()
     var tab by remember { mutableStateOf(0) } // Video
     val answers by vm.answers.collectAsStateWithLifecycle()
@@ -179,7 +202,40 @@ fun ResultScreen(stem: String, onBack: () -> Unit, vm: ResultViewModel = hiltVie
                         }
                     }
                 },
+                actions = {
+                    var menuOpen by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Diagnostics") },
+                                onClick = { menuOpen = false; onOpenDiagnostics(stem) },
+                            )
+                        }
+                    }
+                },
             )
+        },
+        bottomBar = {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.background) {
+                TABS.forEachIndexed { i, label ->
+                    NavigationBarItem(
+                        selected = tab == i,
+                        onClick = { tab = i },
+                        icon = { Icon(MAIN_ICONS[i], contentDescription = null) },
+                        label = {
+                            Text(
+                                label,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                    )
+                }
+            }
         },
     ) { pad ->
         val r = report
@@ -188,16 +244,22 @@ fun ResultScreen(stem: String, onBack: () -> Unit, vm: ResultViewModel = hiltVie
                 MutedNote("Report not found.", Modifier.padding(horizontal = 16.dp))
                 return@Column
             }
-            TspTabBar(TABS, tab, { tab = it }, hint = TAB_HINTS[tab])
             val clipWarnings = (r.quality["warnings"] as? JsonArray)?.mapNotNull { it.toString().trim('"') } ?: emptyList()
             val runCaveats = r.warnings.filter { it !in clipWarnings }
             if (runCaveats.isNotEmpty()) CaveatsBanner(runCaveats)
-            when (tab) {
-                0 -> VideoTab(r, vm::saveAnnotations)
-                1 -> AnalysisTab(r)
-                2 -> ObservationsTab(r)
-                3 -> CoachingTab(r, answers, onAsk = vm::ask)
-                else -> DiagnosticsTab(r)
+            Text(
+                TAB_HINTS[tab],
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            Crossfade(targetState = tab, modifier = Modifier.fillMaxSize(), label = "tab") { t ->
+                when (t) {
+                    0 -> VideoTab(r, vm::saveAnnotations)
+                    1 -> AnalysisTab(r)
+                    2 -> ObservationsTab(r)
+                    else -> CoachingTab(r, answers, onAsk = vm::ask)
+                }
             }
         }
     }
@@ -272,13 +334,13 @@ private fun Prov(info: Outputs.Info) {
 // Analysis
 // ---------------------------------------------------------------------------
 
-private val ANALYSIS_SUBTABS = listOf("Heat maps", "Movement", "Pose", "Tracked object")
+private val ANALYSIS_SUBTABS = listOf("Maps", "Motion", "Pose", "Object")
 
 @Composable
 private fun AnalysisTab(r: Report) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
-        TspTabBar(ANALYSIS_SUBTABS, sub, { sub = it })
+        TspSegmented(ANALYSIS_SUBTABS, sub, { sub = it })
         val m = r.metrics
         val mech = m["mechanics"] as? JsonObject
         val foot = m["footwork_series"] as? JsonArray
@@ -423,7 +485,7 @@ private fun NoData(text: String) {
 private fun ObservationsTab(r: Report) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
-        TspTabBar(listOf("Findings", "Key moments"), sub, { sub = it })
+        TspSegmented(listOf("Findings", "Moments"), sub, { sub = it })
         if (sub == 0) Findings(r) else KeyMoments(r)
     }
 }
@@ -548,7 +610,7 @@ private val COACH_SUBTABS = listOf("Advice", "Practice", "Details", "Ask")
 private fun CoachingTab(r: Report, answers: List<Pair<String, String>>, onAsk: (String) -> Unit) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
-        TspTabBar(COACH_SUBTABS, sub, { sub = it })
+        TspSegmented(COACH_SUBTABS, sub, { sub = it })
         when (sub) {
             0 -> Advice(r)
             1 -> Practice(r)
@@ -844,7 +906,7 @@ private fun Ask(answers: List<Pair<String, String>>, onAsk: (String) -> Unit) {
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun DiagnosticsTab(r: Report) {
+fun DiagnosticsTab(r: Report) {
     val totalTokens = r.usage["total_tokens"]?.toString() ?: "0"
     val timelineStages = r.timeline.mapNotNull { it as? JsonObject }
     val maxSec = timelineStages.mapNotNull { it["seconds"]?.toString()?.toDoubleOrNull() }.maxOrNull() ?: 1.0

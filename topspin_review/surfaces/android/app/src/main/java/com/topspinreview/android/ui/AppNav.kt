@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.topspinreview.android.ui.compare.CompareScreen
 import com.topspinreview.android.ui.newanalysis.NewAnalysisScreen
+import com.topspinreview.android.ui.result.DiagnosticsScreen
 import com.topspinreview.android.ui.result.ResultScreen
 import com.topspinreview.android.ui.sessions.SessionsScreen
 import com.topspinreview.android.ui.settings.SettingsScreen
@@ -44,7 +45,20 @@ fun AppNav() {
             "result/{stem}",
             arguments = listOf(navArgument("stem") { type = NavType.StringType }),
         ) { entry ->
-            ResultScreen(stem = entry.arguments?.getString("stem").orEmpty(), onBack = { nav.popBackStack() })
+            ResultScreen(
+                stem = entry.arguments?.getString("stem").orEmpty(),
+                onBack = { nav.popBackStack() },
+                onOpenDiagnostics = { s -> nav.navigate("diagnostics/$s") },
+            )
+        }
+        composable(
+            "diagnostics/{stem}",
+            arguments = listOf(navArgument("stem") { type = NavType.StringType }),
+        ) { entry ->
+            DiagnosticsScreen(
+                stem = entry.arguments?.getString("stem").orEmpty(),
+                onBack = { nav.popBackStack() },
+            )
         }
         composable("settings") { SettingsScreen(onBack = { nav.popBackStack() }) }
         composable("compare") { CompareScreen(onBack = { nav.popBackStack() }) }

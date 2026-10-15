@@ -60,7 +60,7 @@ import com.topspinreview.android.data.Report
 import com.topspinreview.android.ui.components.MediaImage
 import com.topspinreview.android.ui.components.SectionLabel
 import com.topspinreview.android.ui.components.TspCard
-import com.topspinreview.android.ui.components.TspTabBar
+import com.topspinreview.android.ui.components.TspSegmented
 import com.topspinreview.android.ui.theme.Accent
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonArray
@@ -137,7 +137,11 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
     remember(report.stem) { shapeListOf(report.annotations).forEach { shapes.add(it) }; dirty = false; true }
 
     Column(Modifier.fillMaxWidth()) {
-        if (framesKind != null) TspTabBar(listOf("Motion", "Frames"), view, { view = it })
+        if (framesKind != null) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                TspSegmented(listOf("Motion", "Frames"), view, { view = it })
+            }
+        }
 
         Column(
             Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState()),
