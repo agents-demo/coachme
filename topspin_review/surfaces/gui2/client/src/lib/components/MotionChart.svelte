@@ -28,6 +28,7 @@
   }
 </script>
 
+<div class="text-[10px] uppercase tracking-wide text-muted">Movement energy</div>
 <svg
   bind:this={svg}
   viewBox={`0 0 ${W} ${H}`}
@@ -43,5 +44,6 @@
 </svg>
 <div class="flex justify-between text-[10px] text-muted">
   <span>0s</span>
+  <span>time (s)</span>
   <span>{fmtTime(tMax)}</span>
 </div>

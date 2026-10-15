@@ -7,18 +7,20 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
@@ -138,7 +140,7 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
         if (framesKind != null) TspTabBar(listOf("Motion", "Frames"), view, { view = it })
 
         Column(
-            Modifier.fillMaxWidth().padding(16.dp),
+            Modifier.fillMaxWidth().padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (view == 1 && framesKind != null) {
@@ -152,8 +154,10 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
             } else {
             var trimOpen by remember { mutableStateOf(false) }
             var posMs by remember { mutableStateOf(0L) }
+            var playing by remember { mutableStateOf(false) }
             var rate by remember { mutableStateOf(1f) }
-            LaunchedEffect(exo) { while (exo != null) { posMs = exo.currentPosition; delay(250) } }
+            val durationMs = remember(source) { (videoDurationSec(ctx, source) * 1000).toLong().coerceAtLeast(1L) }
+            LaunchedEffect(exo) { while (exo != null) { posMs = exo.currentPosition; playing = exo.isPlaying; delay(250) } }
             if (!isPhoto) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionLabel("Clip")
@@ -178,7 +182,7 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
                     )
                 } else {
                     AndroidView(
-                        factory = { PlayerView(it).apply { player = exo; useController = true } },
+                        factory = { PlayerView(it).apply { player = exo; useController = false } },
                         modifier = Modifier.matchParentSize(),
                     )
                 }
@@ -210,6 +214,10 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
                                     )
                                 }
                             }
+                        } else if (!isPhoto) {
+                            Modifier.pointerInput(Unit) {
+                                detectTapGestures { exo?.let { p -> if (p.isPlaying) p.pause() else p.play() } }
+                            }
                         } else Modifier
                     ),
                 ) {
@@ -218,46 +226,67 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
                 }
             }
 
-            // Draw controls (tool row only while drawing; arrow is the default tool).
+            // Transport (video) + Draw toggle share one row so Draw isn't stranded.
             Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Chip(if (drawMode) "✏ Drawing" else "✏ Draw", selected = drawMode) {
-                    drawMode = !drawMode; draft = emptyList(); if (drawMode) exo?.pause()
+                if (!isPhoto) {
+                    Chip(if (playing) "Pause" else "Play") { exo?.let { p -> if (p.isPlaying) p.pause() else p.play() } }
+                    Chip("⏮") { exo?.let { p -> p.seekTo((p.currentPosition - 33).coerceAtLeast(0L)) } }
+                    Chip("⏭") { exo?.let { p -> p.seekTo(p.currentPosition + 33) } }
+                    Spacer(Modifier.weight(1f))
                 }
-                if (drawMode) {
-                    TOOLS.forEach { t ->
-                        Chip(toolLabel(t), selected = tool == t) { tool = t; draft = emptyList() }
-                    }
-                    Chip("Undo") { if (shapes.isNotEmpty()) { shapes.removeAt(shapes.size - 1); dirty = true } }
-                    Chip("Clear") { shapes.clear(); draft = emptyList(); dirty = true }
-                    Chip("Save", enabled = dirty) { onSaveAnnotations(toJson(shapes)); status = "Saved"; dirty = false }
-                    if (status.isNotBlank()) {
-                        Text(status, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                Chip(if (drawMode) "Drawing" else "Draw", selected = drawMode) {
+                    drawMode = !drawMode; draft = emptyList(); if (drawMode) exo?.pause()
                 }
             }
 
-            // Playback controls (framing + slow-mo), like gui2's single small control row.
             if (!isPhoto) {
                 Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Chip("⏮") { exo?.let { p -> p.seekTo((p.currentPosition - 33).coerceAtLeast(0L)) } }
-                    Chip("⏭") { exo?.let { p -> p.seekTo(p.currentPosition + 33) } }
-                    listOf(0.25f, 0.5f, 1f).forEach { r ->
-                        Chip(rateLabel(r), selected = rate == r) { rate = r; exo?.setPlaybackSpeed(r) }
-                    }
                     Text(
                         clockLabel(posMs),
                         style = MaterialTheme.typography.labelSmall,
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    SeekBar(posMs = posMs, durationMs = durationMs, onSeek = { exo?.seekTo(it); posMs = it }, modifier = Modifier.weight(1f))
+                    Text(
+                        clockLabel(durationMs),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    SpeedControl(rate = rate, onRate = { rate = it; exo?.setPlaybackSpeed(it) })
+                }
+            }
+
+            if (drawMode) {
+                ToolSegments(tool) { tool = it; draft = emptyList() }
+                if (tool == "angle") {
+                    Text(
+                        "Click 3 points — the angle is at the 2nd.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Chip("Undo") { if (shapes.isNotEmpty()) { shapes.removeAt(shapes.size - 1); dirty = true } }
+                    Chip("Clear") { shapes.clear(); draft = emptyList(); dirty = true }
+                    Spacer(Modifier.weight(1f))
+                    if (status.isNotBlank()) {
+                        Text(status, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Chip("Save", enabled = dirty) { onSaveAnnotations(toJson(shapes)); status = "Saved"; dirty = false }
                 }
             }
 
@@ -298,11 +327,11 @@ private fun Chip(label: String, selected: Boolean = false, enabled: Boolean = tr
             .background(if (selected) Accent.copy(alpha = 0.16f) else Color.Transparent)
             .border(2.dp, if (selected) Accent else MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
             .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             color = when {
@@ -311,6 +340,87 @@ private fun Chip(label: String, selected: Boolean = false, enabled: Boolean = tr
                 else -> MaterialTheme.colorScheme.onSurface
             },
         )
+    }
+}
+
+/** A slim, tappable/draggable scrubber (no media3 overlay). */
+@Composable
+private fun SeekBar(posMs: Long, durationMs: Long, onSeek: (Long) -> Unit, modifier: Modifier = Modifier) {
+    val track = MaterialTheme.colorScheme.surfaceVariant
+    val fill = Accent
+    Box(
+        modifier
+            .height(28.dp)
+            .pointerInput(durationMs) {
+                detectTapGestures { off -> onSeek(((off.x / size.width).coerceIn(0f, 1f) * durationMs).toLong()) }
+            }
+            .pointerInput(durationMs) {
+                detectDragGestures { change, _ -> onSeek(((change.position.x / size.width).coerceIn(0f, 1f) * durationMs).toLong()) }
+            },
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            val cy = size.height / 2f
+            val trackH = 6f
+            val frac = if (durationMs > 0) (posMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+            val corner = androidx.compose.ui.geometry.CornerRadius(trackH / 2f)
+            drawRoundRect(track, Offset(0f, cy - trackH / 2f), Size(size.width, trackH), corner)
+            drawRoundRect(fill, Offset(0f, cy - trackH / 2f), Size(size.width * frac, trackH), corner)
+            drawCircle(fill, radius = trackH * 1.4f, center = Offset(size.width * frac, cy))
+        }
+    }
+}
+
+/** A full-width segmented tool picker (Arrow / Circle / Pen / Angle) that always fits. */
+@Composable
+private fun ToolSegments(tool: String, onTool: (String) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
+    ) {
+        TOOLS.forEach { t ->
+            val sel = tool == t
+            Box(
+                Modifier
+                    .weight(1f)
+                    .background(if (sel) Accent.copy(alpha = 0.16f) else Color.Transparent)
+                    .clickable { onTool(t) }
+                    .padding(vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    toolLabel(t),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    color = if (sel) Accent else MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+/** A compact segmented speed control (0.25× / 0.5× / 1×) that fits a single row. */
+@Composable
+private fun SpeedControl(rate: Float, onRate: (Float) -> Unit) {
+    Row(
+        Modifier.clip(RoundedCornerShape(8.dp)).border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
+    ) {
+        listOf(0.25f, 0.5f, 1f).forEach { r ->
+            val sel = rate == r
+            Box(
+                Modifier
+                    .background(if (sel) Accent.copy(alpha = 0.16f) else Color.Transparent)
+                    .clickable { onRate(r) }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    rateLabel(r),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    color = if (sel) Accent else MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
     }
 }
 

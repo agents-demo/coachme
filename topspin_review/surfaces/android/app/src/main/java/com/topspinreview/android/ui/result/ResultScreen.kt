@@ -156,18 +156,28 @@ fun ResultScreen(stem: String, onBack: () -> Unit, vm: ResultViewModel = hiltVie
             TspTopBar(
                 onBack = onBack,
                 titleContent = {
-                    val title = listOfNotNull(
-                        report?.stem?.ifBlank { stem } ?: stem,
+                    val name = report?.stem?.ifBlank { stem } ?: stem
+                    val meta = listOfNotNull(
                         report?.sport?.takeIf { it.isNotBlank() },
                         report?.date?.takeIf { it.isNotBlank() },
                     ).joinToString(" · ")
-                    Text(
-                        title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (meta.isNotBlank()) {
+                            Text(
+                                meta,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
                 },
             )
         },
@@ -1004,22 +1014,34 @@ fun EnergyChart(activity: JsonArray, playhead: Double? = null, onSeek: ((Double)
             detectTapGestures { pos -> onSeek((t0 + (pos.x / size.width) * span).coerceIn(t0, t1)) }
         } else base
     }
-    androidx.compose.foundation.Canvas(mod) {
-        val w = size.width; val h = size.height
-        fun xOf(t: Double) = (((t - t0) / span) * w).toFloat()
-        fun yOf(e: Double) = (h - (e / maxE * h)).toFloat()
-        val line = androidx.compose.ui.graphics.Path()
-        val area = androidx.compose.ui.graphics.Path()
-        pts.forEachIndexed { i, (t, e) ->
-            val px = xOf(t); val py = yOf(e)
-            if (i == 0) { line.moveTo(px, py); area.moveTo(px, h); area.lineTo(px, py) } else { line.lineTo(px, py); area.lineTo(px, py) }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            "Movement energy",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        androidx.compose.foundation.Canvas(mod) {
+            val w = size.width; val h = size.height
+            fun xOf(t: Double) = (((t - t0) / span) * w).toFloat()
+            fun yOf(e: Double) = (h - (e / maxE * h)).toFloat()
+            val line = androidx.compose.ui.graphics.Path()
+            val area = androidx.compose.ui.graphics.Path()
+            pts.forEachIndexed { i, (t, e) ->
+                val px = xOf(t); val py = yOf(e)
+                if (i == 0) { line.moveTo(px, py); area.moveTo(px, h); area.lineTo(px, py) } else { line.lineTo(px, py); area.lineTo(px, py) }
+            }
+            area.lineTo(xOf(t1), h); area.close()
+            drawPath(area, color = Accent.copy(alpha = 0.18f))
+            drawPath(line, color = Accent, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+            playhead?.let { ph ->
+                val px = xOf(ph.coerceIn(t0, t1))
+                drawLine(Accent2, androidx.compose.ui.geometry.Offset(px, 0f), androidx.compose.ui.geometry.Offset(px, h), strokeWidth = 2f)
+            }
         }
-        area.lineTo(xOf(t1), h); area.close()
-        drawPath(area, color = Accent.copy(alpha = 0.18f))
-        drawPath(line, color = Accent, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
-        playhead?.let { ph ->
-            val px = xOf(ph.coerceIn(t0, t1))
-            drawLine(Accent2, androidx.compose.ui.geometry.Offset(px, 0f), androidx.compose.ui.geometry.Offset(px, h), strokeWidth = 2f)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("0s", style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("time (s)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("%.1fs".format(t1), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
