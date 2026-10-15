@@ -114,9 +114,11 @@ class Pipeline(
 
         val isImage = cp?.isImage ?: sampler.isImage(videoPath)
         val plan = Stages.plan(isImage)
+        // Progress is the fraction of steps already finished, so a step is announced at the
+        // work-remaining value (0-based) and the run only reaches 100% when it actually ends.
         fun emit(name: String) {
             val idx = plan.indexOf(name).coerceAtLeast(0)
-            onStage(StageInfo(name, idx, plan.size, (idx + 1f) / plan.size, plan.getOrNull(idx + 1)))
+            onStage(StageInfo(name, idx, plan.size, idx.toFloat() / plan.size, plan.getOrNull(idx + 1)))
         }
 
         val warnings = (cp?.warnings ?: emptyList()).toMutableList()
@@ -127,8 +129,18 @@ class Pipeline(
             }
         }
 
-        // Reflect already-completed progress in the UI when resuming.
-        plan.lastOrNull { it in done }?.let { emit(it) }
+        // Reflect already-completed progress in the UI when resuming — but never jump ahead
+        // of the step that will actually run next (one internal key per plan index, with
+        // "vision" covering both the overview and detail passes).
+        val stageKeys = if (isImage) {
+            listOf("frames", "render", "vision", "report", "verify")
+        } else {
+            listOf("frames", "measure", "pose", "ball", "render", "vision", "vision", "report", "verify")
+        }
+        val pendingIdx = stageKeys.indexOfFirst { it !in done }
+        if (pendingIdx > 0) {
+            onStage(StageInfo(plan[pendingIdx], pendingIdx, plan.size, pendingIdx.toFloat() / plan.size, plan.getOrNull(pendingIdx + 1)))
+        }
         warnings.forEach { onWarning(it) }
 
         // --- run state (restored from the checkpoint where available) -------------
@@ -376,9 +388,9 @@ class Pipeline(
         if (!done.contains("verify")) {
             warnings.remove(CAVEAT_VERIFY)
             var verifyOk = true
+            emit("Double-check")
             loaded?.let { rep ->
                 if (rep.issues.isNotEmpty()) {
-                    emit("Double-check")
                     client.stage = "verifying"
                     val issuesText = rep.issues.mapIndexed { i, it -> "$i: ${it.issue} (t=${it.evidence_times.joinToString(",")})" }.joinToString("\n")
                     val evidence = observations + "\n\n" + metricsText
@@ -428,6 +440,7 @@ class Pipeline(
             quality = quality, tt_reading = ttReading, warnings = warnings.toList(),
         )
         store.save(finalStem, report)
+        onStage(StageInfo(plan.last(), plan.lastIndex, plan.size, 1f, null))
         // If a supplementary stage still needs a retry, keep the checkpoint so the run can be
         // resumed from that exact step; otherwise the run is complete — clean up.
         val required = buildList {

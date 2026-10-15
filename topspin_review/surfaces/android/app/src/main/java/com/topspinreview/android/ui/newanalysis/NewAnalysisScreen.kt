@@ -384,7 +384,7 @@ class NewAnalysisViewModel @Inject constructor(
                                 stage = s.name,
                                 stageIndex = s.index,
                                 stageCount = s.total,
-                                progress = s.progress,
+                                progress = maxOf(_state.value.progress, s.progress),
                                 nextStage = s.next,
                                 stepSeconds = times,
                             )
@@ -471,7 +471,8 @@ fun NewAnalysisScreen(
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val recent by vm.recent.collectAsStateWithLifecycle()
-    var confirmBack by remember { mutableStateOf(false) }
+    var confirmCancel by remember { mutableStateOf(false) }
+    var cancelBack by remember { mutableStateOf(false) }
 
     val useRegion = state.useRegion
     val region = state.region
@@ -484,16 +485,16 @@ fun NewAnalysisScreen(
 
     LaunchedEffect(resumeStem) { if (resumeStem != null) vm.resumeStem(resumeStem) }
 
-    BackHandler(enabled = state.running) { confirmBack = true }
+    BackHandler(enabled = state.running) { cancelBack = true; confirmCancel = true }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { TspTopBar(title = "Analyze a clip", onBack = { if (state.running) confirmBack = true else onBack() }) },
+        topBar = { TspTopBar(title = "Analyze a clip", onBack = { if (state.running) { cancelBack = true; confirmCancel = true } else onBack() }) },
     ) { pad ->
         if (state.running) {
             RunningPanel(
                 state = state,
-                onCancel = vm::cancel,
+                onCancel = { cancelBack = false; confirmCancel = true },
                 modifier = Modifier.fillMaxSize().padding(pad).padding(16.dp),
             )
         } else {
@@ -562,16 +563,20 @@ fun NewAnalysisScreen(
         }
     }
 
-    if (confirmBack) {
+    if (confirmCancel) {
         AlertDialog(
-            onDismissRequest = { confirmBack = false },
+            onDismissRequest = { confirmCancel = false },
             title = { Text("Cancel analysis?") },
-            text = { Text("This stops the run. You can resume it later from the home screen.") },
+            text = { Text("This stops the run. The clip and its progress are kept, so you can resume from where it stopped.") },
             confirmButton = {
-                TextButton(onClick = { confirmBack = false; vm.cancel(); onBack() }) { Text("Cancel analysis") }
+                TextButton(onClick = {
+                    confirmCancel = false
+                    vm.cancel()
+                    if (cancelBack) onBack()
+                }) { Text("Cancel analysis") }
             },
             dismissButton = {
-                TextButton(onClick = { confirmBack = false }) { Text("Keep going") }
+                TextButton(onClick = { confirmCancel = false }) { Text("Keep going") }
             },
         )
     }

@@ -586,6 +586,11 @@ private fun ObservationsTab(r: Report) {
 @Composable
 private fun Findings(r: Report) {
     val findings = (r.tt_reading?.get("findings") as? JsonArray) ?: JsonArray(emptyList())
+    val activity = r.metrics["activity"] as? JsonArray
+    val segments = (r.metrics["ball"] as? JsonObject)?.get("segments") as? JsonArray
+    val poseAngles = r.metrics["pose_angles"] as? JsonArray
+    val trajectory = (r.metrics["ball"] as? JsonObject)?.get("trajectory3d") as? JsonArray
+
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -601,11 +606,26 @@ private fun Findings(r: Report) {
             item {
                 TspCard(modifier = Modifier.fillMaxWidth()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(groupIcon(grp), contentDescription = null, tint = Accent, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            Modifier.size(30.dp).clip(CircleShape).background(Accent.copy(alpha = 0.14f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(groupIcon(grp), contentDescription = null, tint = Accent, modifier = Modifier.size(17.dp))
+                        }
+                        Spacer(Modifier.width(10.dp))
                         SectionLabel(grp, color = Accent)
+                        Spacer(Modifier.weight(1f))
+                        MetaChip("${rows.size}")
                     }
-                    Spacer(Modifier.height(12.dp))
+                    if (findingsHasVisual(grp, r, activity, segments, poseAngles, trajectory)) {
+                        Spacer(Modifier.height(14.dp))
+                        GroupVisual(grp, r, activity, segments, poseAngles, trajectory)
+                        Spacer(Modifier.height(16.dp))
+                        DividerLine()
+                        Spacer(Modifier.height(16.dp))
+                    } else {
+                        Spacer(Modifier.height(12.dp))
+                    }
                     rows.forEachIndexed { i, f ->
                         val o = f as JsonObject
                         if (i > 0) { Spacer(Modifier.height(12.dp)); DividerLine(); Spacer(Modifier.height(12.dp)) }
@@ -625,6 +645,86 @@ private fun Findings(r: Report) {
                 }
             }
         }
+    }
+}
+
+private fun findingsHasVisual(
+    grp: String,
+    r: Report,
+    activity: JsonArray?,
+    segments: JsonArray?,
+    poseAngles: JsonArray?,
+    trajectory: JsonArray?,
+): Boolean = when (grp) {
+    "Play" -> (activity != null && activity.size > 1) || (segments != null && segments.isNotEmpty())
+    "Player" -> r.artifacts["pose"] != null || (poseAngles != null && poseAngles.size > 1)
+    "Ball" -> r.artifacts["ball"] != null || (trajectory != null && trajectory.size > 2)
+    else -> false
+}
+
+/** The measured visuals that back a findings group (mirrors gui2's embedded charts). */
+@Composable
+private fun GroupVisual(
+    grp: String,
+    r: Report,
+    activity: JsonArray?,
+    segments: JsonArray?,
+    poseAngles: JsonArray?,
+    trajectory: JsonArray?,
+) {
+    when (grp) {
+        "Play" -> {
+            if (activity != null && activity.size > 1) {
+                VisualLabel("Movement over time", "Energy moment-to-moment — a peak is a burst of action.")
+                Spacer(Modifier.height(8.dp))
+                EnergyChart(activity)
+            }
+            if (segments != null && segments.isNotEmpty()) {
+                if (activity != null && activity.size > 1) Spacer(Modifier.height(16.dp))
+                VisualLabel("Active spans", "When the ball was in play.")
+                Spacer(Modifier.height(8.dp))
+                SegmentsBar(segments, lastT(activity ?: JsonArray(emptyList())))
+            }
+        }
+        "Player" -> {
+            r.artifacts["pose"]?.let {
+                MediaImage(File(it), "Skeleton")
+                Spacer(Modifier.height(14.dp))
+            }
+            if (poseAngles != null && poseAngles.size > 1) {
+                PoseAngleChart(poseAngles)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Joint angles over the clip, from the sampled frames — pose estimates, not clinical measurements.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        "Ball" -> {
+            r.artifacts["ball"]?.let {
+                MediaImage(File(it), "Tracked path")
+                Spacer(Modifier.height(14.dp))
+            }
+            if (trajectory != null && trajectory.size > 2) {
+                Trajectory3DView(trajectory)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "The object's route in 3D; drag to rotate. The shape is useful, distances aren't.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VisualLabel(title: String, hint: String) {
+    Column {
+        Text(title, style = MaterialTheme.typography.labelMedium, color = Accent)
+        Spacer(Modifier.height(2.dp))
+        Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

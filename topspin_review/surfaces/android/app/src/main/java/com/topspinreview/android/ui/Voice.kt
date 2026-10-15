@@ -8,6 +8,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.os.Bundle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,6 +17,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -42,8 +44,31 @@ fun rememberTts(): TextToSpeech? {
 @Composable
 fun SpeakButton(text: String) {
     val tts = rememberTts()
-    IconButton(onClick = { tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null) }) {
-        Icon(Icons.Filled.VolumeUp, contentDescription = "Read aloud")
+    val speaking = remember { mutableStateOf(false) }
+    DisposableEffect(tts) {
+        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) { speaking.value = true }
+            override fun onDone(utteranceId: String?) { speaking.value = false }
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) { speaking.value = false }
+            override fun onStop(utteranceId: String?, interrupted: Boolean) { speaking.value = false }
+        })
+        onDispose { }
+    }
+    IconButton(onClick = {
+        val engine = tts ?: return@IconButton
+        if (speaking.value) {
+            engine.stop()
+            speaking.value = false
+        } else {
+            speaking.value = true
+            engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "read-aloud")
+        }
+    }) {
+        Icon(
+            if (speaking.value) Icons.Filled.Stop else Icons.Filled.VolumeUp,
+            contentDescription = if (speaking.value) "Stop reading" else "Read aloud",
+        )
     }
 }
 
