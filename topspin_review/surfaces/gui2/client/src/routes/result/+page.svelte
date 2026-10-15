@@ -500,8 +500,7 @@
       <h3 class="font-display font-bold">Export</h3>
       <p class="mt-1 text-sm text-muted">Save or share this report.</p>
 
-      <h4 class="mt-4 text-sm font-semibold text-app">Save / export</h4>
-      <div class="mt-2 flex flex-wrap gap-3 text-sm">
+      <div class="mt-4 flex flex-wrap gap-3 text-sm">
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "md")} download>Download Markdown</a>
         <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "html")} target="_blank" rel="noreferrer">Open HTML</a>
         {#if report.clips && Object.keys(report.clips).length}

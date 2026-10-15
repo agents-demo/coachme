@@ -67,6 +67,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -489,67 +490,73 @@ fun NewAnalysisScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { TspTopBar(title = "Analyze a clip", onBack = { if (state.running) confirmBack = true else onBack() }) },
     ) { pad ->
-        Column(
-            Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            val sel = state.selection
-            val finishedStem = state.finishedStem
-            when {
-                state.running -> Stagger(1) { RunningPanel(state = state, onCancel = vm::cancel) }
+        if (state.running) {
+            RunningPanel(
+                state = state,
+                onCancel = vm::cancel,
+                modifier = Modifier.fillMaxSize().padding(pad).padding(16.dp),
+            )
+        } else {
+            Column(
+                Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                val sel = state.selection
+                val finishedStem = state.finishedStem
+                when {
+                    finishedStem != null -> Stagger(1) {
+                        CompletionPanel(warnings = state.warnings, onView = { onDone(finishedStem) })
+                    }
 
-                finishedStem != null -> Stagger(1) {
-                    CompletionPanel(warnings = state.warnings, onView = { onDone(finishedStem) })
-                }
+                    state.loading -> Stagger(1) { LoadingPanel() }
 
-                state.loading -> Stagger(1) { LoadingPanel() }
-
-                sel != null -> Stagger(1) {
-                    PreviewPanel(
-                        selection = sel,
-                        useRegion = useRegion,
-                        onToggle = vm::setUseRegion,
-                        left = region[0], top = region[1], right = region[2], bottom = region[3],
-                        onLeft = { vm.setRegionEdge(0, it) }, onTop = { vm.setRegionEdge(1, it) },
-                        onRight = { vm.setRegionEdge(2, it) }, onBottom = { vm.setRegionEdge(3, it) },
-                        onStart = vm::start,
-                        onDiscard = { vm.discard() },
-                    )
-                }
-
-                else -> {
-                    Stagger(1) {
-                        CapturePanel(
-                            onVideo = { picker.launch("video/*") },
-                            onPhoto = { picker.launch("image/*") },
-                            onSample = { vm.selectSample() },
+                    sel != null -> Stagger(1) {
+                        PreviewPanel(
+                            selection = sel,
+                            useRegion = useRegion,
+                            onToggle = vm::setUseRegion,
+                            left = region[0], top = region[1], right = region[2], bottom = region[3],
+                            onLeft = { vm.setRegionEdge(0, it) }, onTop = { vm.setRegionEdge(1, it) },
+                            onRight = { vm.setRegionEdge(2, it) }, onBottom = { vm.setRegionEdge(3, it) },
+                            onStart = vm::start,
+                            onDiscard = { vm.discard() },
                         )
                     }
-                    state.pendingRun?.let { run ->
-                        Stagger(2) {
-                            ResumeBanner(
-                                run = run,
-                                onResume = { vm.resumeRun(run) },
-                                onDiscard = { vm.discardRun(run.stem) },
+
+                    else -> {
+                        Stagger(1) {
+                            CapturePanel(
+                                onVideo = { picker.launch("video/*") },
+                                onPhoto = { picker.launch("image/*") },
+                                onSample = { vm.selectSample() },
                             )
                         }
-                    }
-                    if (recent.isNotEmpty()) {
-                        Stagger(2) { RecentRow(recent = recent, onPick = { vm.selectRecent(it) }) }
+                        state.pendingRun?.let { run ->
+                            Stagger(2) {
+                                ResumeBanner(
+                                    run = run,
+                                    onResume = { vm.resumeRun(run) },
+                                    onDiscard = { vm.discardRun(run.stem) },
+                                )
+                            }
+                        }
+                        if (recent.isNotEmpty()) {
+                            Stagger(2) { RecentRow(recent = recent, onPick = { vm.selectRecent(it) }) }
+                        }
                     }
                 }
-            }
 
-            state.error?.let { err ->
-                Stagger(3) {
-                    ErrorPanel(
-                        message = err,
-                        failedStage = state.failedStage,
-                        warnings = state.warnings,
-                        canResume = state.canResume,
-                        onResume = vm::resume,
-                        onRetry = vm::retry,
-                    )
+                state.error?.let { err ->
+                    Stagger(3) {
+                        ErrorPanel(
+                            message = err,
+                            failedStage = state.failedStage,
+                            warnings = state.warnings,
+                            canResume = state.canResume,
+                            onResume = vm::resume,
+                            onRetry = vm::retry,
+                        )
+                    }
                 }
             }
         }
@@ -867,7 +874,7 @@ private sealed interface StepRow {
 }
 
 @Composable
-private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit) {
+private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit, modifier: Modifier = Modifier) {
     val reduced = rememberReducedMotion()
     val progress by animateFloatAsState(state.progress, tween(if (reduced) 0 else 450, easing = FastOutSlowInEasing), label = "progress")
     val index = state.stageIndex
@@ -902,7 +909,13 @@ private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit
         if (i >= 0) listState.animateScrollToItem(i)
     }
 
-    TspCard(modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             PulsingDot()
             Spacer(Modifier.width(10.dp))
@@ -923,7 +936,7 @@ private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit
         if (rows.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             LazyColumn(
-                Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                Modifier.fillMaxWidth().weight(1f),
                 state = listState,
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
@@ -956,7 +969,7 @@ private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit
             }
         } else {
             Spacer(Modifier.height(12.dp))
-            Text(state.stage.ifBlank { "Working" }, style = MaterialTheme.typography.titleSmall)
+            Text(state.stage.ifBlank { "Working" }, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
         }
 
         if (state.warnings.isNotEmpty()) {
@@ -973,6 +986,7 @@ private fun RunningPanel(state: NewAnalysisViewModel.State, onCancel: () -> Unit
         }
         Spacer(Modifier.height(16.dp))
         GhostButton("Cancel", onCancel, Modifier.fillMaxWidth())
+        }
     }
 }
 

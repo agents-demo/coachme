@@ -33,17 +33,25 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Gif
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -78,6 +86,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -943,33 +952,53 @@ private fun Export(r: Report) {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        val times = r.issues.flatMap { it.evidence_times }
         TspCard(modifier = Modifier.fillMaxWidth()) {
             SectionLabel("Share")
-            Spacer(Modifier.height(12.dp))
-            PrimaryButton("Share card (PNG)", { ShareCard.share(ctx, r) }, Modifier.fillMaxWidth())
-            val times = r.issues.flatMap { it.evidence_times }
+            Spacer(Modifier.height(6.dp))
+            ExportRow("Share card", "A PNG summary of the report", Icons.Filled.Share) { ShareCard.share(ctx, r) }
+            ExportRow("Original clip", "Share the source video", Icons.Filled.Videocam) { shareSource(ctx, r.source) }
             if (times.isNotEmpty()) {
-                Spacer(Modifier.height(10.dp))
-                GhostButton("Highlight reel (mp4)", { exportReel(ctx, r.source, times) }, Modifier.fillMaxWidth())
+                ExportRow("Highlight reel", "An mp4 of the key moments", Icons.Filled.Movie) { exportReel(ctx, r.source, times) }
             }
-            Spacer(Modifier.height(18.dp))
-            SectionLabel("Export")
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                GhostButton("Markdown", { Reporting.share(ctx, r, "md") }, Modifier.weight(1f))
-                GhostButton("HTML", { Reporting.share(ctx, r, "html") }, Modifier.weight(1f))
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                GhostButton("Print PDF", { Reporting.printPdf(ctx, r) }, Modifier.weight(1f))
-                GhostButton("GIF", {
-                    val start = (r.issues.flatMap { it.evidence_times }.minOrNull()?.minus(1.0) ?: 0.0).coerceAtLeast(0.0)
-                    exportGif(ctx, r.source, start, start + 3.0)
-                }, Modifier.weight(1f))
-            }
-            Spacer(Modifier.height(10.dp))
-            GhostButton("Share original clip", { shareSource(ctx, r.source) }, Modifier.fillMaxWidth())
         }
+        TspCard(modifier = Modifier.fillMaxWidth()) {
+            SectionLabel("Export")
+            Spacer(Modifier.height(6.dp))
+            ExportRow("Markdown", "A plain-text version", Icons.Filled.Description) { Reporting.share(ctx, r, "md") }
+            ExportRow("HTML", "Open in your browser", Icons.Filled.Code) { Reporting.share(ctx, r, "html") }
+            ExportRow("Print / PDF", "Save via the system dialog", Icons.Filled.PictureAsPdf) { Reporting.printPdf(ctx, r) }
+            ExportRow("Animated GIF", "A short looping clip", Icons.Filled.Gif) {
+                val start = (times.minOrNull()?.minus(1.0) ?: 0.0).coerceAtLeast(0.0)
+                exportGif(ctx, r.source, start, start + 3.0)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExportRow(label: String, subtitle: String, icon: ImageVector, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onClick() }.padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(40.dp).clip(CircleShape).background(Accent.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, tint = Accent, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
