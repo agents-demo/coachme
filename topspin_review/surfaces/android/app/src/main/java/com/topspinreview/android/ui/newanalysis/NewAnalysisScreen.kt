@@ -25,6 +25,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
@@ -48,22 +49,27 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -82,10 +88,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -94,6 +103,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -102,6 +112,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -112,6 +124,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
+import com.topspinreview.android.data.Youtube
 import com.topspinreview.android.pipeline.PendingRun
 import com.topspinreview.android.pipeline.Pipeline
 import com.topspinreview.android.pipeline.Sampler
@@ -243,6 +256,12 @@ class NewAnalysisViewModel @Inject constructor(
     /** Use the clip bundled in assets (like the desktop "use the sample clip"). */
     fun selectSample() = loadSelection("Bundled sample", isImage = false) { copySample() }
 
+    /** Download a video from a link (YouTube and other yt-dlp sources) and select it. */
+    fun selectYoutube(url: String) = loadSelection("", isImage = false) {
+        val dir = File(context.filesDir, "media").apply { mkdirs() }
+        Youtube.download(context, url, dir)
+    }
+
     private fun loadSelection(name: String, isImage: Boolean, make: suspend () -> File) {
         job?.cancel()
         job = viewModelScope.launch {
@@ -256,7 +275,7 @@ class NewAnalysisViewModel @Inject constructor(
                 _state.value = State(
                     selection = Selection(
                         path = file.absolutePath,
-                        name = name,
+                        name = name.ifBlank { file.nameWithoutExtension },
                         isImage = isImage,
                         durationSec = inspection.durationSec,
                         width = inspection.width,
@@ -473,6 +492,7 @@ fun NewAnalysisScreen(
     val recent by vm.recent.collectAsStateWithLifecycle()
     var confirmCancel by remember { mutableStateOf(false) }
     var cancelBack by remember { mutableStateOf(false) }
+    var showYoutube by remember { mutableStateOf(false) }
 
     val useRegion = state.useRegion
     val region = state.region
@@ -530,6 +550,7 @@ fun NewAnalysisScreen(
                                 onVideo = { picker.launch("video/*") },
                                 onPhoto = { picker.launch("image/*") },
                                 onSample = { vm.selectSample() },
+                                onYoutube = { showYoutube = true },
                             )
                         }
                         state.pendingRun?.let { run ->
@@ -579,6 +600,70 @@ fun NewAnalysisScreen(
                 TextButton(onClick = { confirmCancel = false }) { Text("Keep going") }
             },
         )
+    }
+
+    if (showYoutube) {
+        var url by remember { mutableStateOf("") }
+        val focusRequester = remember { FocusRequester() }
+        val keyboard = LocalSoftwareKeyboardController.current
+        fun submit() {
+            val link = url.trim()
+            if (link.isEmpty()) return
+            showYoutube = false
+            vm.selectYoutube(link)
+        }
+        AlertDialog(
+            onDismissRequest = { showYoutube = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Link, contentDescription = null, tint = Accent, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Analyze a link")
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        "Paste a YouTube (or other video) link — we download it, then analyze it on your phone like any clip.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    OutlinedTextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        singleLine = true,
+                        label = { Text("Video link") },
+                        placeholder = { Text("https://youtube.com/watch?v=…") },
+                        leadingIcon = { Icon(Icons.Filled.Link, contentDescription = null, tint = Accent2) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
+                        keyboardActions = KeyboardActions(onGo = { submit() }),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { submit() },
+                    enabled = url.isNotBlank(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.White),
+                ) {
+                    Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Download & analyze", style = MaterialTheme.typography.labelLarge)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showYoutube = false }) { Text("Cancel") }
+            },
+        )
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+            delay(120)
+            keyboard?.show()
+        }
     }
 }
 
@@ -661,67 +746,126 @@ private fun CapturePanel(
     onVideo: () -> Unit,
     onPhoto: () -> Unit,
     onSample: () -> Unit,
+    onYoutube: () -> Unit,
 ) {
     TspCard(modifier = Modifier.fillMaxWidth(), padding = PaddingValues(0.dp)) {
-        Box(
+        Column(
             Modifier
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Accent.copy(alpha = 0.16f), Color.Transparent, Accent2.copy(alpha = 0.10f)),
+                        listOf(Accent.copy(alpha = 0.14f), Color.Transparent, Accent2.copy(alpha = 0.08f)),
                     ),
-                ),
-        ) {
-            Column(
-                Modifier.fillMaxWidth().padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier.size(54.dp).clip(RoundedCornerShape(17.dp)).background(heroBrush()),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Filled.Videocam, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
-                    }
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Add footage", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            "Analyzed on your phone — a full clip or a single still",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                PrimaryButton(
-                    "Choose a video",
-                    onVideo,
-                    Modifier.fillMaxWidth(),
-                    icon = { Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 )
-
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ActionButton("Photo", Icons.Filled.PhotoCamera, onPhoto, Modifier.weight(1f))
-                    ActionButton("Sample clip", Icons.Filled.Movie, onSample, Modifier.weight(1f))
+                .padding(18.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(heroBrush()),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Filled.Videocam, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
                 }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Add footage", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        "Analyzed on your phone — a clip or a single still",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SourceTile(
+                    icon = Icons.Filled.PlayArrow,
+                    title = "Video",
+                    hint = "Pick from gallery",
+                    onClick = onVideo,
+                    modifier = Modifier.weight(1f),
+                    primary = true,
+                )
+                SourceTile(
+                    icon = Icons.Filled.PhotoCamera,
+                    title = "Photo",
+                    hint = "A single still",
+                    onClick = onPhoto,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SourceTile(
+                    icon = Icons.Filled.Movie,
+                    title = "Sample",
+                    hint = "Try a demo clip",
+                    onClick = onSample,
+                    modifier = Modifier.weight(1f),
+                )
+                SourceTile(
+                    icon = Icons.Filled.Link,
+                    title = "Link",
+                    hint = "YouTube or URL",
+                    onClick = onYoutube,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
 }
 
+/** One source in the 2×2 "add footage" grid — a whole tile is a single tap target. */
 @Composable
-private fun ActionButton(label: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(48.dp),
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+private fun SourceTile(
+    icon: ImageVector,
+    title: String,
+    hint: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    primary: Boolean = false,
+) {
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier
+            .clip(shape)
+            .background(if (primary) Accent.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface)
+            .border(
+                2.dp,
+                if (primary) Accent.copy(alpha = 0.55f) else MaterialTheme.colorScheme.outline,
+                shape,
+            )
+            .clickable { onClick() }
+            .padding(14.dp),
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+        Column {
+            Box(
+                Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(if (primary) heroBrush() else SolidColor(Accent.copy(alpha = 0.14f))),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = if (primary) Color.White else Accent,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

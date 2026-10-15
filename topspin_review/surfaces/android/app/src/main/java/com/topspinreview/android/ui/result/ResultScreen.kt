@@ -1,5 +1,8 @@
 package com.topspinreview.android.ui.result
 
+import android.content.Context
+import android.graphics.Bitmap
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,10 +39,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Gif
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Insights
@@ -51,6 +59,7 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
@@ -89,6 +98,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -101,6 +111,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
+import com.topspinreview.android.data.Issue
 import com.topspinreview.android.data.Report
 import com.topspinreview.android.data.ReportStore
 import com.topspinreview.android.domain.Drills
@@ -222,6 +233,7 @@ fun ResultScreen(
     val report by vm.report.collectAsStateWithLifecycle()
     val loading by vm.loading.collectAsStateWithLifecycle()
     var tab by remember { mutableStateOf(0) } // Video
+    var seekMs by remember { mutableStateOf<Long?>(null) }
     val answers by vm.answers.collectAsStateWithLifecycle()
     val asking by vm.asking.collectAsStateWithLifecycle()
     var askOpen by remember { mutableStateOf(false) }
@@ -334,10 +346,18 @@ fun ResultScreen(
                 }
                 Crossfade(targetState = tab, modifier = Modifier.fillMaxSize(), label = "tab") { t ->
                     when (t) {
-                        0 -> VideoTab(r, vm::saveAnnotations)
+                        0 -> VideoTab(r, vm::saveAnnotations, seekMs = seekMs, onSeekConsumed = { seekMs = null })
                         1 -> AnalysisTab(r)
                         2 -> ObservationsTab(r)
-                        else -> CoachingTab(r, drillsDone)
+                        else -> CoachingTab(
+                            r,
+                            drillsDone,
+                            onOpenMoment = { time ->
+                                seekMs = (time * 1000).toLong().coerceAtLeast(0L)
+                                tab = 0
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            },
+                        )
                     }
                 }
             }
@@ -824,114 +844,348 @@ private val COACH_SUBTABS = listOf("Advice", "Practice", "Export")
 private fun CoachingTab(
     r: Report,
     drillsDone: MutableMap<Int, Boolean>,
+    onOpenMoment: (Double) -> Unit,
 ) {
     var sub by remember { mutableStateOf(0) }
     Column(Modifier.fillMaxSize()) {
         TspSegmented(COACH_SUBTABS, sub, { sub = it }, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
         when (sub) {
-            0 -> Advice(r)
+            0 -> Advice(r, onOpenMoment)
             1 -> Practice(r, drillsDone)
             else -> Export(r)
         }
     }
 }
 
+/** A short, human headline for the advice: the single most useful sentence. */
+private fun adviceHeadline(r: Report): String {
+    val first = r.summary.trim().substringBefore('.').trim()
+    return when {
+        first.isNotBlank() -> "$first."
+        r.focus.isNotBlank() -> r.focus
+        else -> "Here's what the coach saw."
+    }
+}
+
 @Composable
-private fun Advice(r: Report) {
-    val summaryText = buildString {
-        if (r.sport.isNotBlank()) append("${r.sport} on ${r.date.ifBlank { "an unknown date" }}. ")
-        if (r.focus.isNotBlank()) append("Focus next session: ${r.focus}. ")
-        r.issues.take(3).forEach { append("${it.issue}. ") }
-        append(r.summary)
-    }.trim()
+private fun Advice(r: Report, onOpenMoment: (Double) -> Unit) {
+    val summaryText = remember(r) {
+        buildString {
+            if (r.sport.isNotBlank()) append("${r.sport} on ${r.date.ifBlank { "an unknown date" }}. ")
+            if (r.focus.isNotBlank()) append("Focus next session: ${r.focus}. ")
+            r.issues.take(3).forEach { append("${it.issue}. ") }
+            append(r.summary)
+        }.trim()
+    }
+    val headline = remember(r) { adviceHeadline(r) }
+    val activity = r.metrics["activity"] as? JsonArray
 
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SectionLabel("Advice")
-                Spacer(Modifier.weight(1f))
-                SpeakButton(summaryText)
+            TintedCard(border = Accent.copy(alpha = 0.35f), background = Accent.copy(alpha = 0.08f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionLabel("Coach's read", color = Accent)
+                    Spacer(Modifier.weight(1f))
+                    SpeakButton(summaryText)
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(headline, style = MaterialTheme.typography.headlineSmall)
+                if (r.strengths.isNotEmpty() || r.issues.isNotEmpty()) {
+                    Spacer(Modifier.height(18.dp))
+                    BalanceBar(wins = r.strengths.size, sharpen = r.issues.size)
+                }
             }
         }
+
+        if (activity != null && activity.size > 1) {
+            item { PulseCard(activity, onOpenMoment) }
+        }
+
         if (r.focus.isNotBlank()) {
-            item {
-                TintedCard(border = Good.copy(alpha = 0.4f), background = Good.copy(alpha = 0.1f)) {
-                    SectionLabel("Focus next session", color = Good)
-                    Spacer(Modifier.height(6.dp))
-                    Text(r.focus, style = MaterialTheme.typography.titleMedium)
-                }
-            }
+            item { FocusCard(r.focus) }
         }
+
         if (r.strengths.isNotEmpty()) {
-            item {
-                TintedCard(border = Good.copy(alpha = 0.3f), background = Good.copy(alpha = 0.05f)) {
-                    Text(
-                        "✅ What's working",
-                        fontFamily = SpaceGrotesk,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Good,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    r.strengths.forEach { Bullet(it) }
-                }
-            }
+            item { WinsCard(r.strengths) }
         }
+
         if (r.issues.isNotEmpty()) {
             item {
-                TintedCard(border = Warn.copy(alpha = 0.3f), background = Warn.copy(alpha = 0.05f)) {
-                    Text(
-                        "🎯 What to improve",
-                        fontFamily = SpaceGrotesk,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Warn,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    r.issues.forEach { Bullet(it.issue) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionLabel("Sharpen these", color = Warn)
+                    Spacer(Modifier.weight(1f))
+                    MetaChip("${r.issues.size}", color = Warn, border = Warn.copy(alpha = 0.5f))
                 }
             }
+            items(r.issues.size) { i -> IssueCard(i, r.issues[i], r.source, onOpenMoment) }
         }
-        if (r.summary.isNotBlank() || r.progress.isNotBlank()) {
+
+        if (r.progress.isNotBlank()) {
+            item { ProgressCard(r.progress) }
+        }
+
+        if (r.summary.isNotBlank()) {
             item {
-                TspCard(modifier = Modifier.fillMaxWidth()) {
-                    SectionLabel("Read more")
-                    if (r.summary.isNotBlank()) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(r.summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    if (r.progress.isNotBlank()) {
-                        Spacer(Modifier.height(10.dp))
-                        Text("Since last time", style = MaterialTheme.typography.titleSmall)
-                        Spacer(Modifier.height(2.dp))
-                        Text(r.progress, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                CollapsibleCard("The full picture") {
+                    Text(
+                        r.summary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
+
         val clipWarnings = (r.quality["warnings"] as? JsonArray)?.mapNotNull { it.toString().trim('"') } ?: emptyList()
         val caveats = r.limitations.filter { it !in clipWarnings }
         if (clipWarnings.isNotEmpty() || caveats.isNotEmpty()) {
             item {
-                TspCard(modifier = Modifier.fillMaxWidth()) {
-                    SectionLabel("About this analysis")
+                CollapsibleCard("About this analysis") {
                     if (clipWarnings.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
                         Text("Your clip", style = MaterialTheme.typography.titleSmall)
-                        Spacer(Modifier.height(2.dp))
+                        Spacer(Modifier.height(4.dp))
                         clipWarnings.forEach { Bullet(it) }
                     }
                     if (caveats.isNotEmpty()) {
-                        Spacer(Modifier.height(10.dp))
+                        if (clipWarnings.isNotEmpty()) Spacer(Modifier.height(10.dp))
                         Text("Limits", style = MaterialTheme.typography.titleSmall)
-                        Spacer(Modifier.height(2.dp))
+                        Spacer(Modifier.height(4.dp))
                         caveats.forEach { Bullet(it) }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Wins vs things to sharpen, as two counts over a proportional two-tone bar. */
+@Composable
+private fun BalanceBar(wins: Int, sharpen: Int) {
+    val total = (wins + sharpen).coerceAtLeast(1)
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth()) {
+            VerdictStat("$wins", "Working", Good, Modifier.weight(1f))
+            VerdictStat("$sharpen", "To sharpen", Warn, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape)) {
+            if (wins > 0) Box(Modifier.weight(wins.toFloat() / total).fillMaxHeight().background(Good))
+            if (sharpen > 0) {
+                Box(Modifier.weight(sharpen.toFloat() / total).fillMaxHeight().background(Warn.copy(alpha = 0.85f)))
+            }
+        }
+    }
+}
+
+@Composable
+private fun VerdictStat(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(value, style = MaterialTheme.typography.headlineMedium, color = color)
+        Text(
+            label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 1.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun FocusCard(focus: String) {
+    TintedCard(border = Good.copy(alpha = 0.45f), background = Good.copy(alpha = 0.1f)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Filled.TrackChanges, Good)
+            Spacer(Modifier.width(10.dp))
+            SectionLabel("Focus next session", color = Good)
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(focus, style = MaterialTheme.typography.titleLarge)
+    }
+}
+
+@Composable
+private fun WinsCard(items: List<String>) {
+    TspCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Filled.Check, Good)
+            Spacer(Modifier.width(10.dp))
+            SectionLabel("What's working", color = Good)
+        }
+        Spacer(Modifier.height(8.dp))
+        items.forEach { text ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.Top) {
+                Icon(Icons.Filled.Check, contentDescription = null, tint = Good, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(10.dp))
+                Text(text, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+    }
+}
+
+@Composable
+private fun IssueCard(index: Int, issue: Issue, source: String, onOpenMoment: (Double) -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val conf = issue.confidence.lowercase()
+    val tone = when (conf) {
+        "high" -> Bad
+        "medium" -> Warn
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    TspCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(26.dp).clip(CircleShape).background(tone.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("${index + 1}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = tone)
+            }
+            Spacer(Modifier.width(10.dp))
+            ConfidenceMeter(conf, tone)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "${issue.confidence.ifBlank { "low" }} confidence",
+                style = MaterialTheme.typography.labelSmall,
+                color = tone,
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(issue.issue, style = MaterialTheme.typography.bodyLarge)
+        if (issue.evidence_times.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                issue.evidence_times.take(4).forEach { t ->
+                    MomentThumb(ctx, source, t, onOpen = { onOpenMoment(t) }, modifier = Modifier.width(150.dp))
+                }
+            }
+        }
+    }
+}
+
+/** A filmstrip of a moment: a real frame from the clip with the time overlaid, tap to replay. */
+@Composable
+private fun MomentThumb(ctx: Context, source: String, time: Double, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    var bmp by remember(source, time) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(source, time) {
+        bmp = withContext(Dispatchers.IO) { frameAt(ctx, source, time) }
+    }
+    Box(
+        modifier
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable { onOpen() },
+    ) {
+        if (bmp != null) {
+            AsyncImage(
+                model = bmp,
+                contentDescription = "Moment at ${fmtTime(time)}",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
+        Box(
+            Modifier.align(Alignment.Center).size(30.dp).clip(CircleShape).background(Color(0x99000000)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+        }
+        Box(
+            Modifier.align(Alignment.BottomEnd).padding(4.dp)
+                .clip(CircleShape).background(Color(0xCC0B0B0F)).padding(horizontal = 6.dp, vertical = 2.dp),
+        ) {
+            Text(fmtTime(time), style = MaterialTheme.typography.labelSmall, color = Color.White)
+        }
+    }
+}
+
+/** The measured movement curve for the clip — tap anywhere to jump the video to that moment. */
+@Composable
+private fun PulseCard(activity: JsonArray, onOpenMoment: (Double) -> Unit) {
+    TspCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Filled.Insights, Accent)
+            Spacer(Modifier.width(10.dp))
+            SectionLabel("Session pulse", color = Accent)
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "How much action there was over the clip — tap the curve to replay a peak.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(10.dp))
+        EnergyChart(activity, onSeek = onOpenMoment)
+    }
+}
+
+/** A three-bar signal meter for confidence. */
+@Composable
+private fun ConfidenceMeter(conf: String, tone: Color) {
+    val level = when (conf) {
+        "high" -> 3
+        "medium" -> 2
+        else -> 1
+    }
+    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        for (i in 1..3) {
+            Box(
+                Modifier.width(5.dp).height((6 + i * 4).dp).clip(RoundedCornerShape(2.dp))
+                    .background(if (i <= level) tone else MaterialTheme.colorScheme.outline),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProgressCard(progress: String) {
+    TspCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.AutoMirrored.Filled.TrendingUp, Accent2)
+            Spacer(Modifier.width(10.dp))
+            SectionLabel("Since last time", color = Accent2)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(progress, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun IconBadge(icon: ImageVector, tint: Color) {
+    Box(
+        Modifier.size(30.dp).clip(CircleShape).background(tint.copy(alpha = 0.16f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
+    }
+}
+
+@Composable
+private fun CollapsibleCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    TspCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().clickable { open = !open },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SectionLabel(title)
+            Spacer(Modifier.weight(1f))
+            Icon(
+                if (open) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = if (open) "Collapse" else "Expand",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        AnimatedVisibility(open) {
+            Column {
+                Spacer(Modifier.height(10.dp))
+                content()
             }
         }
     }

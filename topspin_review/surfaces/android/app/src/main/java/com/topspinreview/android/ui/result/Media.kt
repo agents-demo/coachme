@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.util.LruCache
 import androidx.core.content.FileProvider
 import androidx.media3.common.MediaItem
 import androidx.media3.transformer.Composition
@@ -16,6 +17,31 @@ import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import com.topspinreview.android.pipeline.GifEncoder
 import java.io.File
+
+private val frameCache = LruCache<String, Bitmap>(24)
+
+/** A decoded frame at [timeSec] (cached) for evidence thumbnails. `null` on failure. */
+fun frameAt(ctx: Context, source: String, timeSec: Double, maxWidth: Int = 320): Bitmap? {
+    if (source.isBlank() || timeSec < 0) return null
+    val key = "$source@${(timeSec * 2).toInt()}"
+    frameCache.get(key)?.let { return it }
+    val retriever = MediaMetadataRetriever()
+    return try {
+        if (source.startsWith("content:") || source.startsWith("http")) retriever.setDataSource(ctx, Uri.parse(source))
+        else retriever.setDataSource(source)
+        val bmp = retriever.getFrameAtTime((timeSec * 1_000_000).toLong(), MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+            ?: return null
+        val w = maxWidth
+        val h = (bmp.height * w / bmp.width).coerceAtLeast(2)
+        val scaled = Bitmap.createScaledBitmap(bmp, w, h, true)
+        frameCache.put(key, scaled)
+        scaled
+    } catch (_: Exception) {
+        null
+    } finally {
+        retriever.release()
+    }
+}
 
 /** Cut a short clip around a moment (best-effort) and share it. Ported from `integrations/media.py`. */
 /** Extract a short range at ~8 fps and encode an animated GIF, then share it. */

@@ -59,3 +59,11 @@ export async function upload(file) {
   form.append("file", file);
   return api("/upload", { method: "POST", body: form });
 }
+
+// Fetch a video from a link (YouTube etc.) and return its server-side path.
+export const youtube = (url) =>
+  api("/youtube", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ url }),
+  });

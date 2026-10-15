@@ -48,7 +48,9 @@ android {
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        jniLibs { useLegacyPackaging = false }
+        // youtubedl-android reads its bundled python/ffmpeg out of lib/<abi> at runtime, so the
+        // native libraries must be extracted to disk (see its README: android:extractNativeLibs).
+        jniLibs { useLegacyPackaging = true }
     }
 }
 
@@ -76,6 +78,10 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // Analyze a YouTube (or other yt-dlp-supported) link (bundles yt-dlp + ffmpeg).
+    implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
+    implementation("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
 
     // On-device ML (versions chosen for Android 16 KB page-size alignment)
     implementation("com.google.mediapipe:tasks-vision:0.10.35")

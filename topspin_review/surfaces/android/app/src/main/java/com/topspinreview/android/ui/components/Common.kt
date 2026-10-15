@@ -249,6 +249,7 @@ fun HeroCard(
     eyebrow: String? = null,
     title: @Composable () -> Unit,
     subtitle: String? = null,
+    footer: (@Composable () -> Unit)? = null,
 ) {
     val shape = MaterialTheme.shapes.extraLarge
     Box(
@@ -282,6 +283,10 @@ fun HeroCard(
             if (subtitle != null) {
                 Spacer(Modifier.height(8.dp))
                 Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (footer != null) {
+                Spacer(Modifier.height(18.dp))
+                footer()
             }
         }
     }

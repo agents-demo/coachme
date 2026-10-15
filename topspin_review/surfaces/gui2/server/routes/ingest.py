@@ -7,12 +7,36 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from pydantic import BaseModel
 
 from topspin_review.core.bootstrap import setup
 from topspin_review.integrations.storage import runtime
+from topspin_review.integrations.youtube import YoutubeUnavailable, download
 from topspin_review.surfaces.gui2.server import config
 
 router = APIRouter()
+
+
+class YoutubeRequest(BaseModel):
+    """A video link to fetch (YouTube and anything else yt-dlp supports)."""
+
+    url: str
+
+
+@router.post("/youtube")
+def youtube(request: YoutubeRequest) -> dict:
+    """Download a video from a link and return its server-side path (for ``/analyze/async``)."""
+    setup()
+    dest_dir = config.UPLOADS / uuid.uuid4().hex[:12]
+    try:
+        path = download(request.url, dest_dir)
+    except YoutubeUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 - surface yt-dlp failures to the user
+        raise HTTPException(status_code=502, detail=f"Could not download that link: {exc}") from exc
+    return {"path": str(path), "name": path.name}
 
 
 @router.post("/upload")

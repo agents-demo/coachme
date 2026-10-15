@@ -40,6 +40,29 @@ def _scaled_reader(path: str, width: int = 160, height: int = 90):
         return imageio.get_reader(path, format="ffmpeg")
 
 
+def _read_rgb(reader, idx: int) -> Image.Image | None:
+    """Decode frame ``idx`` as RGB, or ``None`` when the reader can't reach it.
+
+    The estimated frame count (``duration * fps``) can overshoot what the decoder can
+    actually seek to, so the last few indices may raise ``IndexError``/``StopIteration``.
+    """
+    try:
+        return Image.fromarray(reader.get_data(idx)).convert("RGB")
+    except Exception:
+        return None
+
+
+def _read_gray(reader, idx: int, size: tuple[int, int] = (160, 90)) -> np.ndarray | None:
+    """Decode frame ``idx`` as a small grayscale array, or ``None`` when unavailable."""
+    try:
+        img = Image.fromarray(reader.get_data(idx)).convert("L")
+        if img.size != size:
+            img = img.resize(size)
+        return np.asarray(img, dtype=np.float32)
+    except Exception:
+        return None
+
+
 def _probe_indices(total: int, budget: int) -> list[int]:
     if total <= budget:
         return list(range(total))
@@ -251,26 +274,51 @@ def sample_frames(
             probes = _probe_indices(total, min(config.probe_budget(), max(2, total)))
             probe_reader = _scaled_reader(str(path), 160, 90)
             try:
-                probe_gray = []
+                # Keep only the probes we could actually decode, so the motion series
+                # stays aligned with the indices (an unreachable tail can't break it).
+                valid_probes: list[int] = []
+                probe_gray: list[np.ndarray] = []
                 for idx in probes:
-                    frame = Image.fromarray(probe_reader.get_data(idx)).convert("L")
-                    if frame.size != (160, 90):
-                        frame = frame.resize((160, 90))
-                    probe_gray.append(np.asarray(frame, dtype=np.float32))
-            except Exception:
-                probe_gray = [
-                    np.asarray(Image.fromarray(reader.get_data(idx)).convert("L").resize((160, 90)), dtype=np.float32)
-                    for idx in probes
-                ]
+                    gray = _read_gray(probe_reader, idx)
+                    if gray is None:
+                        gray = _read_gray(reader, idx)
+                    if gray is not None:
+                        valid_probes.append(idx)
+                        probe_gray.append(gray)
             finally:
                 try:
                     probe_reader.close()
                 except Exception:
                     pass
-            energies = [float(np.abs(probe_gray[i] - probe_gray[i - 1]).mean()) for i in range(1, len(probe_gray))]
-            indices = _select_indices(probes, energies, max_frames, total)
-            frames = [Image.fromarray(reader.get_data(idx)).convert("RGB") for idx in indices]
-            timestamps = [idx / fps for idx in indices]
+            if len(valid_probes) >= 2:
+                energies = [
+                    float(np.abs(probe_gray[i] - probe_gray[i - 1]).mean()) for i in range(1, len(probe_gray))
+                ]
+                indices = _select_indices(valid_probes, energies, max_frames, total)
+            else:
+                indices = _probe_indices(total, min(max_frames, max(2, total)))
+            frames = []
+            timestamps = []
+            for idx in indices:
+                img = _read_rgb(reader, idx)
+                if img is not None:
+                    frames.append(img)
+                    timestamps.append(idx / fps)
+            if not frames:
+                # Seeking failed for every chosen index — read sequentially instead.
+                fallback = imageio.get_reader(str(path), format="ffmpeg")
+                try:
+                    step = max(1, total // max_frames) if total else 30
+                    for i, arr in enumerate(fallback):
+                        if i % step == 0:
+                            frames.append(Image.fromarray(arr).convert("RGB"))
+                            timestamps.append(i / fps)
+                        if len(frames) >= max_frames:
+                            break
+                except Exception:
+                    pass
+                finally:
+                    fallback.close()
         else:
             frames = []
             timestamps = []

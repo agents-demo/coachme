@@ -1,6 +1,6 @@
 <script>
   import { onMount } from "svelte";
-  import { samples, upload, analyzeAsync } from "$lib/api";
+  import { samples, upload, youtube, analyzeAsync } from "$lib/api";
 
   let { onqueued } = $props();
 
@@ -9,6 +9,7 @@
   let samplePath = $state("");
   let file = $state(null);
   let pathText = $state("");
+  let urlText = $state("");
   let agentic = $state(false);
   let useBox = $state(false);
   let box = $state([0, 0, 1, 1]);
@@ -35,6 +36,10 @@
       } else if (mode === "sample") {
         if (!samplePath) throw new Error("No sample clip found. Make one with tests\\integration\\make_sample.py.");
         video_path = samplePath;
+      } else if (mode === "youtube") {
+        const link = urlText.trim();
+        if (!link) throw new Error("Paste a video link first.");
+        video_path = (await youtube(link)).path;
       } else {
         video_path = pathText.trim();
         if (!video_path) throw new Error("Enter a video path.");
@@ -57,7 +62,7 @@
   </p>
 
   <div class="mt-3 flex flex-wrap gap-2 text-sm">
-    {#each [["sample", "Use the sample clip"], ["upload", "Upload a clip/photo"], ["path", "Paste a path"]] as [v, label]}
+    {#each [["sample", "Use the sample clip"], ["upload", "Upload a clip/photo"], ["youtube", "YouTube link"], ["path", "Paste a path"]] as [v, label]}
       <button
         onclick={() => (mode = v)}
         class="rounded-full border-2 px-3 py-1.5 font-semibold transition"
@@ -87,6 +92,15 @@
         onchange={(e) => (file = e.currentTarget.files?.[0] || null)}
         class="w-full rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm"
       />
+    {:else if mode === "youtube"}
+      <input
+        bind:value={urlText}
+        placeholder="https://www.youtube.com/watch?v=…"
+        class="w-full rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm"
+      />
+      <p class="mt-1 text-xs text-muted">
+        We download the clip up to 720p with yt-dlp, then analyze it like any other video.
+      </p>
     {:else}
       <input
         bind:value={pathText}
@@ -126,7 +140,7 @@
     onclick={submit}
     disabled={busy}
     class="mt-4 rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
-  >{busy ? "Starting…" : "Analyze"}</button>
+  >{busy ? (mode === "youtube" ? "Downloading…" : "Starting…") : "Analyze"}</button>
 
   <details class="mt-4 text-sm">
     <summary class="cursor-pointer font-semibold text-muted">How to film for the best report</summary>

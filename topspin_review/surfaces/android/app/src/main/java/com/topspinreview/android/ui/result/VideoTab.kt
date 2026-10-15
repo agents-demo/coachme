@@ -104,7 +104,12 @@ private fun angleDegrees(a: Offset, b: Offset, c: Offset, aspect: Float): Int {
  * drawing + playback control row, and the motion/segments charts. Frames = the stills read.
  */
 @Composable
-fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
+fun VideoTab(
+    report: Report,
+    onSaveAnnotations: (JsonArray) -> Unit,
+    seekMs: Long? = null,
+    onSeekConsumed: () -> Unit = {},
+) {
     val ctx = LocalContext.current
     val source = report.source
     if (source.isBlank()) {
@@ -162,6 +167,14 @@ fun VideoTab(report: Report, onSaveAnnotations: (JsonArray) -> Unit) {
             var rate by remember { mutableStateOf(1f) }
             val durationMs = remember(source) { (videoDurationSec(ctx, source) * 1000).toLong().coerceAtLeast(1L) }
             LaunchedEffect(exo) { while (exo != null) { posMs = exo.currentPosition; playing = exo.isPlaying; delay(250) } }
+            LaunchedEffect(seekMs) {
+                if (seekMs != null && exo != null) {
+                    exo.seekTo(seekMs)
+                    posMs = seekMs
+                    exo.play()
+                    onSeekConsumed()
+                }
+            }
             if (!isPhoto) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionLabel("Clip")

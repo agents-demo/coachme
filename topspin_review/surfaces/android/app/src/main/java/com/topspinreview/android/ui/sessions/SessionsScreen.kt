@@ -72,14 +72,13 @@ import com.topspinreview.android.ui.components.HeroCard
 import com.topspinreview.android.ui.components.MetaChip
 import com.topspinreview.android.ui.components.PrimaryButton
 import com.topspinreview.android.ui.components.SectionLabel
-import com.topspinreview.android.ui.components.StatTile
 import com.topspinreview.android.ui.components.TspCard
 import com.topspinreview.android.ui.components.TspTopBar
 import com.topspinreview.android.ui.components.heroBrush
 import com.topspinreview.android.ui.theme.Accent
 import com.topspinreview.android.ui.theme.Accent2
 import com.topspinreview.android.ui.theme.Bad
-import com.topspinreview.android.ui.theme.Warn
+import com.topspinreview.android.ui.theme.Good
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -173,7 +172,7 @@ fun SessionsScreen(
 ) {
     val reports by vm.reports.collectAsStateWithLifecycle()
     val interrupted by vm.interrupted.collectAsStateWithLifecycle()
-    val totalIssues = reports.sumOf { it.issues.size }
+    val totalPractice = reports.sumOf { it.drills.size }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var menuOpen by remember { mutableStateOf(false) }
@@ -212,20 +211,8 @@ fun SessionsScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item {
-                HeroCard(
-                    eyebrow = "Vision-powered coaching",
-                    title = {
-                        Column {
-                            Text("Turn a session into a", style = MaterialTheme.typography.displaySmall)
-                            Text(
-                                "coaching report",
-                                style = MaterialTheme.typography.displaySmall.copy(brush = heroBrush()),
-                            )
-                        }
-                    },
-                    subtitle = "Pick a clip from your phone, analyze it in-app, and get measured form & footwork insights, the things to fix, and drills.",
-                )
+            item(key = "header") {
+                SessionsHeader(sessionCount = reports.size, practiceCount = totalPractice)
             }
 
             interrupted?.let { run ->
@@ -235,15 +222,6 @@ fun SessionsScreen(
                         onResume = { onResume(run.stem) },
                         onDiscard = { vm.discardInterrupted() },
                     )
-                }
-            }
-
-            if (reports.isNotEmpty()) {
-                item(key = "stats") {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatTile("${reports.size}", "Sessions", Modifier.weight(1f))
-                        StatTile("$totalIssues", "Open issues", Modifier.weight(1f), valueColor = Warn)
-                    }
                 }
             }
 
@@ -284,6 +262,60 @@ fun SessionsScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * A brand hero: the gradient title + glow blobs are kept (the "wow"), now with a live stat
+ * row so the card reads as a dashboard rather than a mostly-empty banner.
+ */
+@Composable
+private fun SessionsHeader(sessionCount: Int, practiceCount: Int) {
+    HeroCard(
+        modifier = Modifier.fillMaxWidth(),
+        eyebrow = "Vision-powered coaching",
+        title = {
+            Text("Your sessions", style = MaterialTheme.typography.displaySmall.copy(brush = heroBrush()))
+        },
+        subtitle = if (sessionCount > 0) {
+            "Form, footwork and drills from every clip you analyze."
+        } else {
+            "Analyze a clip to get measured form & footwork coaching."
+        },
+        footer = if (sessionCount > 0) {
+            {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    HeroStat("$sessionCount", if (sessionCount == 1) "Session" else "Sessions", Modifier.weight(1f))
+                    Box(Modifier.width(1.dp).height(38.dp).background(MaterialTheme.colorScheme.outline))
+                    HeroStat(
+                        "$practiceCount",
+                        if (practiceCount == 1) "Practice item" else "Practice items",
+                        Modifier.weight(1f),
+                        valueColor = Good,
+                    )
+                }
+            }
+        } else {
+            null
+        },
+    )
+}
+
+@Composable
+private fun HeroStat(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color? = null,
+) {
+    Column(modifier.padding(horizontal = 4.dp)) {
+        Text(
+            value,
+            style = MaterialTheme.typography.headlineLarge,
+            color = valueColor ?: MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(2.dp))
+        SectionLabel(label)
     }
 }
 
@@ -364,13 +396,14 @@ private fun SessionCard(report: Report, onOpen: () -> Unit) {
     val poster = thumbOf(report)
     TspCard(
         modifier = Modifier.fillMaxWidth().clickable { onOpen() },
-        padding = PaddingValues(0.dp),
+        padding = PaddingValues(10.dp),
     ) {
-        Box(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
-                    .fillMaxWidth()
+                    .width(116.dp)
                     .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(Brush.linearGradient(listOf(Accent.copy(alpha = 0.25f), Accent2.copy(alpha = 0.25f)))),
                 contentAlignment = Alignment.Center,
             ) {
@@ -382,63 +415,63 @@ private fun SessionCard(report: Report, onOpen: () -> Unit) {
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    Text("🏓", fontSize = 46.sp)
+                    Text("🏓", fontSize = 24.sp)
+                }
+                if (isPhoto(report)) {
+                    Box(
+                        Modifier.align(Alignment.BottomEnd).padding(5.dp)
+                            .clip(CircleShape).background(Color(0xCC0B0B0F)).padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        Text("PHOTO", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.sp, color = Color.White)
+                    }
+                } else {
+                    Box(
+                        Modifier.align(Alignment.BottomStart).padding(5.dp)
+                            .size(20.dp).clip(CircleShape).background(Color(0xCC0B0B0F)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                    }
                 }
             }
 
-            if (isPhoto(report)) {
-                Box(
-                    Modifier.align(Alignment.BottomEnd).padding(8.dp)
-                        .clip(CircleShape).background(Color(0xCC0B0B0F)).padding(horizontal = 8.dp, vertical = 3.dp),
-                ) {
-                    Text("PHOTO", style = MaterialTheme.typography.labelSmall, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-                Box(
-                    Modifier.align(Alignment.BottomStart).padding(8.dp)
-                        .size(28.dp).clip(CircleShape).background(Color(0xCC0B0B0F)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                }
-            }
-        }
+            Spacer(Modifier.width(12.dp))
 
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            Text(
-                report.stem.ifBlank { report.source },
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                "${report.sport.ifBlank { "session" }} · ${report.date.ifBlank { "undated" }}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                report.summary.ifBlank { report.focus }.ifBlank { "—" },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                val issues = report.issues.size
-                MetaChip("$issues issue${if (issues == 1) "" else "s"}")
-                if (report.artifacts["pose"] != null || report.artifacts["pose_hero"] != null) MetaChip("pose")
-                if (report.focus.isNotBlank()) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    report.stem.ifBlank { report.source },
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "${report.sport.ifBlank { "session" }} · ${report.date.ifBlank { "undated" }}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val line = report.summary.ifBlank { report.focus }
+                if (line.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        report.focus,
-                        style = MaterialTheme.typography.labelSmall,
+                        line,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
                     )
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    val practice = report.drills.size
+                    if (practice > 0) {
+                        MetaChip(
+                            "$practice practice item${if (practice == 1) "" else "s"}",
+                            color = Good,
+                            border = Good.copy(alpha = 0.55f),
+                        )
+                    }
+                    if (report.artifacts["pose"] != null || report.artifacts["pose_hero"] != null) MetaChip("pose")
                 }
             }
         }
