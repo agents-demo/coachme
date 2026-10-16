@@ -38,3 +38,13 @@ val GoodContainerLight = Color(0xFFD7F5E9)
 
 // The annotation ink used by the telestration tool.
 val Telestration = Color(0xFFF97316)
+
+// ---------------------------------------------------------------------------
+// Sport mode palette — kinetic orange replaces indigo for a more athletic feel.
+// ---------------------------------------------------------------------------
+val SportAccent = Color(0xFFF97316)          // vivid orange (same as Telestration)
+val SportAccent2 = Color(0xFFFB923C)         // orange/400, lighter companion
+val SportAccentContainerDark = Color(0xFF431407)
+val SportAccentContainerLight = Color(0xFFFFEDD5)
+val SportAccent2ContainerDark = Color(0xFF3B1A0A)
+val SportAccent2ContainerLight = Color(0xFFFEF3C7)

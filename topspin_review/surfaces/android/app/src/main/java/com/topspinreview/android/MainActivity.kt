@@ -3,6 +3,7 @@ package com.topspinreview.android
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -19,6 +20,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             val s by settings.flow.collectAsStateWithLifecycle(initialValue = AppSettings())
             val dark = when (s.theme) {
@@ -26,7 +28,7 @@ class MainActivity : ComponentActivity() {
                 "dark" -> true
                 else -> isSystemInDarkTheme()
             }
-            TopspinTheme(darkTheme = dark) {
+            TopspinTheme(darkTheme = dark, dynamicColor = s.dynamicColor, sportMode = s.sportMode) {
                 AppNav()
             }
         }

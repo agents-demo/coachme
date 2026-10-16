@@ -1,6 +1,9 @@
 package com.topspinreview.android.ui.result
 
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -124,8 +127,6 @@ import com.topspinreview.android.ui.components.SectionLabel
 import com.topspinreview.android.ui.components.TspCard
 import com.topspinreview.android.ui.components.TspSegmented
 import com.topspinreview.android.ui.components.TspTopBar
-import com.topspinreview.android.ui.theme.Accent
-import com.topspinreview.android.ui.theme.Accent2
 import com.topspinreview.android.ui.theme.Bad
 import com.topspinreview.android.ui.theme.Good
 import com.topspinreview.android.ui.theme.SpaceGrotesk
@@ -214,9 +215,12 @@ private val MAIN_ICONS = listOf(
     Icons.Filled.School,
 )
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ResultScreen(
     stem: String,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onBack: () -> Unit,
     onOpenDiagnostics: (String) -> Unit = {},
     onRetryAnalysis: (String) -> Unit = {},
@@ -236,6 +240,12 @@ fun ResultScreen(
     androidx.compose.runtime.LaunchedEffect(stem) { vm.load(stem) }
 
     Scaffold(
+        modifier = with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                rememberSharedContentState(key = "card_$stem"),
+                animatedVisibilityScope = animatedVisibilityScope,
+            )
+        },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TspTopBar(
@@ -306,9 +316,9 @@ fun ResultScreen(
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Accent,
-                                selectedTextColor = Accent,
-                                indicatorColor = Accent.copy(alpha = 0.16f),
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
                                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             ),
@@ -322,7 +332,7 @@ fun ResultScreen(
         Column(Modifier.fillMaxSize().padding(pad)) {
             if (loading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Accent)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else if (r == null) {
                 MutedNote("Report not found.", Modifier.padding(horizontal = 16.dp))
@@ -408,7 +418,7 @@ private fun Prov(info: Outputs.Info) {
         Text(
             if (open) "hide details" else "details",
             style = MaterialTheme.typography.labelMedium,
-            color = Accent2,
+            color = MaterialTheme.colorScheme.secondary,
             modifier = Modifier
                 .clip(RoundedCornerShape(6.dp))
                 .clickable { open = !open }
@@ -418,7 +428,7 @@ private fun Prov(info: Outputs.Info) {
             Spacer(Modifier.height(4.dp))
             Text(info.method, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(2.dp))
-            Text("${info.detail} · ${info.engine}", style = MaterialTheme.typography.bodySmall, color = Accent2)
+            Text("${info.detail} · ${info.engine}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
         }
     }
 }
@@ -512,7 +522,7 @@ private fun AnalysisTab(r: Report) {
                                     val o = s as? JsonObject
                                     val hand = o?.get("hand")?.toString()?.trim('"') ?: "?"
                                     val t = o?.get("t")?.toString() ?: "?"
-                                    MetaChip("$hand · ${t}s", color = Accent2, border = Accent2.copy(alpha = 0.4f))
+                                    MetaChip("$hand · ${t}s", color = MaterialTheme.colorScheme.secondary, border = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f))
                                 }
                             }
                         }
@@ -611,13 +621,13 @@ private fun Findings(r: Report) {
                 TspCard(modifier = Modifier.fillMaxWidth()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            Modifier.size(30.dp).clip(CircleShape).background(Accent.copy(alpha = 0.14f)),
+                            Modifier.size(30.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(groupIcon(grp), contentDescription = null, tint = Accent, modifier = Modifier.size(17.dp))
+                            Icon(groupIcon(grp), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(17.dp))
                         }
                         Spacer(Modifier.width(10.dp))
-                        SectionLabel(grp, color = Accent)
+                        SectionLabel(grp, color = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.weight(1f))
                         MetaChip("${rows.size}")
                     }
@@ -726,7 +736,7 @@ private fun GroupVisual(
 @Composable
 private fun VisualLabel(title: String, hint: String) {
     Column {
-        Text(title, style = MaterialTheme.typography.labelMedium, color = Accent)
+        Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(2.dp))
         Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -1036,7 +1046,7 @@ private fun Practice(r: Report, done: MutableMap<Int, Boolean>) {
                     Checkbox(
                         checked = checked,
                         onCheckedChange = { done[i] = it },
-                        colors = CheckboxDefaults.colors(checkedColor = Accent),
+                        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary),
                     )
                     Column(Modifier.weight(1f).padding(start = 6.dp)) {
                         Text(
@@ -1047,7 +1057,7 @@ private fun Practice(r: Report, done: MutableMap<Int, Boolean>) {
                         if (det != null) {
                             Spacer(Modifier.height(4.dp))
                             Text("${det.name} · ${det.cue}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("Next: ${det.progression}", style = MaterialTheme.typography.bodySmall, color = Accent2)
+                            Text("Next: ${det.progression}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                         }
                     }
                 }
@@ -1094,10 +1104,10 @@ private fun ExportRow(label: String, subtitle: String, icon: ImageVector, onClic
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            Modifier.size(40.dp).clip(CircleShape).background(Accent.copy(alpha = 0.14f)),
+            Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = Accent, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
@@ -1185,9 +1195,9 @@ private fun AskSheet(
                     onClick = { if (q.isNotBlank() && !asking) { onAsk(q); q = "" } },
                     enabled = q.isNotBlank() && !asking,
                     colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = Accent,
+                        containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = Color.White,
-                        disabledContainerColor = Accent.copy(alpha = 0.3f),
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                         disabledContentColor = Color.White.copy(alpha = 0.6f),
                     ),
                 ) {
@@ -1207,7 +1217,7 @@ private fun QA(question: String, answer: String) {
                 Modifier
                     .widthIn(max = 300.dp)
                     .clip(RoundedCornerShape(16.dp, 16.dp, 4.dp, 16.dp))
-                    .background(Accent.copy(alpha = 0.15f))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
                     .padding(12.dp),
             ) {
                 Text(question, style = MaterialTheme.typography.bodyMedium)
@@ -1290,7 +1300,7 @@ fun DiagnosticsTab(r: Report) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
                         Text(stage, Modifier.width(130.dp), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Box(Modifier.weight(1f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                            Box(Modifier.fillMaxWidth((secs / maxSec).toFloat().coerceIn(0f, 1f)).fillMaxHeight().background(Accent))
+                            Box(Modifier.fillMaxWidth((secs / maxSec).toFloat().coerceIn(0f, 1f)).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
                         }
                         Text("${"%.1f".format(secs)}s", Modifier.width(52.dp).padding(start = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -1365,6 +1375,7 @@ private fun FootworkChart(series: JsonArray) {
             Text("Left–right position", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("range %.2f–%.2f".format(lo, hi), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        val primaryColor = MaterialTheme.colorScheme.primary
         androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(150.dp)) {
             val w = size.width; val h = size.height
             fun xOf(t: Double) = (((t - t0) / (if (t1 - t0 == 0.0) 1.0 else t1 - t0)) * w).toFloat()
@@ -1374,7 +1385,7 @@ private fun FootworkChart(series: JsonArray) {
                 val px = xOf(t); val py = yOf(x)
                 if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
             }
-            drawPath(path, color = Accent, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f))
+            drawPath(path, color = primaryColor, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("0s", style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1398,7 +1409,9 @@ private fun PoseAngleChart(series: JsonArray) {
     }
     if (rows.size < 2) return
     val t0 = rows.first()[0]; val t1 = rows.last()[0]
-    val colors = listOf(Accent, Accent2, Good, Warn)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val colors = listOf(primaryColor, secondaryColor, Good, Warn)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Joint angle (°)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1427,7 +1440,7 @@ private fun PoseAngleChart(series: JsonArray) {
             Text("%.1fs".format(t1), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf("L knee" to Accent, "R knee" to Accent2, "L elbow" to Good, "R elbow" to Warn).forEach { (label, c) ->
+            listOf("L knee" to primaryColor, "R knee" to secondaryColor, "L elbow" to Good, "R elbow" to Warn).forEach { (label, c) ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.foundation.Canvas(Modifier.height(6.dp).width(14.dp)) { drawRect(color = c) }
                     Text(" $label", style = MaterialTheme.typography.bodySmall)
@@ -1454,6 +1467,8 @@ fun EnergyChart(activity: JsonArray, playhead: Double? = null, onSeek: ((Double)
             detectTapGestures { pos -> onSeek((t0 + (pos.x / size.width) * span).coerceIn(t0, t1)) }
         } else base
     }
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
@@ -1479,11 +1494,11 @@ fun EnergyChart(activity: JsonArray, playhead: Double? = null, onSeek: ((Double)
                 if (i == 0) { line.moveTo(px, py); area.moveTo(px, h); area.lineTo(px, py) } else { line.lineTo(px, py); area.lineTo(px, py) }
             }
             area.lineTo(xOf(t1), h); area.close()
-            drawPath(area, color = Accent.copy(alpha = 0.18f))
-            drawPath(line, color = Accent, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+            drawPath(area, color = primaryColor.copy(alpha = 0.18f))
+            drawPath(line, color = primaryColor, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
             playhead?.let { ph ->
                 val px = xOf(ph.coerceIn(t0, t1))
-                drawLine(Accent2, androidx.compose.ui.geometry.Offset(px, 0f), androidx.compose.ui.geometry.Offset(px, h), strokeWidth = 2f)
+                drawLine(secondaryColor, androidx.compose.ui.geometry.Offset(px, 0f), androidx.compose.ui.geometry.Offset(px, h), strokeWidth = 2f)
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -1509,22 +1524,24 @@ fun SegmentsBar(segments: JsonArray, duration: Double, playhead: Double? = null,
             detectTapGestures { pos -> onSeek(((pos.x / size.width) * duration).toDouble().coerceIn(0.0, duration)) }
         } else base
     }
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         androidx.compose.foundation.Canvas(mod) {
             val w = size.width; val h = size.height
-            drawRect(color = Accent.copy(alpha = 0.15f), size = androidx.compose.ui.geometry.Size(w, h))
+            drawRect(color = primaryColor.copy(alpha = 0.15f), size = androidx.compose.ui.geometry.Size(w, h))
             spans.forEach { (s, e) ->
                 val x = (s / duration * w).toFloat()
                 val ww = ((e - s) / duration * w).toFloat()
                 drawRect(
-                    color = Accent2,
+                    color = secondaryColor,
                     topLeft = androidx.compose.ui.geometry.Offset(x, 0f),
                     size = androidx.compose.ui.geometry.Size(ww.coerceAtLeast(2f), h),
                 )
             }
             playhead?.let { ph ->
                 val px = ((ph / duration) * w).toFloat().coerceIn(0f, w)
-                drawLine(Accent2, androidx.compose.ui.geometry.Offset(px, 0f), androidx.compose.ui.geometry.Offset(px, h), strokeWidth = 2f)
+                drawLine(secondaryColor, androidx.compose.ui.geometry.Offset(px, 0f), androidx.compose.ui.geometry.Offset(px, h), strokeWidth = 2f)
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

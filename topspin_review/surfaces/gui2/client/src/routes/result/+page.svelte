@@ -18,6 +18,7 @@
   import { movementSeries, issueText, fmtTime, CONF_TONE, CONF_HELP, POSE_SERIES } from "$lib/format";
 
   const stem = $derived($page.url.searchParams.get("stem") || "");
+  const vtName = $derived('r-' + stem.replace(/[^a-zA-Z0-9]/g, '-'));
   let report = $state(null);
   let loading = $state(true);
   let error = $state("");
@@ -201,7 +202,7 @@
 {:else if !report}
   <p class="mt-6 text-sm text-muted">No report selected.</p>
 {:else}
-  <div class="flex flex-wrap items-baseline gap-3">
+  <div class="flex flex-wrap items-baseline gap-3" style="view-transition-name: {vtName}">
     <h1 class="font-display text-2xl font-bold">{report.stem}</h1>
     <span class="text-sm text-muted">{report.sport} · {report.date}</span>
     {#if report.fallback}

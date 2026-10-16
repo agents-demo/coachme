@@ -1,6 +1,7 @@
 package com.topspinreview.android.ui.settings
 
 import android.content.Context
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,7 +46,6 @@ import com.topspinreview.android.ui.components.PrimaryButton
 import com.topspinreview.android.ui.components.SectionLabel
 import com.topspinreview.android.ui.components.TspCard
 import com.topspinreview.android.ui.components.TspTopBar
-import com.topspinreview.android.ui.theme.Accent
 import com.topspinreview.android.ui.theme.Bad
 import com.topspinreview.android.ui.theme.Good
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -121,6 +122,46 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = hiltViewModel()) 
                         }
                     }
                 }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
+                            Text("Dynamic color", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "Use wallpaper colors (Material You)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = s.dynamicColor,
+                            onCheckedChange = { checked -> vm.update { it.copy(dynamicColor = checked) } },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text("Sport mode", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Orange palette · image-forward session grid",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = s.sportMode,
+                        onCheckedChange = { checked -> vm.update { it.copy(sportMode = checked) } },
+                    )
+                }
             }
 
             TspCard(modifier = Modifier.fillMaxWidth()) {
@@ -168,15 +209,15 @@ private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (selected) Accent.copy(alpha = 0.18f) else Color.Transparent)
-            .border(2.dp, if (selected) Accent else MaterialTheme.colorScheme.outline, RoundedCornerShape(50))
+            .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent)
+            .border(2.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(50))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
             label,
             style = MaterialTheme.typography.labelLarge,
-            color = if (selected) Accent else MaterialTheme.colorScheme.onSurface,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold,
         )
     }

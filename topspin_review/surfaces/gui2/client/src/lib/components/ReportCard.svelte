@@ -5,6 +5,7 @@
   let { report, ondeleted } = $props();
 
   const poster = $derived(thumb(report));
+  const vtName = $derived('r-' + (report.stem || '').replace(/[^a-zA-Z0-9]/g, '-'));
   let busy = $state(false);
 
   async function del(e) {
@@ -23,13 +24,13 @@
   }
 </script>
 
-<div class="group card relative overflow-hidden p-0 transition hover:-translate-y-0.5 hover:border-accent2">
+<div class="group card relative overflow-hidden p-0 transition hover:-translate-y-0.5 hover:border-accent2" style="view-transition-name: {vtName}">
   <button
     onclick={del}
     disabled={busy}
     title="Delete this session"
     aria-label="Delete this session"
-    class="absolute right-2 top-2 z-10 grid h-7 w-7 place-items-center rounded-full bg-ink/70 text-xs text-muted backdrop-blur transition hover:bg-bad/20 hover:text-bad disabled:opacity-50"
+    class="absolute right-2 top-2 z-10 grid h-7 w-7 place-items-center rounded-full bg-ink/70 text-xs text-muted backdrop-blur opacity-0 group-hover:opacity-100 transition-opacity hover:bg-bad/20 hover:text-bad disabled:opacity-30"
   >✕</button>
 
   <a href={`${base}/result?stem=${encodeURIComponent(report.stem)}`} class="block">

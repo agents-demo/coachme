@@ -4,10 +4,12 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { getReports, compare } from "$lib/api";
+  import { sportMode } from "$lib/stores";
   import Readiness from "$lib/components/Readiness.svelte";
   import NewAnalysis from "$lib/components/NewAnalysis.svelte";
   import LiveJob from "$lib/components/LiveJob.svelte";
   import ReportCard from "$lib/components/ReportCard.svelte";
+  import SportCard from "$lib/components/SportCard.svelte";
   import CompareVideos from "$lib/components/CompareVideos.svelte";
 
   let reports = $state([]);
@@ -59,6 +61,7 @@
   const totalIssues = $derived(reports.reduce((a, r) => a + (r.issue_count || 0), 0));
 </script>
 
+<!-- Hero banner -->
 <section class="relative overflow-hidden rounded-3xl border-2 border-line bg-gradient-to-br from-accent/15 via-transparent to-accent2/15 p-6 sm:p-9">
   <div class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-accent/25 blur-3xl"></div>
   <div class="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-accent2/20 blur-3xl"></div>
@@ -103,47 +106,89 @@
   {#if loading}
     <p class="mt-6 text-sm text-muted">Loading…</p>
   {:else if !reports.length}
-    <p class="mt-6 text-sm text-muted">No sessions yet. Use “＋ New analysis” in the menu above.</p>
+    <p class="mt-6 text-sm text-muted">No sessions yet. Use "＋ New" in the header.</p>
   {:else}
-    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {#each reports as r (r.stem)}
-        <ReportCard report={r} ondeleted={load} />
-      {/each}
-    </div>
+    <!-- Sport mode: 2-col portrait grid (full-bleed, image-forward).
+         Default mode: 3-col landscape grid with metadata below the thumbnail. -->
+    {#if $sportMode}
+      <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {#each reports as r (r.stem)}
+          <SportCard report={r} ondeleted={load} />
+        {/each}
+      </div>
+    {:else}
+      <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {#each reports as r (r.stem)}
+          <ReportCard report={r} ondeleted={load} />
+        {/each}
+      </div>
+    {/if}
 
     {#if reports.length >= 2}
-      <h3 class="mt-8 font-display text-lg font-bold">Compare two sessions</h3>
+      <h3 class="mt-10 font-display text-lg font-bold">Compare two sessions</h3>
       <div class="mt-3 flex flex-wrap items-end gap-3 text-sm">
         <label class="text-xs text-muted">Earlier
-          <select bind:value={a} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2">
+          <select bind:value={a} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2 focus:border-accent focus:outline-none transition">
             {#each reports as r (r.stem)}<option value={r.stem}>{r.stem}</option>{/each}
           </select>
         </label>
         <label class="text-xs text-muted">Later
-          <select bind:value={b} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2">
+          <select bind:value={b} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2 focus:border-accent focus:outline-none transition">
             {#each reports as r (r.stem)}<option value={r.stem}>{r.stem}</option>{/each}
           </select>
         </label>
-        <button onclick={runCompare} disabled={a === b} class="rounded-lg bg-accent px-4 py-2 font-semibold text-white disabled:opacity-50">Compare</button>
+        <button onclick={runCompare} disabled={a === b} class="rounded-lg bg-accent px-4 py-2 font-semibold text-white transition hover:opacity-90 disabled:opacity-40">Compare</button>
       </div>
+
       {#if canCompareVideos}
         <div class="mt-4">
           <CompareVideos a={{ stem: a, label: aReport.stem }} b={{ stem: b, label: bReport.stem }} />
         </div>
       {/if}
-      {#if cmpError}<p class="mt-2 text-sm text-bad">{cmpError}</p>{/if}
+
+      {#if cmpError}
+        <p class="mt-2 text-sm text-bad">{cmpError}</p>
+      {/if}
+
       {#if diff}
-        <p class="mt-3 text-sm">{diff.text}</p>
-        {#each [["Improved", diff.improved], ["Still an issue", diff.unchanged], ["New / regressed", diff.regressed]] as [label, items]}
-          {#if items?.length}
-            <p class="mt-1 text-sm"><b>{label}:</b> {items.join(", ")}</p>
+        <div class="mt-4 card p-5 space-y-4">
+          {#if diff.text}
+            <p class="text-sm text-muted">{diff.text}</p>
           {/if}
-        {/each}
-        {#if diff.metric_deltas && Object.keys(diff.metric_deltas).length}
-          <div class="mt-2 text-xs text-muted">
-            {#each Object.entries(diff.metric_deltas) as [k, v]}<span class="mr-3">{k}: {v > 0 ? "+" : ""}{v}</span>{/each}
-          </div>
-        {/if}
+
+          <!-- Issue buckets as colour-coded chip groups -->
+          {#each [
+            { label: "Improved",         items: diff.improved,  chipClass: "border-good/50 bg-good/10 text-good" },
+            { label: "Still an issue",   items: diff.unchanged, chipClass: "border-line bg-surface/80 text-muted" },
+            { label: "New / regressed",  items: diff.regressed, chipClass: "border-bad/50 bg-bad/10 text-bad" },
+          ] as { label, items, chipClass }}
+            {#if items?.length}
+              <div>
+                <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</p>
+                <div class="flex flex-wrap gap-1.5">
+                  {#each items as item}
+                    <span class="rounded-full border px-2.5 py-0.5 text-xs {chipClass}">{item}</span>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          {/each}
+
+          <!-- Metric deltas as stat tiles -->
+          {#if diff.metric_deltas && Object.keys(diff.metric_deltas).length}
+            <div>
+              <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Metric changes</p>
+              <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {#each Object.entries(diff.metric_deltas) as [k, v]}
+                  <div class="rounded-xl border border-line bg-surface/60 px-3 py-2.5 text-center">
+                    <div class="font-display text-xl font-bold {v > 0 ? 'text-good' : v < 0 ? 'text-bad' : 'text-muted'}">{v > 0 ? '+' : ''}{v}</div>
+                    <div class="mt-0.5 text-[10px] uppercase tracking-wide text-muted">{k}</div>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
       {/if}
     {/if}
   {/if}

@@ -3,13 +3,16 @@
 @tailwind utilities;
 
 /* Theme tokens as space-separated RGB (so Tailwind's <alpha-value> works).
-   Dark is the default; [data-theme="light"] overrides. */
+   Dark is the default; [data-theme="light"] overrides.
+   Accent/accent2 are CSS variables so sport mode can swap them without a rebuild. */
 :root {
   --c-bg: 11 11 15;
   --c-panel: 21 21 29;
   --c-line: 38 38 47;
   --c-text: 236 236 242;
   --c-muted: 156 163 175;
+  --c-accent: 79 70 229;     /* indigo-600  #4f46e5 */
+  --c-accent2: 129 140 248;  /* indigo-400  #818cf8 */
   color-scheme: dark;
 }
 
@@ -20,6 +23,12 @@
   --c-text: 18 18 26;
   --c-muted: 100 116 139;
   color-scheme: light;
+}
+
+/* Sport mode: vivid orange replaces indigo across every accent surface. */
+[data-sport] {
+  --c-accent: 249 115 22;   /* orange-500  #f97316 */
+  --c-accent2: 251 146 60;  /* orange-400  #fb923c */
 }
 
 html,
@@ -56,4 +65,20 @@ video {
 ::-webkit-scrollbar-thumb {
   background: rgb(var(--c-line));
   border-radius: 999px;
+}
+
+/* View Transitions — subtle fade+slide so sessions↔result feels continuous. */
+@keyframes vt-fade-in {
+  from { opacity: 0; translate: 0 6px; }
+}
+@keyframes vt-fade-out {
+  to { opacity: 0; translate: 0 -4px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 160ms ease vt-fade-out both;
+  }
+  ::view-transition-new(root) {
+    animation: 240ms ease vt-fade-in both;
+  }
 }

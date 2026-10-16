@@ -10,8 +10,9 @@ module.exports = {
         line: "rgb(var(--c-line) / <alpha-value>)",
         app: "rgb(var(--c-text) / <alpha-value>)",
         muted: "rgb(var(--c-muted) / <alpha-value>)",
-        accent: "#4f46e5",
-        accent2: "#818cf8",
+        // Accent tokens are CSS variables so sport mode can swap them to orange.
+        accent: "rgb(var(--c-accent) / <alpha-value>)",
+        accent2: "rgb(var(--c-accent2) / <alpha-value>)",
         good: "#34d399",
         bad: "#fb7185",
         warn: "#fbbf24",

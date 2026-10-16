@@ -51,15 +51,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.topspinreview.android.ui.theme.Accent
-import com.topspinreview.android.ui.theme.Accent2
 import com.topspinreview.android.ui.theme.Bad
 import com.topspinreview.android.ui.theme.Good
 import com.topspinreview.android.ui.theme.SpaceGrotesk
 import com.topspinreview.android.ui.theme.Warn
 
-/** The brand gradient used for hero text and logos (`from-accent to-accent2`). */
-fun heroBrush(): Brush = Brush.linearGradient(listOf(Accent, Accent2))
+/** The brand gradient used for hero text and logos (`from-primary to-secondary`). Adapts to sport mode. */
+@Composable
+fun heroBrush(): Brush = Brush.linearGradient(
+    listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
+)
 
 /** gui2's control radius: `rounded-lg` (8 dp). */
 private val ControlShape = RoundedCornerShape(8.dp)
@@ -195,7 +196,7 @@ fun TimeChip(text: String, modifier: Modifier = Modifier) {
             text,
             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
             fontSize = 12.sp,
-            color = Accent2,
+            color = MaterialTheme.colorScheme.secondary,
         )
     }
 }
@@ -262,17 +263,21 @@ fun HeroCard(
         Box(
             Modifier.matchParentSize().background(
                 Brush.linearGradient(
-                    listOf(Accent.copy(alpha = 0.20f), Color.Transparent, Accent2.copy(alpha = 0.18f)),
+                    listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
+                        Color.Transparent,
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f),
+                    ),
                 ),
             ),
         )
         Box(
             Modifier.align(Alignment.TopEnd).offset(x = 46.dp, y = (-46).dp).size(190.dp)
-                .background(Brush.radialGradient(listOf(Accent.copy(alpha = 0.38f), Color.Transparent)), CircleShape),
+                .background(Brush.radialGradient(listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.38f), Color.Transparent)), CircleShape),
         )
         Box(
             Modifier.align(Alignment.BottomStart).offset(x = (-40).dp, y = 44.dp).size(190.dp)
-                .background(Brush.radialGradient(listOf(Accent2.copy(alpha = 0.32f), Color.Transparent)), CircleShape),
+                .background(Brush.radialGradient(listOf(MaterialTheme.colorScheme.secondary.copy(alpha = 0.32f), Color.Transparent)), CircleShape),
         )
         Column(Modifier.fillMaxWidth().padding(22.dp)) {
             if (eyebrow != null) {
@@ -365,7 +370,7 @@ fun TspTabBar(
                     )
                     Box(
                         Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(3.dp))
-                            .background(if (selected) Accent else Color.Transparent),
+                            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent),
                     )
                 }
             }
@@ -429,10 +434,10 @@ fun PrimaryButton(
         modifier = modifier.height(48.dp),
         shape = ControlShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Accent,
-            contentColor = Color.White,
-            disabledContainerColor = Accent.copy(alpha = 0.35f),
-            disabledContentColor = Color.White.copy(alpha = 0.7f),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
         ),
     ) {
         if (icon != null) {

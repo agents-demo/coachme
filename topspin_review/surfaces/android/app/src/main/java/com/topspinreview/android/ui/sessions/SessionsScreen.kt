@@ -1,5 +1,8 @@
 package com.topspinreview.android.ui.sessions
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +20,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -53,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -65,6 +73,7 @@ import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
 import com.topspinreview.android.data.Report
 import com.topspinreview.android.data.ReportStore
+import com.topspinreview.android.data.SettingsStore
 import com.topspinreview.android.pipeline.PendingRun
 import com.topspinreview.android.pipeline.Pipeline
 import com.topspinreview.android.ui.components.GhostButton
@@ -75,16 +84,17 @@ import com.topspinreview.android.ui.components.SectionLabel
 import com.topspinreview.android.ui.components.TspCard
 import com.topspinreview.android.ui.components.TspTopBar
 import com.topspinreview.android.ui.components.heroBrush
-import com.topspinreview.android.ui.theme.Accent
-import com.topspinreview.android.ui.theme.Accent2
 import com.topspinreview.android.ui.theme.Bad
 import com.topspinreview.android.ui.theme.Good
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -96,6 +106,7 @@ import javax.inject.Inject
 class SessionsViewModel @Inject constructor(
     private val store: ReportStore,
     private val pipeline: Pipeline,
+    settingsStore: SettingsStore,
 ) : ViewModel() {
     private var all: List<Report> = emptyList()
     private val pending = linkedMapOf<String, Report>()
@@ -104,6 +115,10 @@ class SessionsViewModel @Inject constructor(
 
     private val _interrupted = MutableStateFlow<PendingRun?>(null)
     val interrupted: StateFlow<PendingRun?> = _interrupted.asStateFlow()
+
+    val sportMode: StateFlow<Boolean> = settingsStore.flow
+        .map { it.sportMode }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     init { refresh() }
 
@@ -160,9 +175,11 @@ private fun dateBucket(date: String): String {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SessionsScreen(
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onOpen: (String) -> Unit,
     onNew: () -> Unit,
     onSettings: () -> Unit,
@@ -172,6 +189,7 @@ fun SessionsScreen(
 ) {
     val reports by vm.reports.collectAsStateWithLifecycle()
     val interrupted by vm.interrupted.collectAsStateWithLifecycle()
+    val sportMode by vm.sportMode.collectAsStateWithLifecycle()
     val totalPractice = reports.sumOf { it.drills.size }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -201,64 +219,107 @@ fun SessionsScreen(
         },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNew, containerColor = Accent, contentColor = Color.White) {
+            FloatingActionButton(onClick = onNew, containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) {
                 Icon(Icons.Filled.Add, contentDescription = "New analysis")
             }
         },
     ) { pad ->
-        LazyColumn(
-            Modifier.fillMaxSize().padding(pad),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            item(key = "header") {
-                SessionsHeader(sessionCount = reports.size, practiceCount = totalPractice)
-            }
-
-            interrupted?.let { run ->
-                item(key = "interrupted") {
-                    InterruptedCard(
-                        run = run,
-                        onResume = { onResume(run.stem) },
-                        onDiscard = { vm.discardInterrupted() },
-                    )
+        if (sportMode) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize().padding(pad),
+                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 96.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }, key = "header") {
+                    SessionsHeader(sessionCount = reports.size, practiceCount = totalPractice)
                 }
-            }
-
-            if (reports.isEmpty()) {
-                item(key = "empty") { EmptySessions(onNew) }
-            } else {
-                val grouped = reports.groupBy { dateBucket(it.date) }
-                DATE_GROUPS.forEach { group ->
-                    val rows = grouped[group] ?: return@forEach
-                    item(key = "header_$group") { SectionLabel(group) }
-                    items(rows, key = { it.stem.ifEmpty { it.source } }) { r ->
-                    val dismissState = rememberSwipeToDismissBoxState(
-                        confirmValueChange = { value ->
-                            if (value == SwipeToDismissBoxValue.EndToStart) {
-                                vm.stageDelete(r)
-                                scope.launch {
-                                    val res = snackbar.showSnackbar(
-                                        message = "Session removed",
-                                        actionLabel = "Undo",
-                                        duration = SnackbarDuration.Short,
-                                    )
-                                    if (res == SnackbarResult.ActionPerformed) vm.undo(r)
-                                }
-                                true
-                            } else {
-                                false
-                            }
-                        },
-                    )
-                    SwipeToDismissBox(
-                        state = dismissState,
-                        enableDismissFromStartToEnd = false,
-                        backgroundContent = { SwipeDeleteBackground() },
-                    ) {
-                        SessionCard(report = r, onOpen = { onOpen(r.stem) })
+                interrupted?.let { run ->
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "interrupted") {
+                        InterruptedCard(
+                            run = run,
+                            onResume = { onResume(run.stem) },
+                            onDiscard = { vm.discardInterrupted() },
+                        )
                     }
                 }
+                if (reports.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "empty") { EmptySessions(onNew) }
+                } else {
+                    val grouped = reports.groupBy { dateBucket(it.date) }
+                    DATE_GROUPS.forEach { group ->
+                        val rows = grouped[group] ?: return@forEach
+                        item(span = { GridItemSpan(maxLineSpan) }, key = "header_$group") { SectionLabel(group) }
+                        gridItems(rows, key = { it.stem.ifEmpty { it.source } }) { r ->
+                            SessionsGridCard(
+                                report = r,
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                onOpen = { onOpen(r.stem) },
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            LazyColumn(
+                Modifier.fillMaxSize().padding(pad),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                item(key = "header") {
+                    SessionsHeader(sessionCount = reports.size, practiceCount = totalPractice)
+                }
+                interrupted?.let { run ->
+                    item(key = "interrupted") {
+                        InterruptedCard(
+                            run = run,
+                            onResume = { onResume(run.stem) },
+                            onDiscard = { vm.discardInterrupted() },
+                        )
+                    }
+                }
+                if (reports.isEmpty()) {
+                    item(key = "empty") { EmptySessions(onNew) }
+                } else {
+                    val grouped = reports.groupBy { dateBucket(it.date) }
+                    DATE_GROUPS.forEach { group ->
+                        val rows = grouped[group] ?: return@forEach
+                        item(key = "header_$group") { SectionLabel(group) }
+                        items(rows, key = { it.stem.ifEmpty { it.source } }) { r ->
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.EndToStart) {
+                                        vm.stageDelete(r)
+                                        scope.launch {
+                                            val res = snackbar.showSnackbar(
+                                                message = "Session removed",
+                                                actionLabel = "Undo",
+                                                duration = SnackbarDuration.Short,
+                                            )
+                                            if (res == SnackbarResult.ActionPerformed) vm.undo(r)
+                                        }
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                            )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                enableDismissFromStartToEnd = false,
+                                backgroundContent = { SwipeDeleteBackground() },
+                            ) {
+                                SessionCard(
+                                    report = r,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    onOpen = { onOpen(r.stem) },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -324,10 +385,10 @@ private fun InterruptedCard(run: PendingRun, onResume: () -> Unit, onDiscard: ()
     TspCard(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Accent.copy(alpha = 0.16f)),
+                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.Restore, contentDescription = null, tint = Accent, modifier = Modifier.size(22.dp))
+                Icon(Icons.Filled.Restore, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
@@ -391,11 +452,24 @@ private fun SwipeDeleteBackground() {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun SessionCard(report: Report, onOpen: () -> Unit) {
+private fun SessionCard(
+    report: Report,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    onOpen: () -> Unit,
+) {
     val poster = thumbOf(report)
+    with(sharedTransitionScope) {
     TspCard(
-        modifier = Modifier.fillMaxWidth().clickable { onOpen() },
+        modifier = Modifier
+            .sharedBounds(
+                rememberSharedContentState(key = "card_${report.stem}"),
+                animatedVisibilityScope = animatedVisibilityScope,
+            )
+            .fillMaxWidth()
+            .clickable { onOpen() },
         padding = PaddingValues(10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -404,7 +478,7 @@ private fun SessionCard(report: Report, onOpen: () -> Unit) {
                     .width(116.dp)
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Brush.linearGradient(listOf(Accent.copy(alpha = 0.25f), Accent2.copy(alpha = 0.25f)))),
+                    .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f)))),
                 contentAlignment = Alignment.Center,
             ) {
                 if (poster != null) {
@@ -472,6 +546,94 @@ private fun SessionCard(report: Report, onOpen: () -> Unit) {
                         )
                     }
                     if (report.artifacts["pose"] != null || report.artifacts["pose_hero"] != null) MetaChip("pose")
+                }
+            }
+        }
+    }
+    } // end with(sharedTransitionScope)
+}
+
+/**
+ * Sport-mode grid card: full-bleed image with a gradient scrim overlay,
+ * session title + sport/date text at the bottom, and a practice-count badge.
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun SessionsGridCard(
+    report: Report,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    onOpen: () -> Unit,
+) {
+    val poster = thumbOf(report)
+    with(sharedTransitionScope) {
+        Box(
+            modifier = Modifier
+                .sharedBounds(
+                    rememberSharedContentState(key = "card_${report.stem}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                )
+                .fillMaxWidth()
+                .aspectRatio(0.75f)
+                .clip(MaterialTheme.shapes.large)
+                .background(
+                    Brush.linearGradient(
+                        listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f))
+                    )
+                )
+                .clickable { onOpen() },
+        ) {
+            if (poster != null) {
+                AsyncImage(
+                    model = File(poster),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Text("🏓", fontSize = 40.sp, modifier = Modifier.align(Alignment.Center))
+            }
+            // Bottom gradient scrim with session info overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000))))
+                    .padding(8.dp),
+            ) {
+                Column {
+                    Text(
+                        report.stem.ifBlank { report.source },
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        "${report.sport.ifBlank { "session" }} · ${report.date.ifBlank { "undated" }}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.75f),
+                    )
+                }
+            }
+            // Practice count badge (top-right)
+            val practice = report.drills.size
+            if (practice > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Good)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        "$practice",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
         }

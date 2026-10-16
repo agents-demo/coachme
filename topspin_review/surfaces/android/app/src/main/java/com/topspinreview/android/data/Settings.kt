@@ -1,5 +1,7 @@
 package com.topspinreview.android.data
 
+import android.content.Context
+import android.os.Build
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -8,7 +10,6 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import android.content.Context
 import com.topspinreview.android.BuildConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,6 +28,8 @@ data class AppSettings(
     val hand: String = "right",
     val goal: String = "improve",
     val theme: String = "system",
+    val dynamicColor: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+    val sportMode: Boolean = false,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("topspin")
@@ -44,6 +47,8 @@ class SettingsStore(private val context: Context) {
         val hand = stringPreferencesKey("hand")
         val goal = stringPreferencesKey("goal")
         val theme = stringPreferencesKey("theme")
+        val dynamicColor = booleanPreferencesKey("dynamic_color")
+        val sportMode = booleanPreferencesKey("sport_mode")
     }
 
     val flow: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -59,6 +64,8 @@ class SettingsStore(private val context: Context) {
             hand = p[K.hand] ?: "right",
             goal = p[K.goal] ?: "improve",
             theme = p[K.theme] ?: "system",
+            dynamicColor = p[K.dynamicColor] ?: (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S),
+            sportMode = p[K.sportMode] ?: false,
         )
     }
 
@@ -75,6 +82,8 @@ class SettingsStore(private val context: Context) {
             p[K.hand] = s.hand
             p[K.goal] = s.goal
             p[K.theme] = s.theme
+            p[K.dynamicColor] = s.dynamicColor
+            p[K.sportMode] = s.sportMode
         }
     }
 }
