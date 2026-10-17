@@ -20,6 +20,12 @@ class AnnotationsRequest(BaseModel):
     annotations: list[dict] = []
 
 
+class FeedbackRequest(BaseModel):
+    item: str = "session"  # issue text, or "session" for a session-level vote
+    vote: str  # "up" or "down"
+    note: str = ""
+
+
 @router.get("/reports")
 def reports() -> dict:
     return {"reports": read.list_reports()}
@@ -39,6 +45,22 @@ def delete_report(stem: str) -> dict:
     if read.get_report(stem) is None:
         raise HTTPException(status_code=404, detail="unknown report")
     return {"deleted": store.delete_report(stem)}
+
+
+@router.post("/reports/{stem}/feedback")
+def add_feedback(stem: str, payload: FeedbackRequest) -> dict:
+    """Record a 👍/👎 vote on a session or a specific issue.
+
+    Votes are appended (never overwritten) so the full history is kept for
+    prompt-improvement work.  ``item`` is the issue text or ``"session"`` for a
+    session-level vote.
+    """
+    if payload.vote not in ("up", "down"):
+        raise HTTPException(status_code=400, detail="vote must be 'up' or 'down'")
+    if read.get_report(stem) is None:
+        raise HTTPException(status_code=404, detail="unknown report")
+    result = store.append_feedback(stem, payload.item, payload.vote, payload.note)
+    return {"feedback": result}
 
 
 @router.post("/reports/{stem}/annotations")

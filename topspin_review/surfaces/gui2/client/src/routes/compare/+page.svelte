@@ -2,6 +2,8 @@
   import { tr } from "$lib/appearance";
   import { onMount } from "svelte";
   import { base } from "$app/paths";
+  import { page } from "$app/stores";
+  import { replaceState } from "$app/navigation";
   import { getReports, compare } from "$lib/api";
   import CompareVideos from "$lib/components/CompareVideos.svelte";
 
@@ -18,6 +20,23 @@
     Boolean(a && b && a !== b && aReport?.has_source && bReport?.has_source && !aReport?.is_photo && !bReport?.is_photo),
   );
 
+  function sessionLabel(r) {
+    const parts = [r.stem];
+    if (r.sport) parts.push(r.sport);
+    if (r.date) parts.push(r.date);
+    return parts.join(" · ");
+  }
+
+  function syncUrl() {
+    const url = new URL($page.url);
+    if (a) url.searchParams.set("a", a); else url.searchParams.delete("a");
+    if (b) url.searchParams.set("b", b); else url.searchParams.delete("b");
+    replaceState(url, {});
+  }
+
+  function setA(v) { a = v; diff = null; cmpError = ""; syncUrl(); }
+  function setB(v) { b = v; diff = null; cmpError = ""; syncUrl(); }
+
   async function runCompare() {
     cmpError = "";
     diff = null;
@@ -31,9 +50,12 @@
   onMount(async () => {
     try {
       reports = (await getReports()).reports;
+      // Prefer URL params, then default to two most-recent sessions.
+      const paramA = $page.url.searchParams.get("a");
+      const paramB = $page.url.searchParams.get("b");
       if (reports.length >= 2) {
-        b = reports[0].stem;
-        a = reports[reports.length - 1].stem;
+        a = (paramA && reports.find((r) => r.stem === paramA)) ? paramA : reports[1].stem;
+        b = (paramB && reports.find((r) => r.stem === paramB)) ? paramB : reports[0].stem;
       }
     } finally {
       loading = false;
@@ -61,13 +83,13 @@
 {:else}
   <div class="mt-5 flex flex-wrap items-end gap-3 text-sm">
     <label class="text-xs text-muted">{tr("Earlier")}
-      <select bind:value={a} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2 transition focus:border-accent focus:outline-none">
-        {#each reports as r (r.stem)}<option value={r.stem}>{r.stem}</option>{/each}
+      <select value={a} onchange={(e) => setA(e.currentTarget.value)} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2 transition focus:border-accent focus:outline-none">
+        {#each reports as r (r.stem)}<option value={r.stem}>{sessionLabel(r)}</option>{/each}
       </select>
     </label>
     <label class="text-xs text-muted">{tr("Later")}
-      <select bind:value={b} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2 transition focus:border-accent focus:outline-none">
-        {#each reports as r (r.stem)}<option value={r.stem}>{r.stem}</option>{/each}
+      <select value={b} onchange={(e) => setB(e.currentTarget.value)} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2 transition focus:border-accent focus:outline-none">
+        {#each reports as r (r.stem)}<option value={r.stem}>{sessionLabel(r)}</option>{/each}
       </select>
     </label>
     <button

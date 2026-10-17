@@ -1,7 +1,7 @@
 <script>
   import { tr } from "$lib/appearance";
   import { page } from "$app/stores";
-  import { getReport, ask, artifact, clip, exportUrl, reelUrl, cardUrl } from "$lib/api";
+  import { getReport, ask, artifact, clip, exportUrl, reelUrl, cardUrl, feedback } from "$lib/api";
   import VideoReview from "$lib/components/VideoReview.svelte";
   import Technical from "$lib/components/Technical.svelte";
   import ReadAloud from "$lib/components/ReadAloud.svelte";
@@ -100,6 +100,24 @@
     } catch {}
   }
   const doneCount = $derived(Object.values(doneDrills).filter(Boolean).length);
+  const drillTotal = $derived(report?.drills?.length || 0);
+
+  // Feedback votes: keyed by issue text or "session". Last vote per item wins.
+  let votes = $state({});
+  function latestVotes(fb) {
+    const v = {};
+    for (const f of fb || []) v[f.item] = f.vote;
+    return v;
+  }
+  async function doVote(item, vote) {
+    // Toggle: clicking the active vote removes it (sends the opposite won't work server-side,
+    // so just optimistically clear; if same vote re-sent it will be recorded again which is fine).
+    const prev = votes[item];
+    votes = { ...votes, [item]: prev === vote ? null : vote };
+    if (prev !== vote) {
+      try { await feedback(report.stem, item, vote); } catch {}
+    }
+  }
 
   function splitIssue(text) {
     const s = String(text || "");
@@ -121,6 +139,7 @@
       report = await getReport(stem);
       tab = "Video";
       doneDrills = loadDrills(report?.stem);
+      votes = latestVotes(report?.feedback);
     } catch (e) {
       error = String(e?.message || e);
       report = null;
@@ -445,12 +464,12 @@
         {#each ["Advice", "Practice", "Export", "Ask"] as v}
           <button
             onclick={() => (coachView = v)}
-            class="whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
+            class="inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
             class:border-accent={coachView === v}
             class:text-app={coachView === v}
             class:border-transparent={coachView !== v}
             class:text-muted={coachView !== v}
-          >{tr(v)}</button>
+          >{tr(v)}{#if v === "Practice" && drillTotal > 0}<span class="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none {doneCount === drillTotal ? 'bg-good/20 text-good' : 'bg-accent/15 text-accent'}">{doneCount}/{drillTotal}</span>{/if}</button>
         {/each}
       </div>
       {#if coachView === "Advice"}
@@ -481,9 +500,14 @@
             <ul class="mt-2 space-y-1.5 text-sm">
               {#each issues as issue}
                 {@const parts = splitIssue(issueText(issue))}
+                {@const ikey = issueText(issue)}
                 <li class="flex items-start gap-2">
                   <span class="mt-0.5 text-warn">•</span>
-                  <span class="font-semibold">{parts[0]}</span>
+                  <span class="flex-1 font-semibold">{parts[0]}</span>
+                  <span class="mt-0.5 flex shrink-0 items-center gap-0.5">
+                    <button onclick={() => doVote(ikey, "up")} title={tr("Correct")} class="grid h-5 w-5 place-items-center rounded transition {votes[ikey] === 'up' ? 'text-good' : 'text-muted/50 hover:text-good'}">👍</button>
+                    <button onclick={() => doVote(ikey, "down")} title={tr("Wrong or misleading")} class="grid h-5 w-5 place-items-center rounded transition {votes[ikey] === 'down' ? 'text-bad' : 'text-muted/50 hover:text-bad'}">👎</button>
+                  </span>
                 </li>
               {/each}
             </ul>
@@ -513,6 +537,11 @@
           {/if}
         </div>
       {/if}
+      <div class="mt-6 flex items-center gap-3 border-t-2 border-line pt-4 text-xs text-muted">
+        <span>{tr("Was this report helpful?")}</span>
+        <button onclick={() => doVote("session", "up")} title={tr("Yes, helpful")} class="flex items-center gap-1 rounded-full border px-2.5 py-1 transition {votes['session'] === 'up' ? 'border-good/60 bg-good/10 text-good' : 'border-line hover:border-good/60 hover:text-good'}">👍 {tr("Yes")}</button>
+        <button onclick={() => doVote("session", "down")} title={tr("No, needs improvement")} class="flex items-center gap-1 rounded-full border px-2.5 py-1 transition {votes['session'] === 'down' ? 'border-bad/60 bg-bad/10 text-bad' : 'border-line hover:border-bad/60 hover:text-bad'}">👎 {tr("No")}</button>
+      </div>
       {:else if coachView === "Export"}
       <h3 class="font-display font-bold">{tr("Export")}</h3>
       <p class="mt-1 text-sm text-muted">{tr("Save or share this report.")}</p>

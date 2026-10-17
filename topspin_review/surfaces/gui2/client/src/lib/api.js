@@ -21,6 +21,12 @@ export const saveAnnotations = (stem, annotations) =>
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ annotations }),
   });
+export const feedback = (stem, item, vote, note = "") =>
+  api(`/reports/${encodeURIComponent(stem)}/feedback`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ item, vote, note }),
+  });
 export const compare = (a, b) => api(`/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
 
 export const analyzeAsync = (body) =>

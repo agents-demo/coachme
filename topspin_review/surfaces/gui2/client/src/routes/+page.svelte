@@ -35,6 +35,15 @@
   }
 
   const totalIssues = $derived(reports.reduce((a, r) => a + (r.issue_count || 0), 0));
+
+  let search = $state("");
+  const filtered = $derived(
+    search.trim()
+      ? reports.filter((r) =>
+          [r.stem, r.sport, r.date].join(" ").toLowerCase().includes(search.trim().toLowerCase()),
+        )
+      : reports,
+  );
 </script>
 
 <!-- Hero banner -->
@@ -64,6 +73,20 @@
   </div>
 {/if}
 
+{#if reports.length > 3 && !showNew}
+  <div class="relative mt-5">
+    <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35"/></svg>
+    <input
+      bind:value={search}
+      placeholder={tr("Search sessions…")}
+      class="w-full rounded-xl border-2 border-line bg-surface py-2 pl-9 pr-4 text-sm transition focus:border-accent focus:outline-none"
+    />
+    {#if search}
+      <button onclick={() => (search = "")} aria-label="Clear search" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted transition hover:text-app">✕</button>
+    {/if}
+  </div>
+{/if}
+
 <h2 class="mt-5 font-display text-lg font-bold">{showNew ? tr("New analysis") : tr("Sessions")}</h2>
 
 {#if showNew}
@@ -79,18 +102,20 @@
     <p class="mt-6 text-sm text-muted">{tr("Loading…")}</p>
   {:else if !reports.length}
     <p class="mt-6 text-sm text-muted">{tr("No sessions yet. Start a new analysis above.")}</p>
+  {:else if !filtered.length}
+    <p class="mt-6 text-sm text-muted">{tr("No sessions match")} "<span class="text-app">{search}</span>".</p>
   {:else}
     <!-- Sport mode: 2-col portrait grid (full-bleed, image-forward).
          Default mode: 3-col landscape grid with metadata below the thumbnail. -->
     {#if $sportMode}
       <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {#each reports as r (r.stem)}
+        {#each filtered as r (r.stem)}
           <SportCard report={r} ondeleted={load} />
         {/each}
       </div>
     {:else}
       <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {#each reports as r (r.stem)}
+        {#each filtered as r (r.stem)}
           <ReportCard report={r} ondeleted={load} />
         {/each}
       </div>

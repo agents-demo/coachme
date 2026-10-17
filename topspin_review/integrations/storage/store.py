@@ -131,6 +131,26 @@ def set_annotations(stem: str, items: list[dict]) -> list[dict] | None:
     return items
 
 
+def append_feedback(stem: str, item: str, vote: str, note: str = "") -> list[dict] | None:
+    """Append a thumbs-up/down vote to a stored report's feedback list.
+
+    Each call adds one entry; votes are never overwritten so the full history
+    is preserved for prompt improvement work.
+    """
+    import time
+
+    report = find_report(stem)
+    if not report:
+        return None
+    path = report_path(report.get("source") or stem)
+    updated = dict(report)
+    existing: list[dict] = list(updated.get("feedback") or [])
+    existing.append({"item": item, "vote": vote, "note": note, "ts": int(time.time())})
+    updated["feedback"] = existing
+    _write(path, updated)
+    return existing
+
+
 def delete_report(video_or_stem: str) -> bool:
     """Delete one session's report and its generated artifacts/exports/cache."""
     stem = Path(video_or_stem).stem
