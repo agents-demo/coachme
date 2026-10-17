@@ -156,6 +156,26 @@ None of these are possible in a request/response LLM call from application code.
 
 ---
 
+### WOW 4: The agent changes what it produces entirely — because something is wrong
+
+The three scenarios above are about coaching quality. This one is different. It is about the agent recognising that the situation does not call for a coaching report at all.
+
+A hardcoded pipeline has one output mode: coaching findings. Every session, regardless of what the data shows, produces a coaching report. The pipeline was programmed to produce a coaching report. It produces one.
+
+An agent can look at the data and decide the data is not saying something about technique — it is saying something about the player's physical state.
+
+> "Comparing this session to the previous four: average stroke cycle time has increased by 18%. Step frequency to the ball has dropped 22%. Reaction window before contact has widened by 0.3 seconds. These are not technique regressions — the mechanics on each stroke are consistent. This pattern across the session looks like accumulated fatigue or the early signal of a physical strain. I am not going to produce coaching recommendations. I am flagging this session for coach review and recommending the player rest before the next training block."
+
+Nobody programmed "detect fatigue." Nobody programmed "do not produce coaching output if the player seems injured." Nobody programmed the concept of switching output mode based on what the data shows.
+
+The agent noticed that three independent metrics degraded in a correlated pattern across the session — not on a single stroke, but as a trend — and changed what it produced accordingly.
+
+**This is the scenario that answers a question nobody in the room will have thought to ask:** "What does the AI do when the right answer is not coaching?" In a pipeline, the answer is: it produces coaching anyway, because that is all it knows how to do. In an agent, the answer is: it decides.
+
+This is also where the product touches Huawei's broader health ecosystem. A system that can detect physical fatigue or early overtraining signals from motion data — not from a wearable, but from a camera — is a health monitoring capability, not just a coaching capability. That is a product category expansion that costs nothing to add if the architecture already supports it.
+
+---
+
 ## What is not a strong agentic argument
 
 Being honest about what does NOT require an agentic platform:
