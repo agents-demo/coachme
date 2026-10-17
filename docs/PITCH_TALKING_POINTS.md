@@ -343,3 +343,50 @@ The conversation you do not want: "Interesting technology but unclear who pays f
 - Not knowing who the specific first target paying customer is
 - Asking for too much at once without prioritising
 - Showing every feature in the demo — signals the product has no focus
+
+---
+
+## The real moat is data, not technology
+
+The technology — pose estimation, LLM calls, ball tracking — is copyable. A well-funded competitor replicates it in 6 months. Do not lead with technology as the competitive advantage.
+
+The real moat: a coaching knowledge base validated against real sessions, where coaches correct the AI's findings, add edge cases, and confirm which drills produce improvement. That database compounds over time. After 10,000 sessions, the finding accuracy and drill relevance are things a new entrant cannot replicate quickly regardless of engineering budget.
+
+When asked about defensibility, the strongest answer is not "our algorithm is good." It is: "Every session trains the next one. The longer we run, the harder we are to replace — not because the technology is patented, but because the validated coaching knowledge is ours."
+
+---
+
+## The Kirin NPU latency argument — stronger than privacy
+
+The on-device inference argument is usually framed as privacy. That is true but it is the weaker version of the argument.
+
+The stronger version: **cloud round-trips make real-time coaching architecturally impossible. On-device inference is what makes it feasible.**
+
+A cloud call for inference takes 1–3 seconds. Between points in a match, the total window is 10–15 seconds. 3 seconds out, 3 seconds back, plus processing — the window is gone before any coaching reaches the player. Local Kirin NPU inference at ~100ms is invisible. It is the difference between live coaching being theoretically possible and actually working.
+
+Say it as: "On-device inference is not a cost or privacy feature — it is the enabler for the live coaching product. Without Kirin, the roadmap stops at session review. With Kirin, it becomes coaching between every point."
+
+---
+
+## The AI makes the coach smarter — never positions itself as replacing them
+
+A coach with 20 students cannot watch 20 students' training sessions every week. They rely on what they see in the 60 minutes together. The AI watches the sessions the coach cannot attend and surfaces the specific patterns the coach would have spotted in 10 sessions — before the first session.
+
+This is the framing that gets coach adoption: **the AI is the coach's analytical instrument, not their replacement.** It watches more video, catches more patterns, and presents findings for the coach to confirm or override. The coach gets credit for the improvement. The AI made them faster and sharper.
+
+Every piece of product language directed at coaches should be: "Your AI assistant" — not "AI coaching." The distinction matters to a coach's professional identity and is the difference between adoption and rejection.
+
+---
+
+## Your demo limitations are your product roadmap
+
+Every honest limitation of the demo maps directly to a concrete product milestone:
+
+- "Only works on clean video, single player" → Phase 1: agent handles real-world video variability
+- "Fixed stroke type assumed" → Phase 1: agent detects and adapts to stroke switches
+- "No session-to-session comparison" → Phase 2: longitudinal tracking and progress trends
+- "No live coaching" → Phase 3: continuous agent on Kirin NPU
+
+Do not hide limitations. State each one and immediately follow with the specific milestone that closes it. This tells a credibility story: you know exactly what is missing, you have a concrete plan for each gap, and the Phase 1 ask is short enough to demonstrate progress fast.
+
+The implicit message: the demo is not the product. The demo proves the concept. The roadmap is the path from concept to product — and it is specific, not aspirational.
