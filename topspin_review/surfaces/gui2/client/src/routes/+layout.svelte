@@ -10,7 +10,7 @@
   let { children } = $props();
   const tabs = [
     { href: `${base}/`, label: "Sessions" },
-    { href: `${base}/compare`, label: "Compare" },
+    { href: `${base}/progress`, label: "Progress" },
   ];
   const here = (href) =>
     href === `${base}/` ? $page.url.pathname === `${base}/` : $page.url.pathname.startsWith(href);

@@ -1,5 +1,11 @@
 package com.topspinreview.android.ui.sessions
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color as AndroidColor
+
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -30,7 +36,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Compare
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Restore
@@ -42,6 +48,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -55,6 +62,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,8 +98,11 @@ import com.topspinreview.android.ui.i18n.tr
 import com.topspinreview.android.ui.theme.Bad
 import com.topspinreview.android.ui.theme.Good
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -112,6 +123,7 @@ class SessionsViewModel @Inject constructor(
     private val store: ReportStore,
     private val pipeline: Pipeline,
     settingsStore: SettingsStore,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
     private var all: List<Report> = emptyList()
     private val pending = linkedMapOf<String, Report>()
@@ -124,6 +136,9 @@ class SessionsViewModel @Inject constructor(
     val sportMode: StateFlow<Boolean> = settingsStore.flow
         .map { it.appStyle == "sport" }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private val _thumbs = MutableStateFlow<Map<String, String>>(emptyMap())
+    val thumbs: StateFlow<Map<String, String>> = _thumbs.asStateFlow()
 
     val trends: StateFlow<TrendsData> = _reports
         .map { reps ->
@@ -151,6 +166,55 @@ class SessionsViewModel @Inject constructor(
     fun refresh() = viewModelScope.launch {
         all = store.list(); pending.clear(); publish()
         _interrupted.value = withContext(Dispatchers.IO) { pipeline.pendingRun() }
+        withContext(Dispatchers.IO) { generateThumbs(all) }
+    }
+
+    private fun generateThumbs(reports: List<Report>) {
+        val map = _thumbs.value.toMutableMap()
+        val dir = File(context.cacheDir, "thumbs_v2").apply { mkdirs() }
+        for (r in reports) {
+            val hero = r.artifacts["pose_hero"] ?: r.artifacts["pose"] ?: continue
+            val src = File(hero)
+            if (!src.exists()) continue
+            val out = File(dir, "${r.stem.ifBlank { src.nameWithoutExtension }}.jpg")
+            if (out.exists() && out.lastModified() >= src.lastModified()) {
+                map[r.stem] = out.absolutePath
+                continue
+            }
+            runCatching { renderCenteredThumb(src, r, out) }
+                .onSuccess { if (out.exists()) map[r.stem] = out.absolutePath }
+        }
+        _thumbs.value = map
+    }
+
+    private fun renderCenteredThumb(src: File, r: Report, out: File) {
+        val opts = BitmapFactory.Options().apply { inSampleSize = 2 }
+        val bmp = BitmapFactory.decodeFile(src.absolutePath, opts) ?: return
+        val w = bmp.width; val h = bmp.height
+        val pose = r.metrics["pose"] as? JsonArray
+        val boxes = pose?.mapNotNull { frame ->
+            val lm = (frame as? JsonObject)?.get("lm") as? JsonArray ?: return@mapNotNull null
+            val xs = ArrayList<Double>(); val ys = ArrayList<Double>()
+            lm.forEach { point ->
+                val arr = point as? JsonArray ?: return@forEach
+                val x = arr.getOrNull(0)?.toString()?.toDoubleOrNull() ?: return@forEach
+                val y = arr.getOrNull(1)?.toString()?.toDoubleOrNull() ?: return@forEach
+                val v = arr.getOrNull(3)?.toString()?.toDoubleOrNull()
+                    ?: arr.getOrNull(2)?.toString()?.toDoubleOrNull() ?: 1.0
+                if (v >= 0.4) { xs.add(x); ys.add(y) }
+            }
+            if (xs.isEmpty()) null else doubleArrayOf(xs.min(), ys.min(), xs.max(), ys.max())
+        } ?: emptyList()
+        val box = boxes.getOrNull(boxes.size / 2)
+        val cx = box?.let { (it[0] + it[2]) / 2 } ?: 0.5
+        val cy = box?.let { (it[1] + it[3]) / 2 } ?: 0.5
+        val personH = box?.let { maxOf(0.2, it[3] - it[1]) } ?: 0.6
+        val side = minOf(w, h, maxOf((h * 0.65).toInt(), (personH * h * 2.0).toInt())).coerceAtLeast(64)
+        val left = (cx * w - side / 2.0).toInt().coerceIn(0, w - side)
+        val top = (cy * h - side / 2.0).toInt().coerceIn(0, h - side)
+        val outBmp = Bitmap.createBitmap(bmp, left, top, side, side)
+        out.outputStream().use { outBmp.compress(Bitmap.CompressFormat.JPEG, 86, it) }
+        outBmp.recycle(); bmp.recycle()
     }
 
     fun discardInterrupted() = viewModelScope.launch {
@@ -180,8 +244,30 @@ class SessionsViewModel @Inject constructor(
 
 /** Best available thumbnail for a session (pose → motion → frames → source photo). */
 private fun thumbOf(r: Report): String? =
-    r.artifacts["pose"] ?: r.artifacts["motion"] ?: r.artifacts["frames"]
+    r.artifacts["pose_hero"] ?: r.artifacts["pose"] ?: r.artifacts["motion"] ?: r.artifacts["frames"]
         ?: if (isPhoto(r)) r.source else null
+
+private fun subjectAlignment(r: Report): Alignment {
+    val poseCenters = (r.metrics["pose"] as? JsonArray)?.mapNotNull { frame ->
+        val lm = (frame as? JsonObject)?.get("lm") as? JsonArray ?: return@mapNotNull null
+        val xs = lm.mapNotNull { point ->
+            val arr = point as? JsonArray ?: return@mapNotNull null
+            val x = arr.getOrNull(0)?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
+            val vis = arr.getOrNull(3)?.toString()?.toDoubleOrNull() ?: arr.getOrNull(2)?.toString()?.toDoubleOrNull() ?: 1.0
+            if (vis >= 0.5) x else null
+        }
+        if (xs.isEmpty()) null else (xs.min() + xs.max()) / 2.0
+    } ?: emptyList()
+    val trackCx = (r.metrics["track"] as? JsonArray)?.mapNotNull {
+        (it as? JsonObject)?.get("cx")?.toString()?.toDoubleOrNull()
+    } ?: emptyList()
+    val cx = (if (poseCenters.isNotEmpty()) poseCenters.average() else trackCx.average()).coerceIn(0.0, 1.0)
+    return when {
+        cx < 0.42 -> Alignment.CenterStart
+        cx > 0.58 -> Alignment.CenterEnd
+        else -> Alignment.Center
+    }
+}
 
 private fun isPhoto(r: Report): Boolean =
     r.source.matches(Regex(".*\\.(png|jpe?g|bmp|webp|gif)$", RegexOption.IGNORE_CASE))
@@ -213,7 +299,7 @@ fun SessionsScreen(
     val reports by vm.reports.collectAsStateWithLifecycle()
     val interrupted by vm.interrupted.collectAsStateWithLifecycle()
     val sportMode by vm.sportMode.collectAsStateWithLifecycle()
-    val trends by vm.trends.collectAsStateWithLifecycle()
+    val thumbs by vm.thumbs.collectAsStateWithLifecycle()
     val totalPractice = reports.sumOf { it.drills.size }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -233,7 +319,7 @@ fun SessionsScreen(
         topBar = {
             TspTopBar(title = "Topspin Review") {
                 IconButton(onClick = onCompare, enabled = reports.size >= 2) {
-                    Icon(Icons.Filled.Compare, "Compare sessions")
+                    Icon(Icons.Filled.Insights, "Progress")
                 }
                 IconButton(onClick = onSettings) {
                     Icon(Icons.Filled.Settings, "Settings")
@@ -257,11 +343,6 @@ fun SessionsScreen(
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }, key = "header") {
                     SessionsHeader(sessionCount = reports.size, practiceCount = totalPractice)
-                }
-                if (trends.topIssues.isNotEmpty() || trends.totalDrills > 0) {
-                    item(span = { GridItemSpan(maxLineSpan) }, key = "trends") {
-                        TrendsCard(trends)
-                    }
                 }
                 if (reports.size > 3) {
                     item(span = { GridItemSpan(maxLineSpan) }, key = "search") {
@@ -296,6 +377,7 @@ fun SessionsScreen(
                         gridItems(rows, key = { it.stem.ifEmpty { it.source } }) { r ->
                             SessionsGridCard(
                                 report = r,
+                                thumb = thumbs[r.stem],
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 onOpen = { onOpen(r.stem) },
@@ -312,11 +394,6 @@ fun SessionsScreen(
             ) {
                 item(key = "header") {
                     SessionsHeader(sessionCount = reports.size, practiceCount = totalPractice)
-                }
-                if (trends.topIssues.isNotEmpty() || trends.totalDrills > 0) {
-                    item(key = "trends") {
-                        TrendsCard(trends)
-                    }
                 }
                 if (reports.size > 3) {
                     item(key = "search") {
@@ -374,6 +451,7 @@ fun SessionsScreen(
                             ) {
                                 SessionCard(
                                     report = r,
+                                    thumb = thumbs[r.stem],
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope,
                                     onOpen = { onOpen(r.stem) },
@@ -393,33 +471,42 @@ fun SessionsScreen(
  */
 @Composable
 private fun SessionsHeader(sessionCount: Int, practiceCount: Int) {
+    if (sessionCount > 0) {
+        TspCard(modifier = Modifier.fillMaxWidth(), padding = PaddingValues(0.dp)) {
+            Column(
+                Modifier.fillMaxWidth().background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                            Color.Transparent,
+                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
+                        ),
+                    ),
+                ).padding(18.dp),
+            ) {
+                SectionLabel("Vision-powered coaching")
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    tr("Sessions"),
+                    style = MaterialTheme.typography.headlineMedium.copy(brush = heroBrush()),
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "$sessionCount ${tr("sessions")} · $practiceCount ${tr("practice items")}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        return
+    }
     HeroCard(
         modifier = Modifier.fillMaxWidth(),
         eyebrow = "Vision-powered coaching",
         title = {
             Text("Your sessions", style = MaterialTheme.typography.displaySmall.copy(brush = heroBrush()))
         },
-        subtitle = if (sessionCount > 0) {
-            "Form, footwork and drills from every clip you analyze."
-        } else {
-            "Analyze a clip to get measured form & footwork coaching."
-        },
-        footer = if (sessionCount > 0) {
-            {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    HeroStat("$sessionCount", if (sessionCount == 1) "Session" else "Sessions", Modifier.weight(1f))
-                    Box(Modifier.width(1.dp).height(38.dp).background(MaterialTheme.colorScheme.outline))
-                    HeroStat(
-                        "$practiceCount",
-                        if (practiceCount == 1) "Practice item" else "Practice items",
-                        Modifier.weight(1f),
-                        valueColor = Good,
-                    )
-                }
-            }
-        } else {
-            null
-        },
+        subtitle = "Analyze a clip to get measured form & footwork coaching.",
     )
 }
 
@@ -501,58 +588,70 @@ private fun EmptySessions(onNew: () -> Unit) {
 
 @Composable
 private fun TrendsCard(trends: TrendsData) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
     TspCard(modifier = Modifier.fillMaxWidth()) {
-        SectionLabel(tr("Trends"))
-        if (trends.topIssues.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                tr("Recurring issues"),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(6.dp))
-            val maxCount = trends.topIssues.first().second
-            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                trends.topIssues.forEach { (text, count) ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box(
-                            Modifier
-                                .weight(1f)
-                                .height(16.dp)
-                                .clip(MaterialTheme.shapes.small)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                        ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SectionLabel(tr("Trends"))
+            TextButton(onClick = { expanded = !expanded }) {
+                Text(tr(if (expanded) "Hide" else "Show"))
+            }
+        }
+        if (expanded) {
+            if (trends.topIssues.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    tr("Recurring issues"),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(6.dp))
+                val maxCount = trends.topIssues.first().second
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    trends.topIssues.forEach { (text, count) ->
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Box(
                                 Modifier
-                                    .fillMaxWidth(count.toFloat() / maxCount)
-                                    .fillMaxHeight()
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
-                            )
+                                    .weight(1f)
+                                    .height(16.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            ) {
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth(count.toFloat() / maxCount)
+                                        .fillMaxHeight()
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+                                )
+                                Text(
+                                    text,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 6.dp, end = 4.dp),
+                                )
+                            }
                             Text(
-                                text,
+                                "x$count",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 6.dp, end = 4.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Text(
-                            "${count}×",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                     }
                 }
             }
-        }
-        if (trends.totalDrills > 0) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "${trends.totalDrills} ${tr("total drills across all sessions")}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (trends.totalDrills > 0) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "${trends.totalDrills} ${tr("total drills across all sessions")}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -600,11 +699,12 @@ private fun SwipeDeleteBackground() {
 @Composable
 private fun SessionCard(
     report: Report,
+    thumb: String? = null,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onOpen: () -> Unit,
 ) {
-    val poster = thumbOf(report)
+    val poster = thumb ?: thumbOf(report)
     with(sharedTransitionScope) {
     TspCard(
         modifier = Modifier
@@ -630,6 +730,7 @@ private fun SessionCard(
                         model = File(poster),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
+                        alignment = subjectAlignment(report),
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
@@ -721,11 +822,12 @@ private fun SessionCard(
 @Composable
 private fun SessionsGridCard(
     report: Report,
+    thumb: String? = null,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onOpen: () -> Unit,
 ) {
-    val poster = thumbOf(report)
+    val poster = thumb ?: thumbOf(report)
     with(sharedTransitionScope) {
         Box(
             modifier = Modifier
@@ -748,6 +850,7 @@ private fun SessionsGridCard(
                     model = File(poster),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    alignment = subjectAlignment(report),
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
@@ -789,7 +892,7 @@ private fun SessionsGridCard(
                         .padding(horizontal = 6.dp, vertical = 2.dp),
                 ) {
                     Text(
-                        "$practice",
+                        "✓ $practice ${tr("drills")}",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White,
                         fontWeight = FontWeight.Bold,

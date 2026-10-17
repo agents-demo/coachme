@@ -52,9 +52,9 @@
     </div>
 
     <!-- Issue count badge (top-left) -->
-    {#if report.issue_count > 0}
-      <span class="absolute top-2 left-2 rounded-full bg-bad/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur pointer-events-none">
-        {report.issue_count}
+    {#if report.drill_count > 0}
+      <span class="absolute top-2 left-2 rounded-full bg-good/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur pointer-events-none">
+        ✓ {report.drill_count} {tr("drills")}
       </span>
     {/if}
 

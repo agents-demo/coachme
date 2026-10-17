@@ -38,6 +38,27 @@ def _summary(report: dict) -> dict[str, Any]:
     """One dict per report for the history list."""
     source = report.get("source", "")
     returns = (report.get("metrics") or {}).get("mechanics") or {}
+    metrics = report.get("metrics") or {}
+    track = metrics.get("track") or []
+    cxs = [float(t["cx"]) for t in track if isinstance(t, dict) and t.get("cx") is not None]
+    subject_cx = round(sum(cxs) / len(cxs), 3) if cxs else 0.5
+    # Prefer the pose body box: the motion-subject mask often covers most of the frame.
+    pose_centers = []
+    for frame in metrics.get("pose") or []:
+        lm = (frame.get("lm") or frame.get("landmarks")) if isinstance(frame, dict) else None
+        if not lm:
+            continue
+        xs = []
+        for p in lm:
+            if not isinstance(p, (list, tuple)) or len(p) < 3:
+                continue
+            vis = p[2] if len(p) == 3 else p[3]
+            if (vis or 0) >= 0.5:
+                xs.append(float(p[0]))
+        if xs:
+            pose_centers.append((min(xs) + max(xs)) / 2)
+    if pose_centers:
+        subject_cx = round(sum(pose_centers) / len(pose_centers), 3)
     return {
         "stem": Path(source).stem or "report",
         "sport": report.get("sport", ""),
@@ -49,6 +70,7 @@ def _summary(report: dict) -> dict[str, Any]:
         "focus": report.get("focus", ""),
         "summary": report.get("summary", ""),
         "issue_count": len(report.get("issues") or []),
+        "drill_count": len(report.get("drills") or []),
         "is_photo": Path(source).suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif"},
         "has_source": _exists(source),
         "has_frames": _exists((report.get("artifacts") or {}).get("frames")),
@@ -56,6 +78,7 @@ def _summary(report: dict) -> dict[str, Any]:
         "has_pose": _exists((report.get("artifacts") or {}).get("pose")),
         "has_pose_hero": _exists((report.get("artifacts") or {}).get("pose_hero")),
         "lower_range": returns.get("lower_lateral_range"),
+        "subject_cx": subject_cx,
     }
 
 

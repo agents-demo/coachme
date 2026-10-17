@@ -629,3 +629,9 @@ export const zhCoach = {"e.g. How do I fix my split-step?": "例如：如何改�
 export const zhDiag = {"Tokens are the model's own counts. in = the whole prompt sent that call (system prompt + full history + question), so the same context is billed again on every turn; out = the reply. cached is the discounted subset the provider serves from its prompt cache.": "令牌数是模型自身的统计。in = 该次调用发送的完整提示词（系统提示 + 完整历史 + 问题），因此每轮都会重复计费同一上下文；out = 回复。cached = 服务商从提示缓存中提供的折扣部分。", "The pose overlay is computed locally by mediapipe (PoseLandmarker) - a small on-device model, not an API call - so it uses no tokens and is not counted above.": "姿态叠加层由 mediapipe（PoseLandmarker）在本地计算——这是一个小型端侧模型，不是 API 调用——因此不消耗令牌，也不计入上方统计。", "bars and numbers are durations. Each row is a step, grouped under the stage it runs in (Measure → Vision → Report). Steps tagged vision / text call a model; hover a step for what it does.": "条形和数字表示耗时。每行是一个步骤，按运行阶段分组（测量 → 视觉 → 报告）。标记为 vision / text 的步骤会调用模型；悬停步骤可查看说明。", "Report (coach)": "报告（教练）", "Finalize": "收尾", "Other": "其他", "Measure → Vision → Report": "测量 → 视觉 → 报告"};
 
 export const zhDiag2 = {"Model call": "模型调用", "Tool": "工具", "requested tool": "请求工具", "image-support probe": "图像支持探测", "in /": "输入 /", "out": "输出", "event": "事件", "text": "文本", "system": "系统", "user": "用户"};
+
+export const zhProgress = {"Progress": "进度", "Trends": "趋势", "Recurring issues": "反复出现的问题", "total drills across all sessions": "所有训练的总练习数", "See what is improving over time, or compare two sessions side by side.": "查看长期进步，或并排对比两次训练。", "You need at least two sessions to see progress.": "至少需要两次训练才能查看进度。", "Not enough sessions for trends yet.": "训练次数还不足以显示趋势。", "No recurring issues yet — analyze a few more sessions.": "还没有反复出现的问题——再分析几次训练。", "Improved": "进步", "Still an issue": "仍然存在的问题", "New / regressed": "新增 / 退步"};
+
+export const zhIssues = {"issues": "个问题", "issues to fix": "个待改进问题"};
+
+export const zhPositive = {"drills": "个练习", "practice items": "个练习项目"};

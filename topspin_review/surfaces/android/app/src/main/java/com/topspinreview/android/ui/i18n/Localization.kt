@@ -46,6 +46,7 @@ private val zh = mapOf(
     "Diagnostics" to "诊断",
     "Advice" to "建议",
     "Practice" to "练习",
+    "drills" to "个练习",
     "Coaching" to "指导",
     "Observations" to "观察",
     "Details" to "详情",

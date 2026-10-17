@@ -35,7 +35,7 @@
   >✕</button>
 
   <a href={`${base}/result?stem=${encodeURIComponent(report.stem)}`} class="block">
-    <div class="relative aspect-video overflow-hidden bg-gradient-to-br from-accent/25 to-accent2/25">
+    <div class="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-accent/25 to-accent2/25">
       {#if poster}
         <img
           src={poster}
@@ -59,7 +59,7 @@
       {#if report.name}<p class="text-[10px] text-muted">{report.stem}</p>{/if}
       <p class="mt-1 line-clamp-2 text-xs text-muted">{report.summary || report.focus || "—"}</p>
       <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted">
-        <span class="rounded-full border border-line px-2 py-0.5">{report.issue_count} {tr("issue")}{report.issue_count === 1 ? "" : "s"}</span>
+        {#if report.drill_count > 0}<span class="rounded-full border border-good/40 bg-good/10 px-2 py-0.5 text-good">✓ {report.drill_count} {tr("drills")}</span>{/if}
         {#if report.has_pose}<span class="rounded-full border border-line px-2 py-0.5" title="A body-pose skeleton overlay is available">{tr("pose")}</span>{/if}
         {#each (report.tags || []) as tag}
           <span class="rounded-full border border-accent/40 bg-accent/8 px-2 py-0.5 text-accent">{tag}</span>

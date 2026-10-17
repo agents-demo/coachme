@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -262,6 +263,21 @@ class Pipeline(
             val m = measured
             metrics = if (m == null) JsonObject(emptyMap()) else JsonObject(
                 m.json + mapOf(
+                    "pose" to buildJsonArray {
+                        poseSeq.forEach { pf ->
+                            val lm = pf.lm
+                            if (lm == null) add(kotlinx.serialization.json.JsonNull)
+                            else add(buildJsonArray {
+                                lm.forEach { l ->
+                                    add(buildJsonArray {
+                                        add(JsonPrimitive(l[0].toDouble()))
+                                        add(JsonPrimitive(l[1].toDouble()))
+                                        add(JsonPrimitive(l[3].toDouble()))
+                                    })
+                                }
+                            })
+                        }
+                    },
                     "pose_summary" to pose.summarize(poseSeq),
                     "pose3d_summary" to pose.summarize3d(poseSeq),
                     "pose3d" to pose.series3d(poseSeq),

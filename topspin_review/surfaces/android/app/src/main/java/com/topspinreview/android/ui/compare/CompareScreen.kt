@@ -56,8 +56,11 @@ import com.topspinreview.android.ui.components.GhostButton
 import com.topspinreview.android.ui.components.HeroCard
 import com.topspinreview.android.ui.components.PrimaryButton
 import com.topspinreview.android.ui.components.SectionLabel
+import com.topspinreview.android.ui.components.MutedNote
 import com.topspinreview.android.ui.components.TspCard
+import com.topspinreview.android.ui.components.TspSegmented
 import com.topspinreview.android.ui.components.TspTopBar
+import com.topspinreview.android.ui.i18n.tr
 import com.topspinreview.android.ui.theme.Accent2
 import com.topspinreview.android.ui.theme.Bad
 import com.topspinreview.android.ui.theme.Good
@@ -86,20 +89,25 @@ fun CompareScreen(onBack: () -> Unit, vm: CompareViewModel = hiltViewModel()) {
     var a by remember { mutableStateOf<Report?>(null) }
     var b by remember { mutableStateOf<Report?>(null) }
 
+    var tab by remember { mutableStateOf(0) }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { TspTopBar(title = "Compare", onBack = onBack) },
+        topBar = { TspTopBar(title = "Progress", onBack = onBack) },
     ) { pad ->
+        Column(Modifier.fillMaxSize().padding(pad)) {
+            TspSegmented(
+                options = listOf("Trends", "Compare"),
+                selectedIndex = tab,
+                onSelect = { tab = it },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+            if (tab == 0) {
+                TrendsContent(reports)
+            } else {
         Column(
-            Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(16.dp),
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            HeroCard(
-                eyebrow = "Progress",
-                title = { Text("Compare two sessions", style = MaterialTheme.typography.headlineLarge) },
-                subtitle = "Pick an earlier and a later session to see what improved, what regressed, and what's still open.",
-            )
-
             PickerCard("Earlier", reports, a) { a = it }
             PickerCard("Later", reports, b) { b = it }
 
@@ -149,6 +157,69 @@ fun CompareScreen(onBack: () -> Unit, vm: CompareViewModel = hiltViewModel()) {
                         }
                     }
                 }
+            }
+        }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrendsContent(reports: List<Report>) {
+    val counts = remember(reports) {
+        val m = mutableMapOf<String, Int>()
+        for (r in reports) for (i in r.issues) {
+            val k = i.issue.trim().take(120)
+            if (k.isNotEmpty()) m[k] = (m[k] ?: 0) + 1
+        }
+        m.entries.filter { it.value >= 2 }.sortedByDescending { it.value }.take(8).map { it.key to it.value }
+    }
+    val drills = remember(reports) { reports.sumOf { it.drills.size } }
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        TspCard(modifier = Modifier.fillMaxWidth()) {
+            SectionLabel("Trends")
+            if (counts.isEmpty()) {
+                Spacer(Modifier.height(6.dp))
+                MutedNote("No recurring issues yet — analyze a few more sessions.")
+            } else {
+                Spacer(Modifier.height(10.dp))
+                val maxCount = counts.first().second
+                counts.forEach { (text, count) ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Box(
+                            Modifier.weight(1f).height(18.dp).clip(MaterialTheme.shapes.small)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        ) {
+                            Box(
+                                Modifier.fillMaxWidth(count.toFloat() / maxCount).fillMaxHeight()
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+                            )
+                            Text(
+                                text,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.align(Alignment.CenterStart).padding(horizontal = 6.dp),
+                            )
+                        }
+                        Text("$count×", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            if (drills > 0) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "$drills ${tr("total drills across all sessions")}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

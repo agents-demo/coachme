@@ -71,7 +71,7 @@ export const trimUrl = (stem, start, end, fmt = "mp4", vertical = false) =>
 // else the motion map, else the frames contact sheet, else the source photo.
 export const thumb = (report) =>
   report.has_pose_hero
-    ? artifact(report.stem, "pose_hero")
+    ? `/thumb/${encodeURIComponent(report.stem)}`
     : report.has_motion
       ? artifact(report.stem, "motion")
       : report.has_frames

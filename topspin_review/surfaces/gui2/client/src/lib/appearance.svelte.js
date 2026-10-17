@@ -1,5 +1,5 @@
 import { derived, get, writable } from "svelte/store";
-import { zh, zhExtra, zhExtraMore, zhWeb, zhUi, zhWeb2, zhProfile, zhHome, zhNew, zhMisc, zhResult, zhBrand, zhMore2, zhFrames, zhTech, zhTech2, zhObs, zhCoach, zhDiag, zhDiag2 } from "$lib/i18n/zh";
+import { zh, zhExtra, zhExtraMore, zhWeb, zhUi, zhWeb2, zhProfile, zhHome, zhNew, zhMisc, zhResult, zhBrand, zhMore2, zhFrames, zhTech, zhTech2, zhObs, zhCoach, zhDiag, zhDiag2, zhProgress, zhIssues, zhPositive } from "$lib/i18n/zh";
 
 export const theme = writable("system");
 export const palette = writable("indigo");
@@ -24,7 +24,7 @@ function canonical(text) {
     .trim();
 }
 
-const all = { ...zh, ...zhExtra, ...zhExtraMore, ...zhWeb, ...zhUi, ...zhWeb2, ...zhProfile, ...zhHome, ...zhNew, ...zhMisc, ...zhResult, ...zhBrand, ...zhMore2, ...zhFrames, ...zhTech, ...zhTech2, ...zhObs, ...zhCoach, ...zhDiag, ...zhDiag2 };
+const all = { ...zh, ...zhExtra, ...zhExtraMore, ...zhWeb, ...zhUi, ...zhWeb2, ...zhProfile, ...zhHome, ...zhNew, ...zhMisc, ...zhResult, ...zhBrand, ...zhMore2, ...zhFrames, ...zhTech, ...zhTech2, ...zhObs, ...zhCoach, ...zhDiag, ...zhDiag2, ...zhProgress, ...zhIssues, ...zhPositive };
 const zhLower = Object.fromEntries(Object.entries(all).map(([k, v]) => [k.toLowerCase(), v]));
 const zhCanon = Object.fromEntries(Object.entries(all).map(([k, v]) => [canonical(k), v]));
 
