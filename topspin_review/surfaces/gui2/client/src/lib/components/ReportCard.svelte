@@ -53,14 +53,17 @@
 
     <div class="p-3">
       <div class="flex items-center gap-2">
-        <span class="truncate font-display font-bold">{report.stem}</span>
+        <span class="truncate font-display font-bold">{report.name || report.stem}</span>
         <span class="ml-auto shrink-0 text-xs text-muted">{report.sport} · {report.date}</span>
       </div>
+      {#if report.name}<p class="text-[10px] text-muted">{report.stem}</p>{/if}
       <p class="mt-1 line-clamp-2 text-xs text-muted">{report.summary || report.focus || "—"}</p>
-      <div class="mt-2 flex items-center gap-2 text-xs text-muted">
+      <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted">
         <span class="rounded-full border border-line px-2 py-0.5">{report.issue_count} {tr("issue")}{report.issue_count === 1 ? "" : "s"}</span>
         {#if report.has_pose}<span class="rounded-full border border-line px-2 py-0.5" title="A body-pose skeleton overlay is available">{tr("pose")}</span>{/if}
-        {#if report.focus}<span class="truncate">{report.focus}</span>{/if}
+        {#each (report.tags || []) as tag}
+          <span class="rounded-full border border-accent/40 bg-accent/8 px-2 py-0.5 text-accent">{tag}</span>
+        {/each}
       </div>
     </div>
   </a>

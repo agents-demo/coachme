@@ -15,7 +15,7 @@ from topspin_review.core import config as app_config
 from topspin_review.integrations.agents import settings as agent_settings
 from topspin_review.integrations.storage import store
 from topspin_review.surfaces.gui2.server import config
-from topspin_review.surfaces.gui2.server.routes import analyze, ingest, jobs, media, reports
+from topspin_review.surfaces.gui2.server.routes import analyze, ingest, jobs, media, reports, trends
 from topspin_review.surfaces.readiness import checks as readiness_checks
 
 app = FastAPI(title="Topspin Review")
@@ -33,6 +33,7 @@ app.include_router(reports.router)
 app.include_router(jobs.router)
 app.include_router(media.router)
 app.include_router(ingest.router)
+app.include_router(trends.router)
 
 
 @app.get("/health")

@@ -9,6 +9,7 @@
   let job = $state(null);
   let feed = $state([]);
   let timer;
+  let es = null; // EventSource for SSE, null when polling
 
   function apply(s) {
     job = s;
@@ -28,7 +29,12 @@
     return GROUP_ORDER.map((g) => ({ name: g, items: buckets.get(g) })).filter((x) => x.items.length);
   });
 
-  function start(id) {
+  function stopAll() {
+    clearInterval(timer);
+    if (es) { es.close(); es = null; }
+  }
+
+  function startPolling(id) {
     clearInterval(timer);
     timer = setInterval(async () => {
       try {
@@ -45,6 +51,32 @@
     }, 1200);
   }
 
+  function start(id) {
+    stopAll();
+    if (typeof EventSource !== "undefined") {
+      es = new EventSource(`/jobs/${encodeURIComponent(id)}/stream`);
+      es.onmessage = (e) => {
+        try {
+          const s = JSON.parse(e.data);
+          apply(s);
+          if (["done", "failed", "cancelled"].includes(s.status)) {
+            es?.close();
+            es = null;
+            onfinished?.();
+            if (s.status === "done") ondone?.(s.stem);
+          }
+        } catch { /* ignore malformed frame */ }
+      };
+      es.addEventListener("error", () => {
+        // SSE connection dropped — fall back to polling
+        if (es) { es.close(); es = null; }
+        startPolling(id);
+      });
+    } else {
+      startPolling(id);
+    }
+  }
+
   $effect(() => {
     if (jobId && jobId !== currentId) {
       currentId = jobId;
@@ -55,7 +87,7 @@
 
   $effect(() => {
     if (currentId) start(currentId);
-    return () => clearInterval(timer);
+    return stopAll;
   });
 
   async function stop() {

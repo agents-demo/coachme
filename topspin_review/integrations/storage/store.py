@@ -131,6 +131,25 @@ def set_annotations(stem: str, items: list[dict]) -> list[dict] | None:
     return items
 
 
+def patch_report(stem: str, patch: dict) -> dict | None:
+    """Merge display metadata (name, tags, notes) into a stored report.
+
+    Only the keys present in ``patch`` are written; existing unrelated fields
+    are preserved. Recognised keys: ``name`` (str), ``tags`` (list[str]),
+    ``notes`` (str).
+    """
+    report = find_report(stem)
+    if not report:
+        return None
+    path = report_path(report.get("source") or stem)
+    updated = dict(report)
+    for key in ("name", "tags", "notes"):
+        if key in patch:
+            updated[key] = patch[key]
+    _write(path, updated)
+    return updated
+
+
 def append_feedback(stem: str, item: str, vote: str, note: str = "") -> list[dict] | None:
     """Append a thumbs-up/down vote to a stored report's feedback list.
 

@@ -26,6 +26,12 @@ class FeedbackRequest(BaseModel):
     note: str = ""
 
 
+class PatchRequest(BaseModel):
+    name: str | None = None
+    tags: list[str] | None = None
+    notes: str | None = None
+
+
 @router.get("/reports")
 def reports() -> dict:
     return {"reports": read.list_reports()}
@@ -45,6 +51,28 @@ def delete_report(stem: str) -> dict:
     if read.get_report(stem) is None:
         raise HTTPException(status_code=404, detail="unknown report")
     return {"deleted": store.delete_report(stem)}
+
+
+@router.patch("/reports/{stem}")
+def patch_report(stem: str, payload: PatchRequest) -> dict:
+    """Update display name, tags or notes for a session.
+
+    Only fields that are not ``None`` in the payload are written; passing
+    ``tags=[]`` explicitly clears the tag list.
+    """
+    if read.get_report(stem) is None:
+        raise HTTPException(status_code=404, detail="unknown report")
+    patch = payload.model_dump(exclude_none=True)
+    if "tags" in patch:
+        # normalise: strip blanks, deduplicate, max 10 tags
+        patch["tags"] = list(dict.fromkeys(t.strip() for t in patch["tags"] if t.strip()))[:10]
+    updated = store.patch_report(stem, patch)
+    return {
+        "ok": True,
+        "name": updated.get("name", ""),
+        "tags": updated.get("tags", []),
+        "notes": updated.get("notes", ""),
+    }
 
 
 @router.post("/reports/{stem}/feedback")

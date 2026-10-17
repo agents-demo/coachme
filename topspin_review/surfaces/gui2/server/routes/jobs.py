@@ -1,8 +1,12 @@
-"""Job lifecycle: list, status, cancel, retry."""
+"""Job lifecycle: list, status, cancel, retry, and SSE stream."""
 
 from __future__ import annotations
 
+import asyncio
+import json
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
@@ -12,6 +16,42 @@ def jobs() -> dict:
     from topspin_review.surfaces.gui2.server.jobs import get_manager
 
     return {"jobs": get_manager().jobs()}
+
+
+@router.get("/jobs/{job_id}/stream")
+async def stream_job(job_id: str) -> StreamingResponse:
+    """Server-Sent Events stream of job progress until completion.
+
+    The client connects once and receives a ``data:`` JSON event every ~600 ms
+    until the job reaches ``done``, ``failed`` or ``cancelled``.  A final
+    ``event: close`` frame is sent so the client knows to close its
+    ``EventSource``.
+    """
+    from topspin_review.surfaces.gui2.server.jobs import get_manager
+
+    manager = get_manager()
+
+    async def generate():
+        while True:
+            status = manager.status(job_id)
+            if status.get("status") == "unknown":
+                yield f"event: error\ndata: {json.dumps({'error': 'unknown job'})}\n\n"
+                return
+            yield f"data: {json.dumps(status)}\n\n"
+            if status["status"] in ("done", "failed", "cancelled"):
+                yield "event: close\ndata: {}\n\n"
+                return
+            await asyncio.sleep(0.6)
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @router.get("/jobs/{job_id}")

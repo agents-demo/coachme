@@ -1,7 +1,7 @@
 <script>
   import { tr } from "$lib/appearance";
   import { page } from "$app/stores";
-  import { getReport, ask, artifact, clip, exportUrl, reelUrl, cardUrl, feedback } from "$lib/api";
+  import { getReport, ask, artifact, clip, exportUrl, reelUrl, cardUrl, feedback, patchReport } from "$lib/api";
   import VideoReview from "$lib/components/VideoReview.svelte";
   import Technical from "$lib/components/Technical.svelte";
   import ReadAloud from "$lib/components/ReadAloud.svelte";
@@ -116,6 +116,31 @@
     votes = { ...votes, [item]: prev === vote ? null : vote };
     if (prev !== vote) {
       try { await feedback(report.stem, item, vote); } catch {}
+    }
+  }
+
+  // Inline name/notes/tags editing
+  let editing = $state(false);
+  let editName = $state("");
+  let editNotes = $state("");
+  let editTags = $state("");
+  let saving = $state(false);
+
+  function openEdit() {
+    editName = report?.name || "";
+    editNotes = report?.notes || "";
+    editTags = (report?.tags || []).join(", ");
+    editing = true;
+  }
+  async function saveEdit() {
+    saving = true;
+    try {
+      const tags = editTags.split(",").map((t) => t.trim()).filter(Boolean);
+      const result = await patchReport(report.stem, { name: editName, notes: editNotes, tags });
+      report = { ...report, name: result.name, notes: result.notes, tags: result.tags };
+      editing = false;
+    } catch { /* keep form open */ } finally {
+      saving = false;
     }
   }
 
@@ -237,11 +262,46 @@
 {:else if !report}
   <p class="mt-6 text-sm text-muted">{tr("No report selected.")}</p>
 {:else}
-  <div class="flex flex-wrap items-baseline gap-3" style="view-transition-name: {vtName}">
-    <h1 class="font-display text-2xl font-bold">{report.stem}</h1>
-    <span class="text-sm text-muted">{tr(report.sport)} · {report.date}</span>
-    {#if report.fallback}
-      <span class="rounded-full border border-warn px-2 py-0.5 text-[11px] font-semibold text-warn" title="The live run failed; this is the last recorded result for this clip.">{tr("recorded run")}</span>
+  <div style="view-transition-name: {vtName}">
+    <div class="flex flex-wrap items-baseline gap-3">
+      <h1 class="font-display text-2xl font-bold">{report.name || report.stem}</h1>
+      {#if report.name}<span class="text-xs text-muted">{report.stem}</span>{/if}
+      <span class="text-sm text-muted">{tr(report.sport)} · {report.date}</span>
+      {#if report.fallback}
+        <span class="rounded-full border border-warn px-2 py-0.5 text-[11px] font-semibold text-warn" title="The live run failed; this is the last recorded result for this clip.">{tr("recorded run")}</span>
+      {/if}
+      <button onclick={openEdit} title={tr("Edit name & notes")} class="ml-auto rounded-lg border border-line px-2 py-0.5 text-xs text-muted transition hover:text-app">✏</button>
+    </div>
+    {#if (report.tags || []).length}
+      <div class="mt-1.5 flex flex-wrap gap-1.5">
+        {#each report.tags as tag}
+          <span class="rounded-full border border-accent/40 bg-accent/8 px-2 py-0.5 text-[11px] text-accent">{tag}</span>
+        {/each}
+      </div>
+    {/if}
+    {#if report.notes}
+      <p class="mt-1.5 text-sm text-muted">{report.notes}</p>
+    {/if}
+    {#if editing}
+      <div class="mt-3 space-y-3 rounded-xl border-2 border-line p-4">
+        <div>
+          <label class="text-[11px] font-semibold uppercase tracking-wide text-muted">{tr("Name")}</label>
+          <input bind:value={editName} placeholder={report.stem} class="mt-1 w-full rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none" />
+        </div>
+        <div>
+          <label class="text-[11px] font-semibold uppercase tracking-wide text-muted">{tr("Tags")}</label>
+          <input bind:value={editTags} placeholder="e.g. forehand, backhand" class="mt-1 w-full rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none" />
+          <p class="mt-0.5 text-[10px] text-muted">{tr("Comma-separated, max 10")}</p>
+        </div>
+        <div>
+          <label class="text-[11px] font-semibold uppercase tracking-wide text-muted">{tr("Notes")}</label>
+          <textarea bind:value={editNotes} rows="3" placeholder={tr("Personal notes about this session…")} class="mt-1 w-full resize-none rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none"></textarea>
+        </div>
+        <div class="flex gap-2">
+          <button onclick={saveEdit} disabled={saving} class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? tr("Saving…") : tr("Save")}</button>
+          <button onclick={() => (editing = false)} class="rounded-lg border-2 border-line px-4 py-2 text-sm font-semibold">{tr("Cancel")}</button>
+        </div>
+      </div>
     {/if}
   </div>
 

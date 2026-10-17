@@ -4,7 +4,7 @@
   import { base } from "$app/paths";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { getReports } from "$lib/api";
+  import { getReports, getTrends } from "$lib/api";
   import { sportMode } from "$lib/stores";
   import NewAnalysis from "$lib/components/NewAnalysis.svelte";
   import LiveJob from "$lib/components/LiveJob.svelte";
@@ -14,6 +14,7 @@
   let reports = $state([]);
   let jobId = $state(null);
   let loading = $state(true);
+  let trends = $state(null);
   const showNew = $derived($page.url.searchParams.get("new") === "1");
 
   async function load() {
@@ -24,9 +25,13 @@
       loading = false;
     }
   }
+  async function loadTrends() {
+    try { trends = await getTrends(); } catch { /* non-critical */ }
+  }
   onMount(async () => {
     await load();
     if (!reports.length && !showNew) goto(`${base}/?new=1`, { replaceState: true });
+    loadTrends();
   });
 
   function ondone(stem) {
@@ -40,7 +45,10 @@
   const filtered = $derived(
     search.trim()
       ? reports.filter((r) =>
-          [r.stem, r.sport, r.date].join(" ").toLowerCase().includes(search.trim().toLowerCase()),
+          [r.stem, r.name || "", r.sport, r.date, (r.tags || []).join(" "), r.notes || ""]
+            .join(" ")
+            .toLowerCase()
+            .includes(search.trim().toLowerCase()),
         )
       : reports,
   );
@@ -71,6 +79,55 @@
       <div class="text-[11px] uppercase tracking-wide text-muted">{tr("Open issues")}</div>
     </div>
   </div>
+{/if}
+
+{#if trends && trends.sessions >= 2 && !showNew}
+  <section class="mt-4 card p-4">
+    <h2 class="font-display text-sm font-bold uppercase tracking-wide text-accent">{tr("Trends")}</h2>
+    {#if trends.top_issues?.length}
+      <div class="mt-3">
+        <div class="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">{tr("Recurring issues")}</div>
+        {@const max = trends.top_issues[0]?.count || 1}
+        <div class="space-y-1.5">
+          {#each trends.top_issues.slice(0, 5) as iss}
+            <div class="flex items-center gap-2 text-xs">
+              <div class="flex-1 min-w-0">
+                <div class="h-4 overflow-hidden rounded-full bg-warn/10 relative">
+                  <div class="h-full rounded-full bg-warn/40 transition-all" style={`width: ${Math.round((iss.count / max) * 100)}%`}></div>
+                  <span class="absolute inset-0 pl-2 flex items-center truncate text-[10px] text-app">{iss.text}</span>
+                </div>
+              </div>
+              <span class="shrink-0 font-mono text-[10px] text-muted">{iss.count}×</span>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+    {#if trends.metrics?.length}
+      <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {#each trends.metrics as m}
+          {@const vals = m.sessions.map((s) => s.value)}
+          {@const mn = Math.min(...vals)}
+          {@const mx = Math.max(...vals) || 1}
+          {@const w = 120}
+          {@const h = 32}
+          {@const pts = vals.map((v, i) => `${Math.round((i / Math.max(vals.length - 1, 1)) * w)},${Math.round(h - ((v - mn) / (mx - mn || 1)) * (h - 4) - 2)}`).join(" ")}
+          <div>
+            <div class="text-[10px] text-muted">{m.label}</div>
+            <svg viewBox="0 0 {w} {h}" class="w-full h-8 overflow-visible">
+              <polyline points={pts} fill="none" stroke="var(--color-accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+              {#each vals as v, i}
+                <circle cx={Math.round((i / Math.max(vals.length - 1, 1)) * w)} cy={Math.round(h - ((v - mn) / (mx - mn || 1)) * (h - 4) - 2)} r="2" fill="var(--color-accent)" />
+              {/each}
+            </svg>
+          </div>
+        {/each}
+      </div>
+    {/if}
+    {#if trends.drill_rate?.total > 0}
+      <div class="mt-3 text-xs text-muted">{trends.drill_rate.total} {tr("total drills across all sessions")}</div>
+    {/if}
+  </section>
 {/if}
 
 {#if reports.length > 3 && !showNew}

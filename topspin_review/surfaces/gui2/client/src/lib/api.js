@@ -21,6 +21,12 @@ export const saveAnnotations = (stem, annotations) =>
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ annotations }),
   });
+export const patchReport = (stem, patch) =>
+  api(`/reports/${encodeURIComponent(stem)}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(patch),
+  });
 export const feedback = (stem, item, vote, note = "") =>
   api(`/reports/${encodeURIComponent(stem)}/feedback`, {
     method: "POST",
@@ -49,6 +55,7 @@ export const saveProfile = (profile) =>
     body: JSON.stringify(profile),
   });
 export const getConfig = () => api("/config");
+export const getTrends = () => api("/trends");
 export const samples = () => api("/samples");
 
 export const source = (stem) => `/source/${encodeURIComponent(stem)}`;

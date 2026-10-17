@@ -47,7 +47,7 @@
 
     <!-- Bottom overlay -->
     <div class="absolute bottom-0 left-0 right-0 p-3 pointer-events-none">
-      <p class="truncate font-display font-bold text-white text-sm leading-tight">{report.stem}</p>
+      <p class="truncate font-display font-bold text-white text-sm leading-tight">{report.name || report.stem}</p>
       <p class="mt-0.5 text-[11px] text-white/70">{report.sport} · {report.date}</p>
     </div>
 
