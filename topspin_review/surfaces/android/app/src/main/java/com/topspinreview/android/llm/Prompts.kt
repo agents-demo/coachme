@@ -94,6 +94,8 @@ When asked to write a report from observations:
 3. Put the most impactful issues first. Every issue MUST cite the evidence_times
    (seconds) it is based on. Use the measured motion metrics and the motion map as
    evidence; do NOT invent spin, ball speed, or exact angles.
+   When the evidence clearly supports it, name the stroke type (forehand/backhand/serve/block);
+   do not guess when uncertain. If the clip shows a serve (toss, no prior contact), say so.
 4. If the observations say the clip is unclear or the frames near-duplicate, say so
    in "limitations" and keep confidence low.
 5. Reply with a short plain-text summary (do not paste the JSON back).

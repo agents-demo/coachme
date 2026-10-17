@@ -235,7 +235,13 @@ fun ResultScreen(
     var askOpen by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val ctx = androidx.compose.ui.platform.LocalContext.current
-    val drillsDone = remember(stem) { mutableStateMapOf<Int, Boolean>() }
+    val drillsDone = remember(stem) {
+        val prefs = ctx.getSharedPreferences("topspin_drills", 0)
+        val saved = prefs.getString("drills_$stem", "").orEmpty()
+            .split(",")
+            .mapNotNull { it.toIntOrNull() }
+        mutableStateMapOf<Int, Boolean>().apply { saved.forEach { put(it, true) } }
+    }
 
     androidx.compose.runtime.LaunchedEffect(stem) { vm.load(stem) }
 
@@ -1016,6 +1022,7 @@ private fun CaveatsBanner(warnings: List<String>, onRetry: () -> Unit, onDismiss
 
 @Composable
 private fun Practice(r: Report, done: MutableMap<Int, Boolean>) {
+    val prefs = androidx.compose.ui.platform.LocalContext.current.getSharedPreferences("topspin_drills", 0)
     if (r.drills.isEmpty()) {
         MutedNote("No practice items for this session.", Modifier.padding(16.dp))
         return
@@ -1045,7 +1052,11 @@ private fun Practice(r: Report, done: MutableMap<Int, Boolean>) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = checked,
-                        onCheckedChange = { done[i] = it },
+                        onCheckedChange = { checked ->
+                            done[i] = checked
+                            val ids = done.filterValues { it }.keys.sorted().joinToString(",")
+                            prefs.edit().putString("drills_${r.stem}", ids).apply()
+                        },
                         colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary),
                     )
                     Column(Modifier.weight(1f).padding(start = 6.dp)) {

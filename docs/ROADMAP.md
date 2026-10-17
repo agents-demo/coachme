@@ -37,6 +37,9 @@ What the app does today is documented in [architecture.md](architecture.md) and
 3D body view, automatic rally segments, footage-quality guidance, progress/compare, share card and
 vertical/GIF/reel exports, and one-click session delete.
 
+Table-tennis-specific ideas (service detection, racket-angle proxy, table heatmap, annotated clips,
+multi-session trends) are merged into C11–C13 and D12–D13 below.
+
 **What competitors have that we don't (summary)**
 - **3D biomechanics** kinematic sequence, **shot type/stats** (SB, Uplift, SV).
 - **Line calls / scoring**, **real-time audio** (SV, HC).
@@ -369,6 +372,46 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Effort:** `M`–`L`. **Acceptance:** a session recorded on the phone shows up on the web.
 - **Risks:** conflict handling; data privacy.
 
+### C11. Service detection
+- **Ref:** — *(table-tennis-specific).*
+- **Goal:** flag likely serves (toss, no prior contact, player at own end) so serve technique,
+  placement and variety get their own coaching instead of being treated as rally strokes.
+- **Where:** `core/stages/measure/` from pose + ball segments; report `strokes[].type="serve"`.
+- **Effort:** `M`. **Acceptance:** serves flagged with confidence and degrade gracefully when the toss
+  is out of frame. **Risks:** false positives; toss often cropped.
+
+### C12. Racket-angle proxy
+- **Ref:** — *(table-tennis-specific).*
+- **Goal:** estimate wrist/forearm orientation at contact as a coaching hint. This is a **proxy**, not
+  the racket face — pose models do not track the racket.
+- **Where:** pose landmarks + ball direction; report `racket_angle_proxy` with an "approximate" label.
+- **Effort:** `M`. **Acceptance:** proxy shown with a caveat and never presented as a measured racket
+  angle. **Risks:** misleading if overclaimed; depends on contact timing.
+
+### C13. Table contact-point heatmap
+- **Ref:** — *(table-tennis-specific).*
+- **Goal:** top-down heatmap of where the ball lands, revealing cross-court bias / short-long patterns.
+- **Where:** manual 4-corner table calibration + trajectory/table-plane intersection; gui2 and Android
+  overlay.
+- **Effort:** `L`. **Acceptance:** calibrated sessions show a landing heatmap; uncalibrated sessions
+  hide it. **Risks:** calibration UX, camera angle, monocular depth.
+
+### D12. Multi-session trend view
+- **Ref:** OF (progress).
+- **Goal:** aggregate issue recurrence, drill completion and key metrics across all sessions, not just
+  pairwise compare.
+- **Where:** a trends endpoint over existing reports + a chart in gui2 and Android.
+- **Effort:** `M`. **Acceptance:** trend lines with ≥3 sessions; warns when metrics are uncalibrated.
+- **Risks:** sparse data; keep the pairwise compare as the fallback.
+
+### D13. Annotated coaching clips
+- **Ref:** CE, OF.
+- **Goal:** burn issue text + timestamp into a trimmed clip (e.g. "right elbow too high — 0:04") for
+  sharing.
+- **Where:** existing trim/reel pipeline + a text-overlay pass (ffmpeg/Media3).
+- **Effort:** `M`. **Acceptance:** exported clip shows the issue labels at their timestamps and is
+  shareable. **Risks:** render cost/text layout.
+
 ---
 
 ## 9. Cross-cutting work
@@ -393,7 +436,7 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 
 | # | Feature | Ref | Effort | Impact | Multimodal |
 |---|---|---|---|---|---|
-| 0.1–0.8 | Foundations: eval, calibration, feedback, UX, i18n, offline, privacy, ops | — | M–L | High | |
+| 0.1–0.8 | Foundations: eval, calibration, feedback, UX, offline, privacy, ops | — | M–L | High | |
 | M3 | Stroke / repetition segmentation | — | M | High | |
 | M5 | Extended footage check | — | S | Medium | |
 | M6 | Scene / rally detection | — | M | Medium | |
@@ -416,6 +459,9 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | C8 | 3D biomechanics / kinematic sequence | SB | L | High | |
 | C9 | Spin estimation (stretch; likely non-goal) | SV | XL | Low | |
 | C10 | Audio understanding (a new sense — listen) | — | M | High | ✓ |
+| C11 | Service detection | — | M | High | |
+| C12 | Racket-angle proxy (wrist/forearm) | — | M | Medium | |
+| C13 | Table contact heatmap | — | L | Medium | |
 | D1 | iOS app (Android shipped) | all | XL | High | |
 | D2 | Coach / team | HL | XL | High (B2B) | |
 | D3 | Personalized plan + memory | OF | L | High | |
@@ -427,20 +473,22 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | D9 | Coach comments + drill assignments | HL/OF | M | Medium | |
 | D10 | Gamification — challenges & leaderboards | HC | M | Medium | |
 | D11 | Cross-device sync | — | M–L | Medium | |
+| D12 | Multi-session trend view | OF | M | High | |
+| D13 | Annotated coaching clips | CE/OF | M | Medium | |
 
 **Multimodal** marks work that extends the core senses: **watch** (vision), **read** its own numbers,
 **write**, **listen** (C10), **speak** (D7). The foundation of every item is the multimodal core.
 
 **Build order:** 0.2 → 0.1 → 0.3 → **M3** → M5/M6 → I1 → I2 → B4 → B5 → **C1 (shot type)** → **C2** →
-C8 → C10 → C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9/D10/D11. (0.4–0.8 and B6 run alongside.)
+C8 → C10 → C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9/D10/D11 → D12/D13. C11–C13 run with the analysis depth work. (0.4–0.8 and B6 run alongside.)
 
 **Milestones (remaining)**
 - **M-foundations:** 0.1–0.8. Eval harness, feedback, session library + streaming, offline, privacy,
   deploy/ops.
 - **M-measure:** M3, M5–M8 + I1–I2. Stroke segmentation, footage check, rally detection, person/segmentation.
 - **M-review:** B4–B6. Overlay compare, reference comparison, multi-sport.
-- **M-depth:** C1–C10. Shot type, whole-session segmentation, line calls, thorough mode, 3D biomechanics, audio sense.
-- **M-platform:** D1–D11. iOS, coach/team, plans, shares, skills, integrations, gamification, sync.
+- **M-depth:** C1–C13. Shot type, whole-session segmentation, line calls, thorough mode, 3D biomechanics, audio sense, serve detection, racket-angle proxy, table heatmap.
+- **M-platform:** D1–D13. iOS, coach/team, plans, shares, skills, integrations, gamification, sync, trends, annotated clips.
 
 ---
 

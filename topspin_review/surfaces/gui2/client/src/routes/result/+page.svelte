@@ -81,8 +81,23 @@
   const issues = $derived(report?.issues || []);
 
   let doneDrills = $state({});
+  function drillsKey(stem) {
+    return `topspin.drills.${stem || "unknown"}`;
+  }
+  function loadDrills(stem) {
+    try {
+      const raw = localStorage.getItem(drillsKey(stem));
+      const saved = raw ? JSON.parse(raw) : {};
+      return saved && typeof saved === "object" ? saved : {};
+    } catch {
+      return {};
+    }
+  }
   function toggleDrill(i) {
     doneDrills = { ...doneDrills, [i]: !doneDrills[i] };
+    try {
+      localStorage.setItem(drillsKey(report?.stem), JSON.stringify(doneDrills));
+    } catch {}
   }
   const doneCount = $derived(Object.values(doneDrills).filter(Boolean).length);
 
@@ -105,7 +120,7 @@
     try {
       report = await getReport(stem);
       tab = "Video";
-      doneDrills = {};
+      doneDrills = loadDrills(report?.stem);
     } catch (e) {
       error = String(e?.message || e);
       report = null;

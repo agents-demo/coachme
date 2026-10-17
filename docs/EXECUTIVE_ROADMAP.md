@@ -29,7 +29,7 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 
 - Video or photo in, a coaching report out — on web and Android.
 - English and Chinese UI and reports; Ask-by-voice; on-device pose/ball analysis.
-- Progress comparison, 3D body mechanics, automatic rally splits, footage-quality checks,
+- Pairwise progress comparison, 3D body mechanics, automatic rally splits, footage-quality checks,
   filming guidance, saved-result fallback and one-click delete are in place.
 - The report is honest — every point points to a moment in the video.
 
@@ -41,25 +41,17 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 
 | # | Workstream | In one line | Type | Items |
 |---|-----------|-------------|------|:---:|
-| 1 | Demo | Make it show-ready. | Build stage | 2 |
-| 2 | Product | Make it usable by strangers. | Build stage | 6 |
-| 3 | Sharper analysis | Read the play more deeply. | Market area | 5 |
-| 4 | Match play | Score and call a real game. | Market area | 3 |
-| 5 | Live & mobile | Use it in the moment. | Market area | 2 |
-| 6 | Coaches & teams | Work with a coach or a team. | Market area | 5 |
-| 7 | Improve over time | Track progress and plan. | Market area | 6 |
+| 1 | Product | Make it usable by strangers. | Build stage | 6 |
+| 2 | Sharper analysis | Read the play more deeply. | Market area | 6 |
+| 3 | Match play | Score and call a real game. | Market area | 3 |
+| 4 | Live & mobile | Use it in the moment. | Market area | 2 |
+| 5 | Coaches & teams | Work with a coach or a team. | Market area | 5 |
+| 6 | Improve over time | Track progress and plan. | Market area | 7 |
 
 **Senses legend:** **Watch** / **Read** / **Listen** = in · **Write** / **Speak** / **Show** = out ·
 **—** = no new sense.
 
-### Workstream 1 — Demo *(stage: show-ready)*
-
-| Item | Senses |
-|------|--------|
-| A short guided tour | Watch · Write · Show |
-| Rehearse end to end | — |
-
-### Workstream 2 — Product *(stage: beta)*
+### Workstream 1 — Product *(stage: beta)*
 
 | Item | Senses |
 |------|--------|
@@ -68,19 +60,22 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 | Session feedback (like / dislike) | — |
 | Track and limit cost per session | — |
 | Broader multi-sport support | Watch |
-| Coach / team view | Show |
+| Annotated coaching clips (issue text burned into a clip) | Write · Show |
 
-### Workstream 3 — Sharper analysis *(market area)*
+### Workstream 2 — Sharper analysis *(market area)*
 
 | Item | Senses |
 |------|--------|
-| Name the shot (forehand / backhand / serve) | Watch · Write |
-| Estimate shot speed | Watch |
+| Name the shot (forehand / backhand / serve / block) | Watch · Write |
 | Feedback per stroke, not just per session | Watch · Write |
-| Spin — only if it can be done honestly | Watch |
+| Service detection (toss, no prior contact) | Watch |
+| Racket-angle proxy (wrist/forearm; not the racket face) | Watch |
+| Table landing heatmap (needs 4-corner calibration) | Watch · Show |
 | **Understand audio too — voice notes, racket sound** | Listen |
 
-### Workstream 4 — Match play *(market area)*
+*Shot speed and spin are stretch/non-goals — ship only if honest.*
+
+### Workstream 3 — Match play *(market area)*
 
 | Item | Senses |
 |------|--------|
@@ -88,14 +83,14 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 | In/out line calls (reviewable) | Watch · Show |
 | Match statistics | Read · Write |
 
-### Workstream 5 — Live & mobile *(market area)*
+### Workstream 4 — Live & mobile *(market area)*
 
 | Item | Senses |
 |------|--------|
 | Live feedback while playing | Watch · Speak · Show |
 | Spoken cues during playback | Speak |
 
-### Workstream 6 — Coaches & teams *(market area)*
+### Workstream 5 — Coaches & teams *(market area)*
 
 | Item | Senses |
 |------|--------|
@@ -105,10 +100,11 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 | Track more than one player | Watch · Show |
 | Use two cameras | Watch |
 
-### Workstream 7 — Improve over time *(market area)*
+### Workstream 6 — Improve over time *(market area)*
 
 | Item | Senses |
 |------|--------|
+| Multi-session trend view (issues, drills, metrics) | Read · Show |
 | Skill ratings per area | Read · Write · Show |
 | A weekly plan from your history | Write · Show |
 | Challenges + leaderboards | — |

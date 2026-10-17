@@ -116,7 +116,8 @@ class AgenticStrategy(Strategy):
             f"Analyze my {params.profile.get('sport', 'table tennis')} session video at {params.video_path} "
             f"({self._profile_line(params)}).\n"
             f"History: {history}\n"
-            "Start with get_measurements, inspect the interesting windows, then save the report.\n\n"
+            "Start with get_measurements, inspect the interesting windows, then save the report.\n"
+            "When the evidence clearly supports it, name the stroke type (forehand/backhand/serve/block); do not guess. If it is a serve (toss, no prior contact), say so.\n\n"
             + language_instruction(params.language)
         )
         result = await self._run_report_agent(params, agent, query, progress, stage="agent: analyzing", pct=45)

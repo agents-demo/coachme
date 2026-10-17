@@ -191,6 +191,8 @@ class DeterministicStrategy(Strategy):
             f"Footage quality: {quality_note}.\n\n"
             + (f"Baseline (previous session):\n{baseline}\n\n" if baseline else "")
             + f"Check the player against this technique rubric (issues should map to it):\n{rubric}\n\n"
+            "When the evidence clearly supports it, name the stroke type (forehand/backhand/serve/block); do not guess when uncertain.\n"
+            "If the clip shows a serve (toss, no prior contact), say so; otherwise do not call it a serve.\n"
             "Save the report with save_report (schema with evidence_times and confidence), "
             "then give me a short summary.\n\n"
             + language_instruction(params.language)
