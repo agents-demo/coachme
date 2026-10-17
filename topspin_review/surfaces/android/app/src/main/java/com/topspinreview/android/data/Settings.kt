@@ -1,18 +1,23 @@
 package com.topspinreview.android.data
 
 import android.content.Context
-import android.os.Build
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
 import com.topspinreview.android.BuildConfig
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 
 /** The API + analysis settings (same values as the desktop `.env`). */
 data class AppSettings(
@@ -28,8 +33,9 @@ data class AppSettings(
     val hand: String = "right",
     val goal: String = "improve",
     val theme: String = "system",
-    val dynamicColor: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
-    val sportMode: Boolean = false,
+    val appStyle: String = "sport",
+    val lastTestAt: Long = 0L,
+    val apiKeyFromBuild: Boolean = BuildConfig.DEFAULT_API_KEY.isNotBlank(),
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("topspin")
@@ -47,14 +53,44 @@ class SettingsStore(private val context: Context) {
         val hand = stringPreferencesKey("hand")
         val goal = stringPreferencesKey("goal")
         val theme = stringPreferencesKey("theme")
+        val appStyle = stringPreferencesKey("app_style")
         val dynamicColor = booleanPreferencesKey("dynamic_color")
         val sportMode = booleanPreferencesKey("sport_mode")
+        val lastTestAt = longPreferencesKey("last_test_at")
     }
 
-    val flow: Flow<AppSettings> = context.dataStore.data.map { p ->
+    private companion object {
+        const val SECRET_API_KEY = "api_key"
+    }
+
+    private val secretPrefs = run {
+        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        EncryptedSharedPreferences.create(
+            "topspin_secrets",
+            masterKeyAlias,
+            context,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
+    }
+    private val apiKey = MutableStateFlow(secretPrefs.getString(SECRET_API_KEY, "") ?: "")
+    private val apiKeyStored = MutableStateFlow(secretPrefs.contains(SECRET_API_KEY))
+
+    private suspend fun migrateLegacyKey() {
+        val legacy = context.dataStore.data.first()[K.apiKey]?.takeIf { it.isNotBlank() } ?: return
+        if (apiKey.value.isBlank()) {
+            secretPrefs.edit().putString(SECRET_API_KEY, legacy).apply()
+            apiKey.value = legacy
+            apiKeyStored.value = true
+        }
+        context.dataStore.edit { it.remove(K.apiKey) }
+    }
+
+    val flow: Flow<AppSettings> = combine(context.dataStore.data, apiKey, apiKeyStored) { p, key, stored ->
         AppSettings(
             apiBase = p[K.apiBase] ?: AppSettings().apiBase,
-            apiKey = p[K.apiKey] ?: AppSettings().apiKey,
+            apiKey = if (stored) key else BuildConfig.DEFAULT_API_KEY,
+            apiKeyFromBuild = !stored && BuildConfig.DEFAULT_API_KEY.isNotBlank(),
             textModel = p[K.textModel] ?: AppSettings().textModel,
             visionModel = p[K.visionModel] ?: AppSettings().visionModel,
             agentic = p[K.agentic] ?: false,
@@ -64,26 +100,40 @@ class SettingsStore(private val context: Context) {
             hand = p[K.hand] ?: "right",
             goal = p[K.goal] ?: "improve",
             theme = p[K.theme] ?: "system",
-            dynamicColor = p[K.dynamicColor] ?: (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S),
-            sportMode = p[K.sportMode] ?: false,
+            appStyle = p[K.appStyle] ?: when {
+                p[K.sportMode] == true -> "sport"
+                p[K.dynamicColor] == true -> "dynamic"
+                else -> "sport"
+            },
+            lastTestAt = p[K.lastTestAt] ?: 0L,
         )
-    }
+    }.onStart { migrateLegacyKey() }
 
     suspend fun save(s: AppSettings) {
+        val clean = s.copy(
+            apiBase = s.apiBase.trim(),
+            apiKey = s.apiKey.trim(),
+            textModel = s.textModel.trim(),
+            visionModel = s.visionModel.trim(),
+            sport = s.sport.trim(),
+        )
+        secretPrefs.edit().putString(SECRET_API_KEY, clean.apiKey).apply()
+        apiKey.update { clean.apiKey }
+        apiKeyStored.update { true }
         context.dataStore.edit { p ->
-            p[K.apiBase] = s.apiBase
-            p[K.apiKey] = s.apiKey
-            p[K.textModel] = s.textModel
-            p[K.visionModel] = s.visionModel
-            p[K.agentic] = s.agentic
-            p[K.maxFrames] = s.maxFrames
-            p[K.sport] = s.sport
-            p[K.level] = s.level
-            p[K.hand] = s.hand
-            p[K.goal] = s.goal
-            p[K.theme] = s.theme
-            p[K.dynamicColor] = s.dynamicColor
-            p[K.sportMode] = s.sportMode
+            p[K.apiBase] = clean.apiBase
+            p.remove(K.apiKey)
+            p[K.textModel] = clean.textModel
+            p[K.visionModel] = clean.visionModel
+            p[K.agentic] = clean.agentic
+            p[K.maxFrames] = clean.maxFrames
+            p[K.sport] = clean.sport
+            p[K.level] = clean.level
+            p[K.hand] = clean.hand
+            p[K.goal] = clean.goal
+            p[K.theme] = clean.theme
+            p[K.appStyle] = clean.appStyle
+            p[K.lastTestAt] = clean.lastTestAt
         }
     }
 }

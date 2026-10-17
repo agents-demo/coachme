@@ -147,19 +147,18 @@ private val SportLightScheme = lightColorScheme(
 @Composable
 fun TopspinTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
-    sportMode: Boolean = false,
+    style: String = "sport",
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
     val colorScheme = when {
-        // Dynamic color wins only when sport mode is off (sport has its own identity)
-        dynamicColor && !sportMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        sportMode && darkTheme -> SportDarkScheme
-        sportMode && !darkTheme -> SportLightScheme
-        darkTheme -> DarkScheme
-        else -> LightScheme
+        style == "dynamic" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val scheme = if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            val line = if (darkTheme) LineDark else LineLight
+            scheme.copy(outline = line, outlineVariant = line)
+        }
+        style == "indigo" -> if (darkTheme) DarkScheme else LightScheme
+        else -> if (darkTheme) SportDarkScheme else SportLightScheme
     }
     MaterialTheme(
         colorScheme = colorScheme,

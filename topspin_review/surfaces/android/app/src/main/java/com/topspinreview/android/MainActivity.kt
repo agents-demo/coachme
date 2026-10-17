@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
                 "dark" -> true
                 else -> isSystemInDarkTheme()
             }
-            TopspinTheme(darkTheme = dark, dynamicColor = s.dynamicColor, sportMode = s.sportMode) {
+            TopspinTheme(darkTheme = dark, style = s.appStyle) {
                 AppNav()
             }
         }

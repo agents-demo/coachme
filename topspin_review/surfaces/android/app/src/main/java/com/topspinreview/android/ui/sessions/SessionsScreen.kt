@@ -117,7 +117,7 @@ class SessionsViewModel @Inject constructor(
     val interrupted: StateFlow<PendingRun?> = _interrupted.asStateFlow()
 
     val sportMode: StateFlow<Boolean> = settingsStore.flow
-        .map { it.sportMode }
+        .map { it.appStyle == "sport" }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     init { refresh() }

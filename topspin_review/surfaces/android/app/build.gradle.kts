@@ -29,14 +29,17 @@ android {
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
 
         buildConfigField("String", "DEFAULT_API_BASE", "\"${secret("apiBase")}\"")
-        buildConfigField("String", "DEFAULT_API_KEY", "\"${secret("apiKey")}\"")
         buildConfigField("String", "DEFAULT_TEXT_MODEL", "\"${secret("textModel")}\"")
         buildConfigField("String", "DEFAULT_VISION_MODEL", "\"${secret("visionModel")}\"")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "DEFAULT_API_KEY", "\"${secret("apiKey")}\"")
+        }
         release {
             isMinifyEnabled = true
+            buildConfigField("String", "DEFAULT_API_KEY", "\"\"")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -66,6 +69,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
 
     implementation("androidx.datastore:datastore-preferences:1.1.7")
+    implementation("androidx.security:security-crypto:1.0.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Media (playback + cutting)
