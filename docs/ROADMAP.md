@@ -33,10 +33,14 @@ them with our agentic, evidence-grounded, self-hosted angle.
 What the app does today is documented in [architecture.md](architecture.md) and
 [USAGE.md](USAGE.md); this roadmap lists only the work that is **not** done.
 
+**Shipped since the last revision:** Android app, English/Chinese UI and reports, ask-by-voice,
+3D body view, automatic rally segments, footage-quality guidance, progress/compare, share card and
+vertical/GIF/reel exports, and one-click session delete.
+
 **What competitors have that we don't (summary)**
 - **3D biomechanics** kinematic sequence, **shot type/stats** (SB, Uplift, SV).
 - **Line calls / scoring**, **real-time audio** (SV, HC).
-- **Coach/team accounts, sharing, annotations, playlists** (HL, OF), **mobile app** (all), **live capture**.
+- **Coach/team accounts, sharing, annotations, playlists** (HL, OF), **iOS app**, **live capture**.
 - **Personalized plans / progress memory**, **injury-risk / load** (Zone7-adjacent), **social/leaderboards**.
 
 ---
@@ -99,13 +103,6 @@ are worth anything.
   states everywhere.
 - **Effort:** `M` (search/tags) + `M` (streaming). **Risks:** SSE plumbing with the job manager.
 
-### 0.5 i18n / localization
-- **Goal:** localize the UI and the report.
-- **Where:** `domain/` gets a message catalog; gui2 a `locale` param; report rendered in the chosen
-  language; label the language in the report.
-- **Acceptance:** EN + ZH end-to-end (UI + generated report); switch without code changes.
-- **Effort:** `M`. **Risks:** prompt quality per language.
-
 ### 0.6 Model portability & offline
 - **Goal:** run against any provider (OpenAI / Anthropic / vLLM / Ollama) and, ideally, **fully
   offline** with a local model.
@@ -118,8 +115,7 @@ are worth anything.
 ### 0.7 Privacy & compliance
 - **Goal:** video of a person is sensitive — be explicit.
 - **Where:** a short data-handling doc; consent line on the Analyze screen; retention setting
-  (`core/config.py`, e.g. `RETENTION_DAYS`, auto-prune on `runtime.setup()`); a "delete everything"
-  action; keep local-first as the default and share opt-in.
+  (`core/config.py`, e.g. `RETENTION_DAYS`, auto-prune on `runtime.setup()`); keep local-first as the default and share opt-in.
 - **Acceptance:** retention prunes old data; consent recorded; no frames leave the machine unless
   sharing is on.
 - **Effort:** `S`–`M`. **Risks:** none technical; policy.
@@ -172,7 +168,7 @@ The `measure` stage is where signal quality is won or lost. Remaining work below
   *Acceptance:* N segments with start/end; per-rep metrics + variance; degrades gracefully.
 - **M5. Extended footage check** — grow `quality.py`: full-body framing / pose completeness, lighting,
   **camera shake**, distance, fps → usable/limits + actionable tips. **S**.
-- **M6. Scene / rally detection** — detect cuts (multi-rally recordings) + rally segments. **M**.
+- **M6. Scene / cut detection** — detect cuts in multi-rally recordings (rally segments already exist). **S**.
 - **M7. Handedness auto-detect** — infer left/right from which arm swings more; suggest profile. **S**.
 - **M8. Thorough sampling mode** — config-gated extra burst around motion peaks (uses `sample_burst`). **S**.
 
@@ -285,12 +281,12 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 
 ## 8. Phase D — Product, platform & growth
 
-### D1. Mobile app (capture-first)
+### D1. iOS app (Android shipped)
 - **Ref:** all.
-- **Goal:** iOS/Android capture + on-device pose (mediapipe mobile) + upload-to-analyze; review on phone.
-- **Where:** new surface(s); reuse `core/service.py` + gui2 API.
+- **Goal:** iOS capture + on-device pose (mediapipe mobile) + upload-to-analyze; review on phone.
+- **Where:** new iOS surface; reuse `core/service.py` + gui2 API.
 - **Effort:** `XL`.
-- **Acceptance:** record → analyze → view a report on the phone.
+- **Acceptance:** record → analyze → view a report on iPhone.
 - **Risks:** app-store builds, native mediapipe, distribution.
 
 ### D2. Coach / team layer
@@ -373,13 +369,6 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Effort:** `M`–`L`. **Acceptance:** a session recorded on the phone shows up on the web.
 - **Risks:** conflict handling; data privacy.
 
-### D12. Voice interaction (ask by voice, hear the answer)
-- **Ref:** — *(multimodal core).*
-- **Goal:** talk to the coach — speak a question, hear the answer (builds on the Ask box + read-aloud).
-- **Where:** gui2 / D1 (speech-to-text + text-to-speech) over the existing `/ask` route.
-- **Effort:** `M`. **Acceptance:** a spoken question returns a spoken, evidence-grounded answer.
-- **Risks:** latency; keep text fallback.
-
 ---
 
 ## 9. Cross-cutting work
@@ -395,7 +384,7 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
   vision "thorough" mode is opt-in.
 - **Testing:** unit tests for new `domain` schemas and `core/video` math; a `tests/integration/`
   harness for the ball/person/3D paths; keep `test_architecture.py` green.
-- **Accessibility & i18n:** captions for voice-over; keep copy short; keep the UI responsive.
+- **Accessibility:** captions for voice-over; keep copy short; keep the UI responsive.
 - **Privacy:** local-first stays the default; share is opt-in; never send more frames than needed.
 
 ---
@@ -427,7 +416,7 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | C8 | 3D biomechanics / kinematic sequence | SB | L | High | |
 | C9 | Spin estimation (stretch; likely non-goal) | SV | XL | Low | |
 | C10 | Audio understanding (a new sense — listen) | — | M | High | ✓ |
-| D1 | Mobile app | all | XL | High | |
+| D1 | iOS app (Android shipped) | all | XL | High | |
 | D2 | Coach / team | HL | XL | High (B2B) | |
 | D3 | Personalized plan + memory | OF | L | High | |
 | D4 | Share links & socials | OF/HL | M | Medium | |
@@ -438,21 +427,20 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | D9 | Coach comments + drill assignments | HL/OF | M | Medium | |
 | D10 | Gamification — challenges & leaderboards | HC | M | Medium | |
 | D11 | Cross-device sync | — | M–L | Medium | |
-| D12 | Voice interaction (ask by voice — speak + listen) | — | M | Medium | ✓ |
 
 **Multimodal** marks work that extends the core senses: **watch** (vision), **read** its own numbers,
-**write**, **listen** (C10), **speak** (D7, D12). The foundation of every item is the multimodal core.
+**write**, **listen** (C10), **speak** (D7). The foundation of every item is the multimodal core.
 
 **Build order:** 0.2 → 0.1 → 0.3 → **M3** → M5/M6 → I1 → I2 → B4 → B5 → **C1 (shot type)** → **C2** →
-C8 → C10 → C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9/D10/D11/D12. (0.4–0.8 and B6 run alongside.)
+C8 → C10 → C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9/D10/D11. (0.4–0.8 and B6 run alongside.)
 
 **Milestones (remaining)**
-- **M-foundations:** 0.1–0.8. Eval harness, feedback, session library + streaming, i18n, offline,
-  privacy, deploy/ops.
+- **M-foundations:** 0.1–0.8. Eval harness, feedback, session library + streaming, offline, privacy,
+  deploy/ops.
 - **M-measure:** M3, M5–M8 + I1–I2. Stroke segmentation, footage check, rally detection, person/segmentation.
 - **M-review:** B4–B6. Overlay compare, reference comparison, multi-sport.
 - **M-depth:** C1–C10. Shot type, whole-session segmentation, line calls, thorough mode, 3D biomechanics, audio sense.
-- **M-platform:** D1–D12. Mobile, coach/team, plans, shares, skills, integrations, gamification, sync, voice.
+- **M-platform:** D1–D11. iOS, coach/team, plans, shares, skills, integrations, gamification, sync.
 
 ---
 
