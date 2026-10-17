@@ -206,3 +206,140 @@ Have a fallback prepared. If the app has a technical issue during the demo:
 3. "The demo is a working prototype, not a production app — rough edges are expected and Phase 1 addresses them" is an honest and reasonable thing to say
 
 Do not apologise excessively for a technical glitch. Move past it quickly and keep the conversation on the ideas.
+
+---
+
+## Meeting dynamics — how Huawei internal meetings actually work
+
+This is different from a Western startup pitch. Several specific things to know:
+
+**Do not expect a "yes" in the room.** Chinese internal business meetings are consensus-building events, not decision events. The manager present may be genuinely interested but will want to discuss with peers or a senior before committing. A successful meeting ends with "this is interesting, I want to share it with [name]" — not a signed approval. Do not interpret the absence of immediate commitment as rejection.
+
+**There is usually one person whose opinion matters more than everyone else's.** Read the room in the first five minutes. When that person speaks, everyone else listens. Direct your most important points toward them without being obvious about it. If they nod or ask a follow-up question, that is the signal.
+
+**Questions are a good sign. Silence is harder to read.** If managers are asking questions, they are engaged. In Chinese business settings, polite silence or very few questions can mean either deep thought or polite disengagement. Do not rush to fill silence — let them process. If the silence extends, ask a direct question to re-engage: "Does this match what you have seen in the market?"
+
+**Never put anyone in a position where they must admit they do not know something.** Explain technical concepts as information-sharing, not as tests. "You may already know this, but..." is better than a question that requires an answer.
+
+**Measured confidence, not American-style enthusiasm.** Huawei internal culture values precision and understatement over excitement. Claim what you can prove. Acknowledge what you do not yet know. This builds more credibility than projecting certainty everywhere.
+
+---
+
+## The critical honesty point — openJiuwen is not integrated yet
+
+This needs to be addressed proactively, not defensively.
+
+The current app does not yet run on openJiuwen. It runs on its own pipeline. Phase 1 is specifically the openJiuwen integration. If a manager asks to see openJiuwen in action, the honest answer is:
+
+> "What you are seeing today is our own pipeline proving the concept works. Phase 1 is specifically about replacing the orchestration layer with openJiuwen — making each stage a named, observable tool call on the platform. We deliberately built and validated the product first, before integration. That means you are seeing a working result, not a proposal."
+
+This is actually a strength, not a weakness. The product exists and produces real output independently. openJiuwen is the production platform layer, not the thing that makes it work. Do not apologise for the sequencing — explain why it was the right order.
+
+---
+
+## The openJiuwen platform play — what this means beyond one app
+
+There is a strategic argument for Huawei that goes beyond "this is a useful sports app."
+
+Every successful commercial application built on openJiuwen makes the platform more valuable and more credible to other developers. This is a classic platform dynamic: the first working consumer product on a developer platform is not just a product — it is proof that the platform is capable of powering real commercial applications.
+
+If Huawei can say to other developers "here is a working consumer product with real users, built on openJiuwen," that is a fundamentally different pitch than "here is a platform that could theoretically enable applications."
+
+This app could be the reference implementation that opens a developer ecosystem. Frame it to managers who care about openJiuwen adoption: you are not asking them to support one sports app. You are asking them to create the platform's first proof point in the consumer vertical AI market.
+
+---
+
+## The B2B coach tier — the biggest growth opportunity, often overlooked
+
+The Pro individual subscription ($8–12/month) is the steady revenue base. But the Club tier ($40–80/month per coach) is where the growth multiplier lives.
+
+The dynamic: a player uses the app and gets a specific report. They show it to their coach. "Look what the AI found about my backhand." Two things can happen:
+1. The coach is impressed — they want to use the app for all their students. One Club subscription brings in 10–20 student users.
+2. The coach is sceptical about one finding — the player and coach watch the video together. If the coach confirms the finding, the player's trust in the app doubles.
+
+Either outcome benefits the product. But the first outcome creates a growth engine: sports coaches are a concentrated, reachable sales channel. One conversation with a club director converts the whole club. The unit economics of acquiring a Club customer are far better than acquiring 20 individual Pro customers.
+
+This growth loop — player → report → shows to coach → coach converts students — is built into the product, not added as a marketing layer.
+
+---
+
+## Tell the story of one user over three months
+
+Abstract metrics do not land in a meeting. A specific user story does.
+
+> "A player comes home from Tuesday practice. They record 10 minutes of their session. The app tells them their elbow drops on backswing — with the timestamp, the measured angle, the specific drill to fix it. On Thursday they run the drill. The following Tuesday they record again. The elbow measurement improved from 88° to 97°. They can see it. Three months later their club coach notices their backhand has gotten sharper. They attribute it to the app. They are still subscribing."
+
+That story makes churn, LTV, and daily retention into something a person can visualise. It also answers the implicit question every manager has: "Would I or someone I know actually use this?"
+
+Note what makes this story work: the player is not coming back because the app sent them a push notification. They are coming back because they want to see if they got better. That is intrinsic motivation created by measurement — the app's core mechanic, not a retention trick.
+
+---
+
+## What they are silently comparing this against
+
+Internal managers are always unconsciously asking: "instead of this, what else could we do?" Know the implicit alternatives:
+
+**"Build something like this internally."** Means no external users, no market validation, much higher cost, much longer timeline. This team built a working version without corporate resources first. That signals efficiency. You are not asking for the team to build — you are asking the platform to support what already exists.
+
+**"Wait and see if the market develops."** The data moat builds daily. Whoever accumulates user sessions first builds a compounding quality advantage. Waiting means buying into a more expensive and more competitive market in 12–18 months.
+
+**"Partner with an existing player (Homecourt, etc.)."** Existing players are Western-built, running on competing AI infrastructure, and have no alignment with openJiuwen or Kirin. Partnership serves none of the platform goals.
+
+The implicit reframe: you are not asking for funding to build a concept. The concept is built and working. You are asking for platform access to the thing that already exists.
+
+---
+
+## The incremental commitment strategy
+
+The four asks are not equally urgent. If you sense hesitation, do not withdraw the whole ask — narrow it.
+
+The critical path is exactly two things: Phase 1 approval and openJiuwen API access. These two unblock everything. The Kirin NPU SDK is months away (Phase 3). The UX design pass is useful but not blocking.
+
+If the room feels uncertain, offer the minimum viable green light:
+
+> "The only thing we need to start is Phase 1 approval and API access. We can show you working openJiuwen integration in four weeks. Everything else — NPU SDK, design resources — we can discuss after you've seen that."
+
+Lower the activation energy. Let them say yes to the small thing. A small yes leads to a larger yes after Phase 1 delivers.
+
+---
+
+## The broader vision — say it once, do not dwell
+
+At some point the "where does this go in 5 years" question arises, or deserves one pre-emptive sentence.
+
+The one sentence: "Sports coaching is where we are validating the pattern — record yourself doing a physical skill, AI watches, gives grounded specific feedback. The same pattern applies to music, physical therapy, language pronunciation, surgical training. We are starting where the outcomes are most objectively measurable. But the platform opportunity is everything humans learn by doing."
+
+Say it once. Let it land. Come back immediately to table tennis and Phase 1. The vision gives scale without replacing the focus.
+
+---
+
+## What you want them saying to each other after you leave
+
+When the managers talk among themselves after the meeting, you want the conversation to be:
+
+- "The demo found something specific about a real player. It wasn't generic."
+- "The market is bigger than I expected. I didn't know table tennis was that large in China."
+- "Phase 1 is short. The ask is small relative to the potential."
+- "The product already works. They are not asking us to build something."
+
+If you hear any of those four things come back to you, the meeting worked.
+
+The conversation you do not want: "Interesting technology but unclear who pays for this" or "Impressive demo but I'm not sure it works in real conditions." Pre-answer both: the paying customer is the serious recreational player who already spends money on coaching and equipment, and the demo report is based on real footage from a real training session.
+
+---
+
+## Things that earn respect vs things that lose it
+
+**Earn respect:**
+- Knowing exactly what the app cannot do yet, stated confidently — signals maturity, not weakness
+- Specific numbers (not "many players" — "875 million globally, 300 million in China")
+- Measured, honest communication about current quality vs roadmap
+- Having thought about what failure looks like and how you'd handle it
+- Having built the thing before asking for support
+
+**Lose credibility:**
+- Vague claims ("our AI is very powerful") without demonstration
+- Inability to explain how the pipeline works in plain language
+- Not knowing who the specific first target paying customer is
+- Asking for too much at once without prioritising
+- Showing every feature in the demo — signals the product has no focus
