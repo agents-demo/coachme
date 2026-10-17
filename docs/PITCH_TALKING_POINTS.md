@@ -368,6 +368,21 @@ Say it as: "On-device inference is not a cost or privacy feature — it is the e
 
 ---
 
+## The coach is the customer, not the player
+
+A player might use the app three times. A coach with 20 students needs it every week and has institutional budget — club, academy, or school — to pay for tools that systematically improve student outcomes.
+
+This is not a nuance. It is the primary revenue model. Individual player subscriptions are the long tail. The coach is the concentrated, reachable, motivated customer.
+
+Coaches have three things players do not:
+1. **Budget** — they already spend on software, video tools, and analysis aids
+2. **Systematic motivation** — their professional reputation is tied to player improvement
+3. **Volume** — one coach conversion brings 10–20 active users
+
+This also changes how you pitch. If you are pitching to a player, you are pitching convenience. If you are pitching to a coach, you are pitching professional capability — "this makes you better at your job." That is a different conversation with a different willingness to pay.
+
+---
+
 ## The AI makes the coach smarter — never positions itself as replacing them
 
 A coach with 20 students cannot watch 20 students' training sessions every week. They rely on what they see in the 60 minutes together. The AI watches the sessions the coach cannot attend and surfaces the specific patterns the coach would have spotted in 10 sessions — before the first session.
