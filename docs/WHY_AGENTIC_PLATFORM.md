@@ -88,6 +88,74 @@ This is a stateful, event-driven, continuously running agent with a persistent m
 
 ---
 
+## The three scenarios for a WOW moment in a presentation
+
+The scenarios above are true and important. These three are for the room. They are the scenarios where a technical audience stops and thinks: *"I had not thought of that."*
+
+---
+
+### WOW 1: The agent finds something no programmer knew to look for
+
+This is the scenario that breaks the "AI describes what it measures" mental model entirely.
+
+A coaching pipeline can only find what it was programmed to measure: elbow angle, knee bend, stroke arc. These are predefined measurements fed into a scribe.
+
+An agent with vision access and the ability to cross-reference measurements freely can discover patterns that are **not in any coaching textbook and not in any programmer's mental model**.
+
+A real example of what this looks like in practice:
+
+> "I notice that in 6 of the 8 strokes in this clip, the player's head tilts downward 0.3 seconds before contact. I cross-referenced this with ball impact quality scores — all 6 strokes with the head dip resulted in flat ball trajectories. The 2 strokes where the head stayed level produced measurably more topspin. This pattern is consistent enough to be causal, not coincidental. The player is losing sight of the ball at the critical brush moment."
+
+Nobody told the agent to look for head position. Nobody programmed "correlate gaze with stroke outcome." Nobody even knew this player had this habit — not the player, not their coach.
+
+A human coach watching this clip might notice it after 10 sessions. The agent noticed it in the first analysis, because it was free to look at everything and cross-reference freely.
+
+**This is the scenario that answers: "what can an agentic AI find that a human coach cannot?"** Not better — faster. The agent looked at relationships no human would think to check on a first viewing. That is a qualitatively different product.
+
+---
+
+### WOW 2: Causal chain, not a list of problems
+
+Every coaching app lists problems. Elbow drops. Arc too flat. No weight transfer.
+
+A scribe pipeline reports each measurement as a separate finding. The player receives a list of 4 things to fix. They do not know which to fix first, because they do not know whether these are 4 independent problems or 4 symptoms of one root cause.
+
+An agent can trace a causal chain across multiple evidence sources, each requiring a separate tool call:
+
+> "Frame-by-frame wrist angle data shows the wrist locks rigid 0.4 seconds before contact [tool call: wrist kinematics]. That rigidity begins at the grip-tighten moment [tool call: hand pressure proxy from finger spread]. With the wrist locked, the elbow cannot remain at waist height through the swing — it drops to compensate for lost wrist mobility [tool call: elbow trajectory against wrist state]. The elbow drop then mechanically forces the paddle to swing forward rather than upward, producing the flat arc [tool call: ball trajectory after contact].
+>
+> This is one problem, not four. The root cause is grip tension before contact. If grip tension is corrected, elbow position, swing arc, and ball trajectory will follow. Drilling elbow position while grip tension remains will produce partial and unstable improvement."
+
+A pipeline reports 4 issues. An agent delivers one diagnosis with a causal chain and a single point of intervention.
+
+The coaching output is not just more accurate — it is categorically different. The player drills one thing instead of four. The prescriptions land because they target the root, not the symptoms.
+
+**This is the scenario that answers: "why does agentic coaching produce better outcomes than a pipeline?"** Not because it knows more about table tennis. Because it can reason across dynamic evidence — calling tools based on what previous calls returned — in a way that a fixed pipeline structurally cannot.
+
+---
+
+### WOW 3: The agent becomes a tactical advisor, not just a technical coach
+
+This is the scenario that describes a different product category entirely — unlocked only by a continuously running agent.
+
+Today: player records a drill clip, uploads it, receives technical feedback on stroke mechanics.
+
+This is useful. It is also static.
+
+A continuously running agent watching a **live match** can shift from technical coach to tactical advisor in real time:
+
+> "You have played 12 backhand-to-backhand rallies in this set. Your opponent has placed 9 of them to your backhand corner and followed with a body shot. You are losing 7 of these. This is not a mechanics issue — your technique is holding. Your opponent has read your preferred return direction. For the next 3 rallies, return to the wide forehand corner. If they adjust within 3 points, you'll know they're adaptive — switch to the middle body shot."
+
+This is not coaching anymore. This is real-time tactical analysis — the kind a professional match coach sitting at the table provides. The kind most recreational players never have access to.
+
+It requires: persistent session memory across all points played, opponent pattern modeling built incrementally as the match progresses, the ability to switch reasoning mode from "technical" to "tactical" based on what the data shows, and delivery in seconds between points.
+
+None of these are possible in a request/response LLM call from application code. There is no "session" to maintain between points. There is no opponent model. There is no memory of points 1 through 12 at the moment of point 13.
+
+**This scenario is the product roadmap in one paragraph.** The demo app proves the concept. An agentic platform running continuously is how it becomes a personal coach that knows your game, knows your opponent, and changes what it tells you based on what it observed — not based on what it was programmed to say.
+
+---
+
 ## What is not a strong agentic argument
 
 Being honest about what does NOT require an agentic platform:
