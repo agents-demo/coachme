@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,12 +29,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -102,6 +105,8 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
+data class TrendsData(val topIssues: List<Pair<String, Int>>, val totalDrills: Int)
+
 @HiltViewModel
 class SessionsViewModel @Inject constructor(
     private val store: ReportStore,
@@ -119,6 +124,24 @@ class SessionsViewModel @Inject constructor(
     val sportMode: StateFlow<Boolean> = settingsStore.flow
         .map { it.appStyle == "sport" }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val trends: StateFlow<TrendsData> = _reports
+        .map { reps ->
+            if (reps.size < 2) return@map TrendsData(emptyList(), 0)
+            val counts = mutableMapOf<String, Int>()
+            var drills = 0
+            for (r in reps) {
+                drills += r.drills.size
+                for (issue in r.issues) {
+                    val k = issue.issue.trim().take(120)
+                    if (k.isNotEmpty()) counts[k] = (counts[k] ?: 0) + 1
+                }
+            }
+            val top = counts.entries.filter { it.value >= 2 }
+                .sortedByDescending { it.value }.take(5).map { it.key to it.value }
+            TrendsData(top, drills)
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, TrendsData(emptyList(), 0))
 
     init { refresh() }
 
@@ -190,9 +213,18 @@ fun SessionsScreen(
     val reports by vm.reports.collectAsStateWithLifecycle()
     val interrupted by vm.interrupted.collectAsStateWithLifecycle()
     val sportMode by vm.sportMode.collectAsStateWithLifecycle()
+    val trends by vm.trends.collectAsStateWithLifecycle()
     val totalPractice = reports.sumOf { it.drills.size }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var search by remember { mutableStateOf("") }
+    val filtered = remember(reports, search) {
+        if (search.isBlank()) reports
+        else reports.filter { r ->
+            listOf(r.name, r.stem, r.sport, r.date, r.tags.joinToString(" "), r.notes)
+                .joinToString(" ").contains(search.trim(), ignoreCase = true)
+        }
+    }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
 
@@ -226,6 +258,16 @@ fun SessionsScreen(
                 item(span = { GridItemSpan(maxLineSpan) }, key = "header") {
                     SessionsHeader(sessionCount = reports.size, practiceCount = totalPractice)
                 }
+                if (trends.topIssues.isNotEmpty() || trends.totalDrills > 0) {
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "trends") {
+                        TrendsCard(trends)
+                    }
+                }
+                if (reports.size > 3) {
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "search") {
+                        SessionSearchBar(query = search, onQueryChange = { search = it })
+                    }
+                }
                 interrupted?.let { run ->
                     item(span = { GridItemSpan(maxLineSpan) }, key = "interrupted") {
                         InterruptedCard(
@@ -237,8 +279,17 @@ fun SessionsScreen(
                 }
                 if (reports.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }, key = "empty") { EmptySessions(onNew) }
+                } else if (filtered.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "empty_search") {
+                        Text(
+                            tr("No sessions match") + " \"$search\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 24.dp),
+                        )
+                    }
                 } else {
-                    val grouped = reports.groupBy { dateBucket(it.date) }
+                    val grouped = filtered.groupBy { dateBucket(it.date) }
                     DATE_GROUPS.forEach { group ->
                         val rows = grouped[group] ?: return@forEach
                         item(span = { GridItemSpan(maxLineSpan) }, key = "header_$group") { SectionLabel(group) }
@@ -262,6 +313,16 @@ fun SessionsScreen(
                 item(key = "header") {
                     SessionsHeader(sessionCount = reports.size, practiceCount = totalPractice)
                 }
+                if (trends.topIssues.isNotEmpty() || trends.totalDrills > 0) {
+                    item(key = "trends") {
+                        TrendsCard(trends)
+                    }
+                }
+                if (reports.size > 3) {
+                    item(key = "search") {
+                        SessionSearchBar(query = search, onQueryChange = { search = it })
+                    }
+                }
                 interrupted?.let { run ->
                     item(key = "interrupted") {
                         InterruptedCard(
@@ -273,8 +334,17 @@ fun SessionsScreen(
                 }
                 if (reports.isEmpty()) {
                     item(key = "empty") { EmptySessions(onNew) }
+                } else if (filtered.isEmpty()) {
+                    item(key = "empty_search") {
+                        Text(
+                            tr("No sessions match") + " \"$search\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 24.dp),
+                        )
+                    }
                 } else {
-                    val grouped = reports.groupBy { dateBucket(it.date) }
+                    val grouped = filtered.groupBy { dateBucket(it.date) }
                     DATE_GROUPS.forEach { group ->
                         val rows = grouped[group] ?: return@forEach
                         item(key = "header_$group") { SectionLabel(group) }
@@ -430,6 +500,89 @@ private fun EmptySessions(onNew: () -> Unit) {
 }
 
 @Composable
+private fun TrendsCard(trends: TrendsData) {
+    TspCard(modifier = Modifier.fillMaxWidth()) {
+        SectionLabel(tr("Trends"))
+        if (trends.topIssues.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                tr("Recurring issues"),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(6.dp))
+            val maxCount = trends.topIssues.first().second
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                trends.topIssues.forEach { (text, count) ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .height(16.dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        ) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth(count.toFloat() / maxCount)
+                                    .fillMaxHeight()
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+                            )
+                            Text(
+                                text,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.align(Alignment.CenterStart).padding(start = 6.dp, end = 4.dp),
+                            )
+                        }
+                        Text(
+                            "${count}×",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+        if (trends.totalDrills > 0) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "${trends.totalDrills} ${tr("total drills across all sessions")}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SessionSearchBar(query: String, onQueryChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = {
+            Text(
+                tr("Search sessions…"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Filled.Close, contentDescription = tr("Clear search"))
+                }
+            }
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(50),
+    )
+}
+
+@Composable
 private fun SwipeDeleteBackground() {
     Box(
         Modifier
@@ -504,11 +657,20 @@ private fun SessionCard(
 
             Column(Modifier.weight(1f)) {
                 Text(
-                    report.stem.ifBlank { report.source },
+                    report.name.ifBlank { report.stem.ifBlank { report.source } },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (report.name.isNotBlank()) {
+                    Text(
+                        report.stem,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     "${report.sport.ifBlank { "session" }} · ${report.date.ifBlank { "undated" }}",
@@ -537,6 +699,13 @@ private fun SessionCard(
                         )
                     }
                     if (report.artifacts["pose"] != null || report.artifacts["pose_hero"] != null) MetaChip("pose")
+                    report.tags.take(3).forEach { tag ->
+                        MetaChip(
+                            tag,
+                            color = MaterialTheme.colorScheme.primary,
+                            border = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                        )
+                    }
                 }
             }
         }
@@ -594,7 +763,7 @@ private fun SessionsGridCard(
             ) {
                 Column {
                     Text(
-                        report.stem.ifBlank { report.source },
+                        report.name.ifBlank { report.stem.ifBlank { report.source } },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,

@@ -23,6 +23,18 @@ class ReportStore(private val context: Context) {
 
     fun save(stem: String, report: Report) = file(stem).writeText(json.encodeToString(Report.serializer(), report))
 
+    /** Update display metadata (name, tags, notes) without touching any other field. */
+    fun patch(stem: String, name: String, tags: List<String>, notes: String): Report? {
+        val current = load(stem) ?: return null
+        val updated = current.copy(
+            name = name.trim(),
+            tags = tags.map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(10),
+            notes = notes.trim(),
+        )
+        save(stem, updated)
+        return updated
+    }
+
     /** Persist a session's shape annotations (drawn on the video). */
     fun saveAnnotations(stem: String, annotations: kotlinx.serialization.json.JsonArray) {
         val current = load(stem) ?: return

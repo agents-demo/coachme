@@ -73,6 +73,8 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -183,6 +185,12 @@ class ResultViewModel @Inject constructor(
         _report.value = updated
     }
 
+    fun patchReport(name: String, tags: List<String>, notes: String) = viewModelScope.launch {
+        val r = _report.value ?: return@launch
+        val updated = withContext(Dispatchers.IO) { store.patch(r.stem, name, tags, notes) }
+        if (updated != null) _report.value = updated
+    }
+
     fun ask(question: String) = viewModelScope.launch {
         val r = _report.value ?: return@launch
         _asking.value = true
@@ -233,6 +241,7 @@ fun ResultScreen(
     val answers by vm.answers.collectAsStateWithLifecycle()
     val asking by vm.asking.collectAsStateWithLifecycle()
     var askOpen by remember { mutableStateOf(false) }
+    var editOpen by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val drillsDone = remember(stem) {
@@ -242,6 +251,9 @@ fun ResultScreen(
             .mapNotNull { it.toIntOrNull() }
         mutableStateMapOf<Int, Boolean>().apply { saved.forEach { put(it, true) } }
     }
+
+    val doneCount = drillsDone.values.count { it }
+    val drillTotal = report?.drills?.size ?: 0
 
     androidx.compose.runtime.LaunchedEffect(stem) { vm.load(stem) }
 
@@ -257,7 +269,7 @@ fun ResultScreen(
             TspTopBar(
                 onBack = onBack,
                 titleContent = {
-                    val name = report?.stem?.ifBlank { stem } ?: stem
+                    val name = report?.name?.ifBlank { null } ?: report?.stem?.ifBlank { stem } ?: stem
                     val meta = listOfNotNull(
                         report?.sport?.takeIf { it.isNotBlank() },
                         report?.date?.takeIf { it.isNotBlank() },
@@ -291,6 +303,11 @@ fun ResultScreen(
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             DropdownMenuItem(
+                                text = { Text("Edit name & notes") },
+                                enabled = report != null,
+                                onClick = { menuOpen = false; editOpen = true },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Share card") },
                                 enabled = report != null,
                                 onClick = { menuOpen = false; report?.let { ShareCard.share(ctx, it) } },
@@ -309,10 +326,25 @@ fun ResultScreen(
                 DividerLine()
                 NavigationBar(containerColor = MaterialTheme.colorScheme.background) {
                     TABS.forEachIndexed { i, label ->
+                        val isCoaching = i == 3 && drillTotal > 0
                         NavigationBarItem(
                             selected = tab == i,
                             onClick = { tab = i; haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove) },
-                            icon = { Icon(MAIN_ICONS[i], contentDescription = null) },
+                            icon = {
+                                if (isCoaching) {
+                                    BadgedBox(badge = {
+                                        Badge(
+                                            containerColor = if (doneCount == drillTotal) Good else MaterialTheme.colorScheme.primary,
+                                        ) {
+                                            Text("$doneCount/$drillTotal", style = MaterialTheme.typography.labelSmall)
+                                        }
+                                    }) {
+                                        Icon(MAIN_ICONS[i], contentDescription = null)
+                                    }
+                                } else {
+                                    Icon(MAIN_ICONS[i], contentDescription = null)
+                                }
+                            },
                             label = {
                                 Text(
                                     label,
@@ -370,6 +402,17 @@ fun ResultScreen(
             asking = asking,
             onAsk = vm::ask,
             onDismiss = { askOpen = false },
+        )
+    }
+
+    if (editOpen && report != null) {
+        EditInfoSheet(
+            report = report!!,
+            onSave = { name, tags, notes ->
+                vm.patchReport(name, tags, notes)
+                editOpen = false
+            },
+            onDismiss = { editOpen = false },
         )
     }
 }
@@ -1214,6 +1257,82 @@ private fun AskSheet(
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditInfoSheet(
+    report: Report,
+    onSave: (name: String, tags: List<String>, notes: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var name by remember(report.stem) { mutableStateOf(report.name) }
+    var tagsText by remember(report.stem) { mutableStateOf(report.tags.joinToString(", ")) }
+    var notes by remember(report.stem) { mutableStateOf(report.notes) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 20.dp)
+                .imePadding(),
+        ) {
+            Text(tr("Edit session info"), style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                tr("Name, tags and notes are saved with the report."),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(tr("Name")) },
+                placeholder = { Text(report.stem) },
+                singleLine = true,
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = tagsText,
+                onValueChange = { tagsText = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(tr("Tags")) },
+                placeholder = { Text("e.g. forehand, serve") },
+                singleLine = true,
+                supportingText = { Text(tr("Comma-separated, max 10")) },
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(tr("Notes")) },
+                placeholder = { Text(tr("Personal notes about this session…")) },
+                minLines = 3,
+                maxLines = 6,
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                GhostButton(tr("Cancel"), onDismiss, Modifier.weight(1f))
+                PrimaryButton(
+                    tr("Save"),
+                    {
+                        val tags = tagsText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                        onSave(name.trim(), tags, notes.trim())
+                    },
+                    Modifier.weight(1.4f),
+                )
             }
         }
     }

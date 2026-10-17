@@ -29,6 +29,10 @@ data class Report(
     val issues: List<Issue> = emptyList(),
     val stem: String = "",
     val source: String = "",
+    // User-editable display metadata (name shown instead of stem, tags for search, notes for free text)
+    val name: String = "",
+    val tags: List<String> = emptyList(),
+    val notes: String = "",
     val metrics: JsonObject = JsonObject(emptyMap()),
     val artifacts: Map<String, String> = emptyMap(),
     val clips: Map<String, String> = emptyMap(),
