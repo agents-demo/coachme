@@ -16,6 +16,7 @@ import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import com.topspinreview.android.pipeline.GifEncoder
+import com.topspinreview.android.ui.i18n.tr
 import java.io.File
 
 private val frameCache = LruCache<String, Bitmap>(24)
@@ -72,7 +73,7 @@ fun exportGif(ctx: Context, source: String, startSec: Double, endSec: Double) {
             putExtra(Intent.EXTRA_STREAM, content)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        ctx.startActivity(Intent.createChooser(send, "Share GIF"))
+        ctx.startActivity(Intent.createChooser(send, tr("Share GIF")))
     } catch (_: Exception) {
     } finally {
         retriever.release()
@@ -90,7 +91,7 @@ fun shareSource(ctx: Context, source: String) {
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    ctx.startActivity(Intent.createChooser(send, "Share clip"))
+    ctx.startActivity(Intent.createChooser(send, tr("Share clip")))
 }
 
 /** Crop to 9:16 and scale to 720×1280, then share (vertical social clip). */
@@ -111,7 +112,7 @@ fun exportVertical(ctx: Context, source: String) {
                 val send = Intent(Intent.ACTION_SEND).apply {
                     type = "video/mp4"; putExtra(Intent.EXTRA_STREAM, content); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                ctx.startActivity(Intent.createChooser(send, "Share vertical clip"))
+                ctx.startActivity(Intent.createChooser(send, tr("Share vertical clip")))
             }
             override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {}
         })
@@ -138,7 +139,7 @@ fun clipAndShare(ctx: Context, source: String, startSec: Double, endSec: Double)
                     putExtra(Intent.EXTRA_STREAM, content)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                ctx.startActivity(Intent.createChooser(send, "Share clip"))
+                ctx.startActivity(Intent.createChooser(send, tr("Share clip")))
             }
             override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {}
         })
@@ -172,7 +173,7 @@ fun exportReel(ctx: Context, source: String, times: List<Double>) {
                     putExtra(Intent.EXTRA_STREAM, content)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                ctx.startActivity(Intent.createChooser(send, "Share highlight reel"))
+                ctx.startActivity(Intent.createChooser(send, tr("Share highlight reel")))
             }
             override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {}
         })
@@ -255,7 +256,7 @@ fun trimShare(ctx: Context, source: String, startSec: Double, endSec: Double, ve
                 putExtra(Intent.EXTRA_STREAM, content)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            ctx.startActivity(Intent.createChooser(send, "Share clip"))
+            ctx.startActivity(Intent.createChooser(send, tr("Share clip")))
         }
         override fun onError(composition: Composition, result: ExportResult, exception: ExportException) {}
     })

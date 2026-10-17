@@ -5,11 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.topspinreview.android.data.AppSettings
 import com.topspinreview.android.data.SettingsStore
 import com.topspinreview.android.ui.AppNav
+import com.topspinreview.android.ui.i18n.AppLanguage
 import com.topspinreview.android.ui.theme.TopspinTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -23,6 +25,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val s by settings.flow.collectAsStateWithLifecycle(initialValue = AppSettings())
+            LaunchedEffect(s.language) { AppLanguage.apply(s.language) }
             val dark = when (s.theme) {
                 "light" -> false
                 "dark" -> true

@@ -4,18 +4,17 @@ Native Android port of Topspin Review — **no server, no openjiuwen**. It picks
 phone, runs the measure → observe → coach pipeline **on-device**, calls the **DeepSeek API**
 directly, and renders the same rubrics as the web app.
 
-See the full plan: [`docs/ANDROID_PLAN.md`](../../docs/ANDROID_PLAN.md) (appendices A–S).
-
 ## Status
 
-**P0–P4 scaffold** — project setup, settings, DeepSeek client, report model + store, sampling, the
-full **measure** stage (activity + subject/mechanics + `footwork_series` + motion/position maps),
-**pose** (MediaPipe PoseLandmarker: skeleton, angles, 3D, fast-hand, footwork), **ball** (ONNX YOLO +
-tracker: path, stats, segments, 3D trajectory), the observe + coach passes, and a Compose shell
-(Sessions / New / Result with Video = player + freehand telestration + trim→mp4 share; Analysis =
-maps + charts + pose + tracked object; Observations; Coaching + Ask with voice). Not yet compiled;
-**P5/P6** remaining: frame-step/slow-mo, GIF/vertical/reel/share-card, compare, key-moment clips,
-full Diagnostics, readiness, localization.
+Feature-complete port: settings (tabs, secure key storage, readiness, backup/reset), report model +
+store, sampling, measure (activity, subject/mechanics, `footwork_series`, maps), pose (skeleton,
+angles, 3D, fast-hand, footwork), ball (ONNX YOLO + tracker), observe + coach passes, and the Compose
+app (Sessions / New / Result, telestration, frame-step and speed controls, trim/GIF/vertical/reel/
+share card, compare, diagnostics, Ask with voice).
+
+Remaining: release setup (signing, store listing) and localization polish (accessibility strings,
+resource migration, more locales). English and Chinese are supported with a Settings override;
+report/QA language follows the selected language.
 
 ## Models (required)
 

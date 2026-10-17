@@ -1,10 +1,15 @@
 package com.topspinreview.android.ui.newanalysis
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -56,6 +61,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -76,7 +82,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
+import com.topspinreview.android.ui.components.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -128,6 +134,8 @@ import com.topspinreview.android.data.Youtube
 import com.topspinreview.android.pipeline.PendingRun
 import com.topspinreview.android.pipeline.Pipeline
 import com.topspinreview.android.pipeline.Sampler
+import com.topspinreview.android.ui.i18n.tr
+import com.topspinreview.android.util.Notifications
 import com.topspinreview.android.pipeline.Stages
 import com.topspinreview.android.ui.components.GhostButton
 import com.topspinreview.android.ui.components.PrimaryButton
@@ -417,6 +425,7 @@ class NewAnalysisViewModel @Inject constructor(
                     )
                 }
                 val stem = report.stem.ifBlank { file.nameWithoutExtension }
+                Notifications.analysisDone(context, stem)
                 _state.value = if (warnings.isEmpty()) {
                     State(stem = stem)
                 } else {
@@ -496,9 +505,43 @@ fun NewAnalysisScreen(
 
     val useRegion = state.useRegion
     val region = state.region
+    val context = LocalContext.current
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) vm.select(uri)
+    }
+
+    var cameraFile by remember { mutableStateOf<File?>(null) }
+    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        val file = cameraFile
+        if (ok && file != null && file.length() > 0) vm.select(Uri.fromFile(file))
+    }
+    val requestNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            requestNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    val requestCamera = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "photo_${System.currentTimeMillis()}.jpg")
+            cameraFile = file
+            takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+        }
+    }
+    fun takePhoto() {
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+            PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            val file = File(File(context.cacheDir, "camera").apply { mkdirs() }, "photo_${System.currentTimeMillis()}.jpg")
+            cameraFile = file
+            takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+        } else {
+            requestCamera.launch(Manifest.permission.CAMERA)
+        }
     }
 
     LaunchedEffect(state.stem) { state.stem?.let(onDone) }
@@ -549,6 +592,7 @@ fun NewAnalysisScreen(
                             CapturePanel(
                                 onVideo = { picker.launch("video/*") },
                                 onPhoto = { picker.launch("image/*") },
+                                onCamera = { takePhoto() },
                                 onSample = { vm.selectSample() },
                                 onYoutube = { showYoutube = true },
                             )
@@ -745,6 +789,7 @@ private fun RecentTile(clip: NewAnalysisViewModel.RecentClip, onClick: () -> Uni
 private fun CapturePanel(
     onVideo: () -> Unit,
     onPhoto: () -> Unit,
+    onCamera: () -> Unit,
     onSample: () -> Unit,
     onYoutube: () -> Unit,
 ) {
@@ -788,9 +833,9 @@ private fun CapturePanel(
                     modifier = Modifier.weight(1f),
                 )
                 SourceTile(
-                    icon = Icons.Filled.PhotoCamera,
+                    icon = Icons.Filled.Image,
                     title = "Photo",
-                    hint = "A single still",
+                    hint = "Pick from gallery",
                     onClick = onPhoto,
                     modifier = Modifier.weight(1f),
                 )
@@ -798,20 +843,28 @@ private fun CapturePanel(
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SourceTile(
+                    icon = Icons.Filled.PhotoCamera,
+                    title = "Camera",
+                    hint = "Take a photo",
+                    onClick = onCamera,
+                    modifier = Modifier.weight(1f),
+                )
+                SourceTile(
                     icon = Icons.Filled.Movie,
                     title = "Sample",
                     hint = "Try a demo clip",
                     onClick = onSample,
                     modifier = Modifier.weight(1f),
                 )
-                SourceTile(
-                    icon = Icons.Filled.Link,
-                    title = "Link",
-                    hint = "YouTube or URL",
-                    onClick = onYoutube,
-                    modifier = Modifier.weight(1f),
-                )
             }
+            Spacer(Modifier.height(10.dp))
+            SourceTile(
+                icon = Icons.Filled.Link,
+                title = "Link",
+                hint = "YouTube or URL",
+                onClick = onYoutube,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -1434,7 +1487,7 @@ private fun ErrorPanel(
             TextButton(
                 onClick = {
                     clipboard.setText(AnnotatedString(message))
-                    Toast.makeText(context, "Details copied", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, tr("Details copied"), Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.heightIn(min = 48.dp),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),

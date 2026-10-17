@@ -1,7 +1,9 @@
 package com.topspinreview.android.ui.settings
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.text.format.DateUtils
@@ -56,7 +58,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import com.topspinreview.android.ui.components.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -83,6 +85,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.topspinreview.android.BuildConfig
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -97,6 +100,7 @@ import com.topspinreview.android.ui.components.SectionLabel
 import com.topspinreview.android.ui.components.TspCard
 import com.topspinreview.android.ui.components.TspSegmented
 import com.topspinreview.android.ui.components.TspTopBar
+import com.topspinreview.android.ui.i18n.tr
 import com.topspinreview.android.ui.theme.Accent
 import com.topspinreview.android.ui.theme.Accent2
 import com.topspinreview.android.ui.theme.Bad
@@ -141,6 +145,9 @@ class SettingsViewModel @Inject constructor(
         private set
 
     fun assetExists(name: String): Boolean = runCatching { context.assets.open(name).close(); true }.getOrDefault(false)
+
+    fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
     fun assetSize(name: String): Long {
         val fdSize = runCatching { context.assets.openFd(name).use { it.length } }.getOrDefault(0L)
@@ -339,6 +346,11 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = hiltViewModel()) 
             "sample.mp4" to vm.assetSize("sample.mp4"),
         )
     }
+    val mediaPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Manifest.permission.READ_MEDIA_VIDEO
+    } else {
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    }
     val checks = listOf(
         "API key set" to s.apiKey.isNotBlank(),
         "Text model set" to s.textModel.isNotBlank(),
@@ -346,11 +358,14 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = hiltViewModel()) 
         "Pose model bundled" to (assets[0].second > 0),
         "Ball model bundled" to (assets[1].second > 0),
         "Sample clip bundled" to (assets[2].second > 0),
+        "Media permission" to vm.hasPermission(mediaPermission),
+        "Microphone permission" to vm.hasPermission(Manifest.permission.RECORD_AUDIO),
+        "Camera permission" to vm.hasPermission(Manifest.permission.CAMERA),
     )
     val missing = checks.count { !it.second }
 
     LaunchedEffect(vm.saveTick) {
-        if (vm.saveTick > 0) snackbar.showSnackbar("Saved")
+        if (vm.saveTick > 0) snackbar.showSnackbar(tr("Saved"))
     }
 
     Scaffold(
@@ -553,6 +568,24 @@ private fun ProfileTab(s: AppSettings, vm: SettingsViewModel) {
 
 @Composable
 private fun StyleTab(s: AppSettings, vm: SettingsViewModel) {
+    TspCard(modifier = Modifier.fillMaxWidth()) {
+        SectionLabel("Language")
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("system" to "System", "en" to "English", "zh" to "中文").forEach { (value, label) ->
+                ChoiceChip(label, selected = s.language == value) {
+                    vm.updateNow { it.copy(language = value) }
+                }
+            }
+        }
+        Text(
+            "Phone language is used by default; English is the fallback.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 10.dp),
+        )
+    }
+
     TspCard(modifier = Modifier.fillMaxWidth()) {
         SectionLabel("Theme")
         Spacer(Modifier.height(10.dp))
@@ -777,7 +810,7 @@ private fun exportSettings(context: Context, s: AppSettings) {
         type = "application/json"
         putExtra(Intent.EXTRA_TEXT, json)
     }
-    context.startActivity(Intent.createChooser(intent, "Export settings"))
+    context.startActivity(Intent.createChooser(intent, tr("Export settings")))
 }
 
 @Composable

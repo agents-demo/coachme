@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import androidx.core.content.FileProvider
 import com.topspinreview.android.data.Report
+import com.topspinreview.android.ui.i18n.tr
 import java.io.File
 
 /** Share card (1200×630), ported from `integrations/cards.py`. */
@@ -61,6 +62,6 @@ object ShareCard {
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        ctx.startActivity(Intent.createChooser(send, "Share card"))
+        ctx.startActivity(Intent.createChooser(send, tr("Share card")))
     }
 }

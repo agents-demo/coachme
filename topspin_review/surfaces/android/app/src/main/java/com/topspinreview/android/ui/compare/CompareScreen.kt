@@ -1,15 +1,22 @@
 package com.topspinreview.android.ui.compare
 
 import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -17,17 +24,27 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.Slider
+import com.topspinreview.android.ui.components.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -139,29 +156,114 @@ fun CompareScreen(onBack: () -> Unit, vm: CompareViewModel = hiltViewModel()) {
 
 @Composable
 private fun ComparePlayers(sourceA: String, sourceB: String) {
-    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val ctx = LocalContext.current
     fun uriOf(s: String): Uri =
         if (s.startsWith("content:") || s.startsWith("http")) Uri.parse(s) else Uri.fromFile(java.io.File(s))
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Earlier", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        PlayerBox(ctx, uriOf(sourceA))
-        Text("Later", style = MaterialTheme.typography.labelMedium, color = Accent2)
-        PlayerBox(ctx, uriOf(sourceB))
-    }
-}
 
-@Composable
-private fun PlayerBox(ctx: android.content.Context, uri: Uri) {
-    val exo = remember {
+    val exoA = remember {
         androidx.media3.exoplayer.ExoPlayer.Builder(ctx).build().apply {
-            setMediaItem(androidx.media3.common.MediaItem.fromUri(uri)); prepare(); playWhenReady = false
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(uriOf(sourceA)))
+            prepare()
+            playWhenReady = false
         }
     }
-    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { exo.release() } }
-    Box(Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(14.dp))) {
-        androidx.compose.ui.viewinterop.AndroidView(
-            factory = { androidx.media3.ui.PlayerView(it).apply { player = exo; useController = true } },
-            modifier = Modifier.fillMaxSize(),
+    val exoB = remember {
+        androidx.media3.exoplayer.ExoPlayer.Builder(ctx).build().apply {
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(uriOf(sourceB)))
+            prepare()
+            playWhenReady = false
+        }
+    }
+    DisposableEffect(Unit) { onDispose { exoA.release(); exoB.release() } }
+
+    var split by remember { mutableFloatStateOf(0.5f) }
+    var playing by remember { mutableStateOf(false) }
+    var progress by remember { mutableFloatStateOf(0f) }
+
+    fun seekBoth(fraction: Float) {
+        val f = fraction.coerceIn(0f, 1f)
+        progress = f
+        if (exoA.duration > 0) exoA.seekTo((f * exoA.duration).toLong())
+        if (exoB.duration > 0) exoB.seekTo((f * exoB.duration).toLong())
+    }
+
+    fun playBoth() {
+        val fraction = if (exoA.duration > 0) exoA.currentPosition.toFloat() / exoA.duration else progress
+        if (exoB.duration > 0) exoB.seekTo((fraction * exoB.duration).toLong())
+        exoA.play()
+        exoB.play()
+        playing = true
+    }
+
+    fun pauseBoth() {
+        exoA.pause()
+        exoB.pause()
+        playing = false
+    }
+
+    LaunchedEffect(playing) {
+        while (playing) {
+            if (exoA.duration > 0) progress = (exoA.currentPosition.toFloat() / exoA.duration).coerceIn(0f, 1f)
+            delay(200)
+        }
+    }
+
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        BoxWithConstraints(
+            Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(14.dp))
+                .background(Color.Black),
+        ) {
+            androidx.compose.ui.viewinterop.AndroidView(
+                factory = { androidx.media3.ui.PlayerView(it).apply { player = exoB; useController = false } },
+                modifier = Modifier.fillMaxSize(),
+            )
+            androidx.compose.ui.viewinterop.AndroidView(
+                factory = { androidx.media3.ui.PlayerView(it).apply { player = exoA; useController = false } },
+                modifier = Modifier.fillMaxSize().drawWithContent {
+                    clipRect(right = size.width * split) { this@drawWithContent.drawContent() }
+                },
+            )
+            Box(
+                Modifier.fillMaxHeight().width(2.dp).offset(x = maxWidth * split - 1.dp)
+                    .background(Color.White),
+            )
+            Box(
+                Modifier.fillMaxSize().pointerInput(Unit) {
+                    detectHorizontalDragGestures { change, _ ->
+                        split = (change.position.x / size.width).coerceIn(0.05f, 0.95f)
+                    }
+                },
+            )
+            Text(
+                "Earlier",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White,
+                modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                    .clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.55f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+            Text(
+                "Later",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White,
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                    .clip(RoundedCornerShape(50)).background(Accent2.copy(alpha = 0.75f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GhostButton(if (playing) "Pause" else "Play", { if (playing) pauseBoth() else playBoth() })
+            Slider(
+                value = progress,
+                onValueChange = { seekBoth(it) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Text(
+            "Drag the divider — earlier on the left, later on the right. Playback is progress-synced.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

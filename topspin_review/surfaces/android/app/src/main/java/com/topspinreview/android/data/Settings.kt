@@ -33,6 +33,7 @@ data class AppSettings(
     val hand: String = "right",
     val goal: String = "improve",
     val theme: String = "system",
+    val language: String = "system",
     val appStyle: String = "sport",
     val lastTestAt: Long = 0L,
     val apiKeyFromBuild: Boolean = BuildConfig.DEFAULT_API_KEY.isNotBlank(),
@@ -53,6 +54,7 @@ class SettingsStore(private val context: Context) {
         val hand = stringPreferencesKey("hand")
         val goal = stringPreferencesKey("goal")
         val theme = stringPreferencesKey("theme")
+        val language = stringPreferencesKey("language")
         val appStyle = stringPreferencesKey("app_style")
         val dynamicColor = booleanPreferencesKey("dynamic_color")
         val sportMode = booleanPreferencesKey("sport_mode")
@@ -100,6 +102,7 @@ class SettingsStore(private val context: Context) {
             hand = p[K.hand] ?: "right",
             goal = p[K.goal] ?: "improve",
             theme = p[K.theme] ?: "system",
+            language = p[K.language] ?: "system",
             appStyle = p[K.appStyle] ?: when {
                 p[K.sportMode] == true -> "sport"
                 p[K.dynamicColor] == true -> "dynamic"
@@ -132,6 +135,7 @@ class SettingsStore(private val context: Context) {
             p[K.hand] = clean.hand
             p[K.goal] = clean.goal
             p[K.theme] = clean.theme
+            p[K.language] = clean.language
             p[K.appStyle] = clean.appStyle
             p[K.lastTestAt] = clean.lastTestAt
         }

@@ -45,7 +45,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.Text
+import com.topspinreview.android.ui.components.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -83,6 +83,7 @@ import com.topspinreview.android.ui.components.SectionLabel
 import com.topspinreview.android.ui.components.TspCard
 import com.topspinreview.android.ui.components.TspTopBar
 import com.topspinreview.android.ui.components.heroBrush
+import com.topspinreview.android.ui.i18n.tr
 import com.topspinreview.android.ui.theme.Bad
 import com.topspinreview.android.ui.theme.Good
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -284,8 +285,8 @@ fun SessionsScreen(
                                         vm.stageDelete(r)
                                         scope.launch {
                                             val res = snackbar.showSnackbar(
-                                                message = "Session removed",
-                                                actionLabel = "Undo",
+                                                message = tr("Session removed"),
+                                                actionLabel = tr("Undo"),
                                                 duration = SnackbarDuration.Short,
                                             )
                                             if (res == SnackbarResult.ActionPerformed) vm.undo(r)

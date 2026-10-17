@@ -1,12 +1,23 @@
 package com.topspinreview.android.llm
 
-/** Prompts ported verbatim from the desktop app (see docs/ANDROID_PLAN.md · Appendix F). */
+import com.topspinreview.android.ui.i18n.AppLanguage
+
+/** Prompts ported verbatim from the desktop app. */
 object Prompts {
-    const val VISION_AGENT_SYSTEM =
-        "You are a racket-sport video analyst. You inspect images (contact sheets, motion maps, " +
-        "pose overlays, frames). Reason from what you see and the measured metrics. Never invent " +
-        "measurements: no spin, ball speed, or exact angles. Reply with ONLY the requested JSON " +
-        "object, with no prose outside it."
+    private fun languageInstruction(): String =
+        if (AppLanguage.resolved == "zh") {
+            "Write all human-readable text in Simplified Chinese (简体中文). " +
+                "Keep JSON keys and machine-readable values exactly as specified."
+        } else {
+            "Write all human-readable text in English."
+        }
+
+    val VISION_AGENT_SYSTEM: String
+        get() =
+            "You are a racket-sport video analyst. You inspect images (contact sheets, motion maps, " +
+                "pose overlays, frames). Reason from what you see and the measured metrics. Never invent " +
+                "measurements: no spin, ball speed, or exact angles. Reply with ONLY the requested JSON " +
+                "object, with no prose outside it. " + languageInstruction()
 
     fun coarse(n: Int, sport: String, level: String, hand: String, goal: String, metrics: String, duration: Double) =
         """
@@ -61,7 +72,8 @@ Return ONLY a JSON object:
 }
 """.trim()
 
-    const val REPORT_AGENT_SYSTEM = """You are Topspin Review. You turn objective, measured observations
+    val REPORT_AGENT_SYSTEM: String
+        get() = """You are Topspin Review. You turn objective, measured observations
 from a time-ordered analysis of a racket-sport session into a practical coaching report.
 
 You have these tools:
@@ -85,7 +97,7 @@ When asked to write a report from observations:
 4. If the observations say the clip is unclear or the frames near-duplicate, say so
    in "limitations" and keep confidence low.
 5. Reply with a short plain-text summary (do not paste the JSON back).
-"""
+""" + "\n" + languageInstruction()
 
     fun reportQuery(
         date: String, sport: String, profileLine: String, history: String,
@@ -106,6 +118,7 @@ Check the player against this technique rubric (issues should map to it):
 $rubric
 
 Save the report with save_report (schema with evidence_times and confidence), then give me a short summary.
+${languageInstruction()}
 """.trim()
 
     const val VERIFY_SYSTEM = "You verify coaching-report issues against evidence and reply with ONLY the requested JSON."
@@ -124,10 +137,11 @@ Return ONLY JSON: {"supported": [list of issue indices, 0-based, that the eviden
 Be strict: an issue with no supporting evidence or evidence times must be dropped.
 """.trim()
 
-    const val QA_SYSTEM =
-        "You are Topspin Review. Answer questions about the player's coaching report using ONLY the " +
-        "report and its measurements. Be concise and practical. Never invent spin, ball speed, or " +
-        "exact angles. If the report does not cover it, say so."
+    val QA_SYSTEM: String
+        get() =
+            "You are Topspin Review. Answer questions about the player's coaching report using ONLY the " +
+                "report and its measurements. Be concise and practical. Never invent spin, ball speed, or " +
+                "exact angles. If the report does not cover it, say so. " + languageInstruction()
 
     val RUBRIC_TABLE_TENNIS = listOf(
         "ready stance and balance",

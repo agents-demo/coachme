@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
 import com.topspinreview.android.data.Report
+import com.topspinreview.android.ui.i18n.tr
 import java.io.File
 
 /** Markdown / HTML export, ported from `integrations/reporting.py`. */
@@ -81,6 +82,6 @@ object Reporting {
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        ctx.startActivity(Intent.createChooser(send, "Share report"))
+        ctx.startActivity(Intent.createChooser(send, tr("Share report")))
     }
 }

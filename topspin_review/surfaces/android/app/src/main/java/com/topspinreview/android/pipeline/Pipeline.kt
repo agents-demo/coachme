@@ -43,7 +43,7 @@ private const val CAVEAT_VERIFY = "The double-check pass was skipped, so an issu
  * The pipeline: measure → observe → coach (mock-free MVP slice).
  *
  * Renders a contact sheet, does the two vision passes, then runs the report agent loop
- * (tools from [ReportTools]) and returns the saved [Report]. See docs/ANDROID_PLAN.md §7.
+ * (tools from [ReportTools]) and returns the saved [Report].
  *
  * Every stage checkpoints its outputs to a [RunStore]; pass `resume = true` to continue a
  * previously interrupted run from the first unfinished stage instead of starting over.
