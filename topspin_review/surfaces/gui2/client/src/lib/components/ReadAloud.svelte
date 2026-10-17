@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   let { text, label = "Play summary" } = $props();
 
   let speaking = $state(false);
@@ -30,6 +31,6 @@
   <button
     onclick={toggle}
     class="inline-flex items-center gap-1.5 rounded-lg border-2 border-line px-3 py-1.5 text-sm font-semibold text-app transition hover:border-accent2"
-    title="Read the summary aloud"
-  >{speaking ? "⏹ Stop" : `🔊 ${label}`}</button>
+    title={tr("Read the summary aloud")}
+  >{speaking ? "⏹ " + tr("Stop") : "🔊 " + tr(label)}</button>
 {/if}

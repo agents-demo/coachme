@@ -1,11 +1,12 @@
 <script>
+  import { tr } from "$lib/appearance";
   let { segments = [], duration = 1, playhead = 0, onseek, tt = false } = $props();
 
   // Sport-neutral label (plain motion terms) unless `tt` — then use the real TT label.
   function label(s) {
     if (tt) return s.label || "rally";
     const n = (s.contacts?.length || 0) + (s.bounces?.length || 0);
-    return n ? `${n} reversal${n > 1 ? "s" : ""}` : "movement";
+    return n ? tr(`${n} reversal${n > 1 ? "s" : ""}`) : tr("movement");
   }
 </script>
 

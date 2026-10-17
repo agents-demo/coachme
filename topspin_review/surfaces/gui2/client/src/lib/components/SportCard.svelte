@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { base } from "$app/paths";
   import { deleteReport, thumb } from "$lib/api";
 
@@ -58,7 +59,7 @@
     {/if}
 
     {#if report.is_photo}
-      <span class="absolute bottom-12 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70 backdrop-blur pointer-events-none">photo</span>
+      <span class="absolute bottom-12 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70 backdrop-blur pointer-events-none">{tr("photo")}</span>
     {/if}
   </a>
 

@@ -26,6 +26,7 @@ class Job:
     video_path: str
     region_box: tuple[float, float, float, float] | None
     agentic: bool
+    language: str = "en"
     status: str = "queued"  # queued | running | done | failed | cancelled
     error: str = ""
     stem: str = ""
@@ -48,9 +49,15 @@ class JobManager:
         self._jobs: dict[str, Job] = {}
         self._progress: dict[str, Progress] = {}
 
-    def submit(self, video_path: str, region_box=None, agentic: bool = False) -> str:
+    def submit(self, video_path: str, region_box=None, agentic: bool = False, language: str = "en") -> str:
         job_id = uuid.uuid4().hex[:12]
-        job = Job(id=job_id, video_path=video_path, region_box=region_box, agentic=agentic)
+        job = Job(
+            id=job_id,
+            video_path=video_path,
+            region_box=region_box,
+            agentic=agentic,
+            language=language,
+        )
         prog = Progress()
         with self._lock:
             self._jobs[job_id] = job
@@ -62,7 +69,16 @@ class JobManager:
         job.status = "running"
         try:
             strategy = resolve(job.agentic)
-            run_async(strategy.analyze(Params(video_path=job.video_path, region_box=job.region_box, progress=prog)))
+            run_async(
+                strategy.analyze(
+                    Params(
+                        video_path=job.video_path,
+                        region_box=job.region_box,
+                        progress=prog,
+                        language=job.language,
+                    )
+                )
+            )
             job.stem = job.video_path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].rsplit(".", 1)[0]
             prog.finish(job.stem)
             job.status = "cancelled" if job.status == "cancelled" else "done"
@@ -97,7 +113,7 @@ class JobManager:
             job = self._jobs.get(job_id)
         if job is None:
             return None
-        return self.submit(job.video_path, job.region_box, job.agentic)
+        return self.submit(job.video_path, job.region_box, job.agentic, job.language)
 
 
 _MANAGER = JobManager()

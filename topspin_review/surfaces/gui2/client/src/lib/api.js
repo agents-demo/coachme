@@ -1,3 +1,5 @@
+import { currentLanguage } from "$lib/appearance";
+
 // Same-origin when served by FastAPI; CORS is enabled for the Vite dev server.
 // The API lives at the server root; the SPA is mounted under /gui2.
 export async function api(path, opts) {
@@ -9,7 +11,10 @@ export async function api(path, opts) {
 export const getReports = () => api("/reports");
 export const getReport = (stem) => api(`/reports/${encodeURIComponent(stem)}`);
 export const deleteReport = (stem) => api(`/reports/${encodeURIComponent(stem)}`, { method: "DELETE" });
-export const ask = (stem, q) => api(`/reports/${encodeURIComponent(stem)}/ask?q=${encodeURIComponent(q)}`);
+export const ask = (stem, q) =>
+  api(
+    `/reports/${encodeURIComponent(stem)}/ask?q=${encodeURIComponent(q)}&language=${encodeURIComponent(currentLanguage())}`,
+  );
 export const saveAnnotations = (stem, annotations) =>
   api(`/reports/${encodeURIComponent(stem)}/annotations`, {
     method: "POST",
@@ -22,7 +27,7 @@ export const analyzeAsync = (body) =>
   api("/analyze/async", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, language: currentLanguage() }),
   });
 
 export const jobStatus = (id) => api(`/jobs/${encodeURIComponent(id)}`);

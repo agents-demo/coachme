@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { onMount } from "svelte";
   import { base } from "$app/paths";
   import { getReports, compare } from "$lib/api";
@@ -41,30 +42,30 @@
 </script>
 
 <section>
-  <h1 class="font-display text-3xl font-extrabold">Compare sessions</h1>
+  <h1 class="font-display text-3xl font-extrabold">{tr("Compare sessions")}</h1>
   <p class="mt-1 max-w-2xl text-sm text-muted">
-    Pick an earlier and a later session to see what improved, what regressed, and what's still open.
+    {tr("Pick an earlier and a later session to see what improved, what regressed, and what's still open.")}
   </p>
 </section>
 
 {#if loading}
-  <p class="mt-6 text-sm text-muted">Loading…</p>
+  <p class="mt-6 text-sm text-muted">{tr("Loading…")}</p>
 {:else if reports.length < 2}
   <div class="card mt-5 p-6 text-center">
-    <p class="text-sm text-muted">You need at least two sessions to compare.</p>
+    <p class="text-sm text-muted">{tr("You need at least two sessions to compare.")}</p>
     <a
       href={`${base}/?new=1`}
       class="mt-4 inline-flex rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-    >New analysis</a>
+    >{tr("New analysis")}</a>
   </div>
 {:else}
   <div class="mt-5 flex flex-wrap items-end gap-3 text-sm">
-    <label class="text-xs text-muted">Earlier
+    <label class="text-xs text-muted">{tr("Earlier")}
       <select bind:value={a} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2 transition focus:border-accent focus:outline-none">
         {#each reports as r (r.stem)}<option value={r.stem}>{r.stem}</option>{/each}
       </select>
     </label>
-    <label class="text-xs text-muted">Later
+    <label class="text-xs text-muted">{tr("Later")}
       <select bind:value={b} class="mt-1 block rounded-lg border-2 border-line bg-surface px-3 py-2 transition focus:border-accent focus:outline-none">
         {#each reports as r (r.stem)}<option value={r.stem}>{r.stem}</option>{/each}
       </select>
@@ -73,7 +74,7 @@
       onclick={runCompare}
       disabled={!a || !b || a === b}
       class="rounded-lg bg-accent px-4 py-2 font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
-    >Compare</button>
+    >{tr("Compare")}</button>
   </div>
 
   {#if canCompareVideos}
@@ -99,7 +100,7 @@
       ] as { label, items, chipClass }}
         {#if items?.length}
           <div>
-            <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</p>
+            <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">{tr(label)}</p>
             <div class="flex flex-wrap gap-1.5">
               {#each items as item}
                 <span class="rounded-full border px-2.5 py-0.5 text-xs {chipClass}">{item}</span>
@@ -111,7 +112,7 @@
 
       {#if diff.metric_deltas && Object.keys(diff.metric_deltas).length}
         <div>
-          <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Metric changes</p>
+          <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">{tr("Metric changes")}</p>
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {#each Object.entries(diff.metric_deltas) as [k, v]}
               <div class="rounded-xl border border-line bg-surface/60 px-3 py-2.5 text-center">

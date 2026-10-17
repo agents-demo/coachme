@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { fmtTime } from "$lib/format";
 
   let { report } = $props();
@@ -64,18 +65,18 @@
 <div>
   {#if Object.keys(p3).length}
     <div class="rounded-xl border-2 border-line p-3">
-      <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">3D biomechanics (world-landmark mean)</div>
+      <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{tr("3D biomechanics (world-landmark mean)")}</div>
       <div class="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted sm:grid-cols-4">
-        {#each [["L knee", p3.l_knee_3d_mean], ["R knee", p3.r_knee_3d_mean], ["L elbow", p3.l_elbow_3d_mean], ["R elbow", p3.r_elbow_3d_mean], ["Torso lean", p3.torso_lean_mean], ["Shoulder twist", p3.shoulder_twist_mean], ["Hip twist", p3.hip_twist_mean]] as [label, val]}
+        {#each [[tr("L knee"), p3.l_knee_3d_mean], [tr("R knee"), p3.r_knee_3d_mean], [tr("L elbow"), p3.l_elbow_3d_mean], [tr("R elbow"), p3.r_elbow_3d_mean], [tr("Torso lean"), p3.torso_lean_mean], [tr("Shoulder twist"), p3.shoulder_twist_mean], [tr("Hip twist"), p3.hip_twist_mean]] as [label, val]}
           {#if val != null}<div><span class="font-semibold text-app">{val}°</span> {label}</div>{/if}
         {/each}
       </div>
-      <p class="mt-1.5 text-[11px] text-muted">Approximate 3D from a single camera — treat as an indicator, not a precise measurement.</p>
+      <p class="mt-1.5 text-[11px] text-muted">{tr("Approximate 3D from a single camera — treat as an indicator, not a precise measurement.")}</p>
     </div>
   {/if}
   {#if !frames.length}
     <p class="mt-3 rounded-xl border-2 border-line p-4 text-sm text-muted">
-      No 3D pose in this report. Re-run the analysis to capture it.
+      {tr("No 3D pose in this report. Re-run the analysis to capture it.")}
     </p>
   {:else}
     <div class="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
@@ -99,13 +100,13 @@
       </div>
 
       <div class="text-xs text-muted">
-        <label class="block">Frame <span class="font-mono text-app">{idx + 1}</span> / {frames.length}</label>
+        <label class="block">{tr("Frame")} <span class="font-mono text-app">{idx + 1}</span> / {frames.length}</label>
         <input type="range" min="0" max={frames.length - 1} step="1" bind:value={idxRaw} class="mt-1 w-full" />
         {#if times.length}<div class="mt-1 font-mono">{fmtTime(times[frames[idx]?.i] || 0)}</div>{/if}
-        <div class="mt-3 font-semibold text-app">{report.metrics?.pose3d_summary?.torso_lean_mean ?? "—"}° torso lean</div>
-        <div>shoulder twist {report.metrics?.pose3d_summary?.shoulder_twist_mean ?? "—"}°</div>
-        <div>hip twist {report.metrics?.pose3d_summary?.hip_twist_mean ?? "—"}°</div>
-        <button onclick={() => { yaw = -0.5; pitch = 0.15; }} class="mt-3 rounded-lg border-2 border-line px-2.5 py-1 font-semibold text-app">Reset view</button>
+        <div class="mt-3 font-semibold text-app">{report.metrics?.pose3d_summary?.torso_lean_mean ?? "—"}{tr("° torso lean")}</div>
+        <div>{tr("shoulder twist")} {report.metrics?.pose3d_summary?.shoulder_twist_mean ?? "—"}°</div>
+        <div>{tr("hip twist")} {report.metrics?.pose3d_summary?.hip_twist_mean ?? "—"}°</div>
+        <button onclick={() => { yaw = -0.5; pitch = 0.15; }} class="mt-3 rounded-lg border-2 border-line px-2.5 py-1 font-semibold text-app">{tr("Reset view")}</button>
       </div>
     </div>
   {/if}

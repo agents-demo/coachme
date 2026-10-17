@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { page } from "$app/stores";
   import { getReport, ask, artifact, clip, exportUrl, reelUrl, cardUrl } from "$lib/api";
   import VideoReview from "$lib/components/VideoReview.svelte";
@@ -160,11 +161,11 @@
     <div class="flex flex-wrap gap-8">
       <div>
         <div class="font-display text-3xl font-bold">{Math.round((it.lateral ?? 0) * 100)}%</div>
-        <div class="text-[11px] uppercase tracking-wide text-muted">Side-to-side travel (the band's height)</div>
+        <div class="text-[11px] uppercase tracking-wide text-muted">{tr("Side-to-side travel (the band's height)")}</div>
       </div>
       <div>
         <div class="font-display text-3xl font-bold">{it.steps ?? 0}</div>
-        <div class="text-[11px] uppercase tracking-wide text-muted">Direction changes (the dots)</div>
+        <div class="text-[11px] uppercase tracking-wide text-muted">{tr("Direction changes (the dots)")}</div>
       </div>
     </div>
     <div class="mt-4">
@@ -178,35 +179,35 @@
     <Ball3D {report} />
   {:else if it.kind}
     <figure>
-      <img src={artifact(report.stem, it.kind)} alt={it.label} class="w-full rounded-xl border-2 border-line" />
+      <img src={artifact(report.stem, it.kind)} alt={tr(it.label)} class="w-full rounded-xl border-2 border-line" />
     </figure>
   {:else if it.id === "ball"}
     <p class="rounded-xl border-2 border-line p-4 text-sm text-muted">
-      No small moving object detected in this clip — automatic tracking is hard here.
+      {tr("No small moving object detected in this clip — automatic tracking is hard here.")}
     </p>
   {/if}
 {/snippet}
 
 {#snippet frow(f)}
   <div class="text-sm">
-    <span class="font-semibold text-app">{f.label}:</span>
-    <span class="text-app"> {f.value}</span>
-    <span class="block text-xs text-muted">{f.note}</span>
+    <span class="font-semibold text-app">{tr(f.label)}:</span>
+    <span class="text-app"> {tr(f.value)}</span>
+    <span class="block text-xs text-muted">{tr(f.note)}</span>
   </div>
 {/snippet}
 
 {#if loading}
-  <p class="mt-6 text-sm text-muted">Loading…</p>
+  <p class="mt-6 text-sm text-muted">{tr("Loading…")}</p>
 {:else if error}
   <p class="mt-6 text-sm text-bad">{error}</p>
 {:else if !report}
-  <p class="mt-6 text-sm text-muted">No report selected.</p>
+  <p class="mt-6 text-sm text-muted">{tr("No report selected.")}</p>
 {:else}
   <div class="flex flex-wrap items-baseline gap-3" style="view-transition-name: {vtName}">
     <h1 class="font-display text-2xl font-bold">{report.stem}</h1>
-    <span class="text-sm text-muted">{report.sport} · {report.date}</span>
+    <span class="text-sm text-muted">{tr(report.sport)} · {report.date}</span>
     {#if report.fallback}
-      <span class="rounded-full border border-warn px-2 py-0.5 text-[11px] font-semibold text-warn" title="The live run failed; this is the last recorded result for this clip.">recorded run</span>
+      <span class="rounded-full border border-warn px-2 py-0.5 text-[11px] font-semibold text-warn" title="The live run failed; this is the last recorded result for this clip.">{tr("recorded run")}</span>
     {/if}
   </div>
 
@@ -220,21 +221,21 @@
           class:text-app={tab === t.id}
           class:border-transparent={tab !== t.id}
           class:text-muted={tab !== t.id}
-        >{t.id}</button>
+        >{tr(t.id)}</button>
       {/each}
       <button
         onclick={() => (tab = TECH_TAB.id)}
-        title={TECH_TAB.hint}
+        title={tr(TECH_TAB.hint)}
         class="ml-auto whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition"
         class:border-accent={tab === TECH_TAB.id}
         class:text-app={tab === TECH_TAB.id}
         class:border-transparent={tab !== TECH_TAB.id}
         class:text-muted={tab !== TECH_TAB.id}
-      >⚙ {TECH_TAB.id}</button>
+      >⚙ {tr(TECH_TAB.id)}</button>
     </div>
   </div>
 
-  <p class="mt-2 text-xs text-muted">{[...MAIN_TABS, TECH_TAB].find((t) => t.id === tab)?.hint}</p>
+  <p class="mt-2 text-xs text-muted">{tr([...MAIN_TABS, TECH_TAB].find((t) => t.id === tab)?.hint ?? "")}</p>
 
   <div class="mt-3">
     {#if tab === "Video"}
@@ -247,13 +248,13 @@
             class:text-app={videoView === v}
             class:border-transparent={videoView !== v}
             class:text-muted={videoView !== v}
-          >{v}</button>
+          >{tr(v)}</button>
         {/each}
       </div>
       {#if videoView === "Motion"}
         {#if report.has_source && !isPhoto}
           <div class="flex items-start justify-between gap-3">
-            <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Clip</h3>
+            <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{tr("Clip")}</h3>
             <TrimExport {report} />
           </div>
           <div class="mt-3"><VideoReview {report} bind:this={playerRef} bind:time={playTime} /></div>
@@ -261,7 +262,7 @@
         <div class="mt-8 space-y-14">
           {#each videoMotionItems as it (it.id)}
             <section>
-              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
+              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{tr(it.label)}</h3>
               <Provenance item={it} />
               <div class="mt-3">{@render visual(it)}</div>
             </section>
@@ -271,7 +272,7 @@
         <div class="space-y-14">
           {#each frameItems as it (it.id)}
             <section>
-              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
+              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{tr(it.label)}</h3>
               <Provenance item={it} />
               <div class="mt-3">{@render visual(it)}</div>
             </section>
@@ -289,7 +290,7 @@
               class:text-app={activeDetect?.id === g.id}
               class:border-transparent={activeDetect?.id !== g.id}
               class:text-muted={activeDetect?.id !== g.id}
-            >{g.group}</button>
+            >{tr(g.group)}</button>
           {/each}
         </div>
       {/if}
@@ -297,7 +298,7 @@
         <div class="space-y-14">
           {#each activeDetect.items as it (it.id)}
             <section>
-              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{it.label}</h3>
+              <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{tr(it.label)}</h3>
               <Provenance item={it} />
               <div class="mt-3">{@render visual(it)}</div>
             </section>
@@ -314,7 +315,7 @@
             class:text-app={obsView === v}
             class:border-transparent={obsView !== v}
             class:text-muted={obsView !== v}
-          >{v}</button>
+          >{tr(v)}</button>
         {/each}
       </div>
       {#if obsView === "Findings"}
@@ -323,7 +324,7 @@
           {@const items = report.tt_reading.findings.filter((f) => f.group === grp)}
           {#if items.length}
             <section class="mt-5 rounded-xl border-2 border-line p-4">
-              <h4 class="font-display text-sm font-bold uppercase tracking-wide text-accent">{grp}</h4>
+              <h4 class="font-display text-sm font-bold uppercase tracking-wide text-accent">{tr(grp)}</h4>
 
               {#if grp === "Ball"}
                 <div class="mt-3 space-y-5">
@@ -342,7 +343,7 @@
                       <Ball3D {report} hideStats hideControls bind:this={ball3dRef} />
                       <div class="grid content-start gap-y-2">
                         {#each items.filter((f) => f.label !== "Tracked" && f.label !== "Path extent") as f}{@render frow(f)}{/each}
-                        <button onclick={() => ball3dRef?.reset()} class="mt-2 w-fit rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold text-app">Reset view</button>
+                        <button onclick={() => ball3dRef?.reset()} class="mt-2 w-fit rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold text-app">{tr("Reset view")}</button>
                       </div>
                     </div>
                   {/if}
@@ -374,13 +375,13 @@
                       <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
                         {#each POSE_SERIES as s (s.key)}
                           <span class="inline-flex items-center gap-1.5">
-                            <span class="inline-block h-2 w-3 rounded-full" style={`background:${s.color}`}></span>{s.label}
+                            <span class="inline-block h-2 w-3 rounded-full" style={`background:${s.color}`}></span>{tr(s.label)}
                           </span>
                         {/each}
                         <span>0°–180° · {fmtTime(duration)}</span>
                       </div>
                       <p class="text-xs text-muted">
-                        Joint angles over the clip (from the sampled frames). Values are pose estimates, not clinical measurements.
+                        {tr("Joint angles over the clip (from the sampled frames). Values are pose estimates, not clinical measurements.")}
                       </p>
                     {/if}
                   </div>
@@ -390,25 +391,25 @@
           {/if}
         {/each}
       {:else}
-        <p class="mt-3 text-sm text-muted">No observations available for this run.</p>
+        <p class="mt-3 text-sm text-muted">{tr("No observations available for this run.")}</p>
       {/if}
       {:else}
 
       {#if issues.length || report.focus}
         <section class="mt-8">
           <h3 class="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-muted">
-            Key moments
-            <span class="inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-1.5 py-0.5 text-[10px] font-semibold text-accent2">✨ AI agent</span>
+            {tr("Key moments")}
+            <span class="inline-flex items-center gap-1 rounded-full border-2 border-accent2/40 bg-accent2/5 px-1.5 py-0.5 text-[10px] font-semibold text-accent2">{tr("✨ AI agent")}</span>
           </h3>
-          <p class="mt-1 text-xs text-muted">The notable seconds — click a time to play just that moment.</p>
+          <p class="mt-1 text-xs text-muted">{tr("The notable seconds — click a time to play just that moment.")}</p>
           <div class="mt-3"><KeyMoments {report} /></div>
         </section>
       {/if}
 
       {#if report.clips && Object.keys(report.clips).length}
         <section class="mt-8">
-          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">Moment clips</h3>
-          <p class="mt-1 text-xs text-muted">Short clips around the noted moments.</p>
+          <h3 class="font-display text-sm font-bold uppercase tracking-wide text-muted">{tr("Moment clips")}</h3>
+          <p class="mt-1 text-xs text-muted">{tr("Short clips around the noted moments.")}</p>
           <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {#each Object.entries(report.clips).sort((a, b) => Number(a[0]) - Number(b[0])) as [key]}
               <figure class="rounded-xl border-2 border-line p-2">
@@ -416,7 +417,7 @@
                 <video src={clip(report.stem, key)} controls preload="metadata" class="w-full rounded-lg border-2 border-line"></video>
                 <figcaption class="mt-1 flex items-center justify-between text-xs text-muted">
                   <span class="font-mono">@ {fmtTime(Number(key))}</span>
-                  <a href={clip(report.stem, key)} download class="font-semibold text-accent">Download</a>
+                  <a href={clip(report.stem, key)} download class="font-semibold text-accent">{tr("Download")}</a>
                 </figcaption>
               </figure>
             {/each}
@@ -434,7 +435,7 @@
             class:text-app={coachView === v}
             class:border-transparent={coachView !== v}
             class:text-muted={coachView !== v}
-          >{v}</button>
+          >{tr(v)}</button>
         {/each}
       </div>
       {#if coachView === "Advice"}
@@ -443,13 +444,13 @@
       </div>
       {#if report.focus}
         <div class="rounded-2xl border-2 border-good/40 bg-good/10 p-5">
-          <div class="font-display text-sm font-bold uppercase tracking-wide text-good">Focus next session</div>
+          <div class="font-display text-sm font-bold uppercase tracking-wide text-good">{tr("Focus next session")}</div>
           <p class="mt-1 text-base font-semibold text-app">{report.focus}</p>
         </div>
       {/if}
       <div class="mt-4 grid gap-4 lg:grid-cols-2">
         <section class="rounded-xl border-2 border-good/30 bg-good/5 p-4">
-          <h3 class="flex items-center gap-2 font-display font-bold text-good">✅ What's working</h3>
+          <h3 class="flex items-center gap-2 font-display font-bold text-good">✅ {tr("What's working")}</h3>
           {#if report.strengths?.length}
             <ul class="mt-2 space-y-1.5 text-sm">
               {#each report.strengths as s}<li>{s}</li>{/each}
@@ -461,7 +462,7 @@
 
         {#if issues.length}
           <section class="rounded-xl border-2 border-warn/30 bg-warn/5 p-4">
-            <h3 class="flex items-center gap-2 font-display font-bold text-warn">🎯 What to improve</h3>
+            <h3 class="flex items-center gap-2 font-display font-bold text-warn">🎯 {tr("What to improve")}</h3>
             <ul class="mt-2 space-y-1.5 text-sm">
               {#each issues as issue}
                 {@const parts = splitIssue(issueText(issue))}
@@ -471,48 +472,48 @@
                 </li>
               {/each}
             </ul>
-            <p class="mt-2 text-xs text-muted">Full observations (with timestamps) are on the Observations tab.</p>
+            <p class="mt-2 text-xs text-muted">{tr("Full observations (with timestamps) are on the Observations tab.")}</p>
           </section>
         {/if}
       </div>
 
       {#if report.summary || report.progress}
         <div class="mt-6 border-t-2 border-line pt-4">
-          <h4 class="text-[11px] font-semibold uppercase tracking-wide text-muted">Read more</h4>
+          <h4 class="text-[11px] font-semibold uppercase tracking-wide text-muted">{tr("Read more")}</h4>
           {#if report.summary}<p class="mt-2 text-sm text-muted">{report.summary}</p>{/if}
-          {#if report.progress}<p class="mt-3 text-sm text-muted"><b class="text-app">Since last time:</b> {report.progress}</p>{/if}
+          {#if report.progress}<p class="mt-3 text-sm text-muted"><b class="text-app">{tr("Since last time:")}</b> {report.progress}</p>{/if}
         </div>
       {/if}
 
       {#if clipWarnings.length || caveats.length}
         <div class="mt-6 border-t-2 border-line pt-4">
-          <h4 class="text-[11px] font-semibold uppercase tracking-wide text-muted">About this analysis</h4>
+          <h4 class="text-[11px] font-semibold uppercase tracking-wide text-muted">{tr("About this analysis")}</h4>
           {#if clipWarnings.length}
-            <h4 class="mt-3 text-sm font-semibold text-app">Your clip</h4>
+            <h4 class="mt-3 text-sm font-semibold text-app">{tr("Your clip")}</h4>
             <ul class="mt-1 list-disc pl-5 text-sm">{#each clipWarnings as w}<li>{w}</li>{/each}</ul>
           {/if}
           {#if caveats.length}
-            <h4 class="mt-3 text-sm font-semibold text-app">Limits</h4>
+            <h4 class="mt-3 text-sm font-semibold text-app">{tr("Limits")}</h4>
             <ul class="mt-1 list-disc pl-5 text-sm">{#each caveats as l}<li>{l}</li>{/each}</ul>
           {/if}
         </div>
       {/if}
       {:else if coachView === "Export"}
-      <h3 class="font-display font-bold">Export</h3>
-      <p class="mt-1 text-sm text-muted">Save or share this report.</p>
+      <h3 class="font-display font-bold">{tr("Export")}</h3>
+      <p class="mt-1 text-sm text-muted">{tr("Save or share this report.")}</p>
 
       <div class="mt-4 flex flex-wrap gap-3 text-sm">
-        <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "md")} download>Download Markdown</a>
-        <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "html")} target="_blank" rel="noreferrer">Open HTML</a>
+        <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "md")} download>{tr("Download Markdown")}</a>
+        <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={exportUrl(report.stem, "html")} target="_blank" rel="noreferrer">{tr("Open HTML")}</a>
         {#if report.clips && Object.keys(report.clips).length}
-          <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={reelUrl(report.stem)} download>Highlight reel (mp4)</a>
+          <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={reelUrl(report.stem)} download>{tr("Highlight reel (mp4)")}</a>
         {/if}
-        <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={cardUrl(report.stem)} download>Share card (PNG)</a>
+        <a class="rounded-lg border-2 border-line px-4 py-2 font-semibold" href={cardUrl(report.stem)} download>{tr("Share card (PNG)")}</a>
       </div>
       {:else if coachView === "Practice"}
       {#if report.drills?.length}
         <div class="mb-4 flex items-center gap-3">
-          <span class="text-sm text-muted">{doneCount} of {report.drills.length} done</span>
+          <span class="text-sm text-muted">{doneCount} {tr("of")} {report.drills.length} {tr("done")}</span>
           <div class="ml-auto h-2 w-40 overflow-hidden rounded-full bg-surface">
             <div class="h-full rounded-full bg-accent transition-all" style={`width: ${(doneCount / report.drills.length) * 100}%`}></div>
           </div>
@@ -535,8 +536,8 @@
                   </div>
                   {#if det}
                     <div class="mt-2 space-y-1 pl-8 text-xs text-muted">
-                      {#if det.cue}<div><span class="font-semibold text-app">Cue:</span> {det.cue}</div>{/if}
-                      {#if det.progression}<div><span class="font-semibold text-app">Next step:</span> {det.progression}</div>{/if}
+                      {#if det.cue}<div><span class="font-semibold text-app">{tr("Cue:")}</span> {det.cue}</div>{/if}
+                      {#if det.progression}<div><span class="font-semibold text-app">{tr("Next step:")}</span> {det.progression}</div>{/if}
                     </div>
                   {/if}
                 </div>
@@ -545,29 +546,29 @@
           {/each}
         </ul>
       {:else}
-        <p class="text-sm text-muted">No practice items for this session.</p>
+        <p class="text-sm text-muted">{tr("No practice items for this session.")}</p>
       {/if}
       {:else if coachView === "Ask"}
       <section class="card p-4">
-        <h3 class="font-display font-bold">Ask about this report</h3>
-        <p class="mt-1 text-xs text-muted">Type, or press the mic and speak — the answer is read aloud.</p>
+        <h3 class="font-display font-bold">{tr("Ask about this report")}</h3>
+        <p class="mt-1 text-xs text-muted">{tr("Type, or press the mic and speak — the answer is read aloud.")}</p>
         {#each answers as a}
           <div class="mt-2 text-sm">
-            <div><span class="text-muted">You:</span> {a.q}</div>
-            <div class="mt-0.5"><span class="text-accent2">Coach:</span> {a.answer}</div>
-            <div class="mt-1"><ReadAloud text={a.answer} label="Replay" /></div>
+            <div><span class="text-muted">{tr("You:")}</span> {a.q}</div>
+            <div class="mt-0.5"><span class="text-accent2">{tr("Coach:")}</span> {a.answer}</div>
+            <div class="mt-1"><ReadAloud text={a.answer} label={tr("Replay")} /></div>
           </div>
         {/each}
         <div class="mt-3 flex gap-2">
           <input
             bind:value={question}
             onkeydown={(e) => e.key === "Enter" && doAsk()}
-            placeholder="e.g. How do I fix my split-step?"
+            placeholder={tr("e.g. How do I fix my split-step?")}
             class="flex-1 rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm"
           />
           <VoiceInput ontext={(t, final) => { question = t; if (final) doAsk(); }} />
           <button onclick={doAsk} disabled={asking} class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-            {asking ? "…" : "Ask"}
+            {asking ? tr("Thinking…") : tr("Ask")}
           </button>
         </div>
       </section>

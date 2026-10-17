@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { fmtTime } from "$lib/format";
 
   let { series = [], playhead = 0, onseek } = $props();
@@ -28,7 +29,7 @@
   }
 </script>
 
-<div class="text-[10px] uppercase tracking-wide text-muted">Movement energy</div>
+<div class="text-[10px] uppercase tracking-wide text-muted">{tr("Movement energy")}</div>
 <svg
   bind:this={svg}
   viewBox={`0 0 ${W} ${H}`}
@@ -43,7 +44,7 @@
   <line x1={playX} y1={pad} x2={playX} y2={H - pad} stroke="#fb7185" stroke-width="2" vector-effect="non-scaling-stroke" />
 </svg>
 <div class="flex justify-between text-[10px] text-muted">
-  <span>0s</span>
-  <span>time (s)</span>
+  <span>{tr("0s")}</span>
+  <span>{tr("time (s)")}</span>
   <span>{fmtTime(tMax)}</span>
 </div>

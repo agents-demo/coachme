@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { source } from "$lib/api";
 
   // a = earlier (left), b = later (right); each { stem, label }
@@ -64,5 +65,5 @@
 </div>
 <div class="mt-2 flex flex-wrap items-center gap-3 text-sm">
   <button onclick={togglePlay} class="rounded-lg border-2 border-line px-3 py-1.5 font-semibold">{playing ? "⏸ Pause both" : "▶ Play both"}</button>
-  <span class="text-xs text-muted">Drag the divider — left = earlier, right = later (playback synced by progress).</span>
+  <span class="text-xs text-muted">{tr("Drag the divider — left = earlier, right = later (playback synced by progress).")}</span>
 </div>

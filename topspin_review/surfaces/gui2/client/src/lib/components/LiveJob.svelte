@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { jobStatus, cancel, retry } from "$lib/api";
   import { JOB_TONE, shortLabel, STEP_GROUP, GROUP_ORDER } from "$lib/format";
 
@@ -75,7 +76,7 @@
       <span class="text-sm font-semibold {JOB_TONE[job.status] || "text-muted"}">{job.status}</span>
       <span class="text-xs text-muted">{shortLabel(job.progress?.stage || "")}{job.progress?.detail ? ` · ${job.progress.detail}` : ""}</span>
       <span class="ml-auto text-xs text-muted">
-        {#if job.progress?.elapsed != null}{Number(job.progress.elapsed).toFixed(1)}s total · {/if}
+        {#if job.progress?.elapsed != null}{Number(job.progress.elapsed).toFixed(1)}{tr("s total ·")} {/if}
         {job.progress?.pct != null ? `${Math.round(job.progress.pct)}%` : ""}
       </span>
     </div>
@@ -94,7 +95,7 @@
                 <li class="flex items-center gap-2 text-sm">
                   <span class={s.state === "running" ? "text-accent2" : "text-good"}>{s.state === "running" ? "●" : "✓"}</span>
                   <span class="text-app">{shortLabel(s.stage)}</span>
-                  {#if s.seconds != null}<span class="ml-auto text-xs text-muted">{Number(s.seconds).toFixed(2)}s</span>{/if}
+                  {#if s.seconds != null}<span class="ml-auto text-xs text-muted">{Number(s.seconds).toFixed(2)}{tr("s")}</span>{/if}
                 </li>
               {/each}
             </ol>
@@ -105,10 +106,10 @@
     {#if job.error}<pre class="mt-2 overflow-auto text-xs text-bad">{job.error}</pre>{/if}
     <div class="mt-3 flex gap-3">
       {#if ["queued", "running"].includes(job.status)}
-        <button onclick={stop} class="rounded-lg border-2 border-line px-4 py-2 text-sm font-semibold">Cancel</button>
+        <button onclick={stop} class="rounded-lg border-2 border-line px-4 py-2 text-sm font-semibold">{tr("Cancel")}</button>
       {/if}
       {#if ["failed", "cancelled", "done"].includes(job.status)}
-        <button onclick={again} class="rounded-lg border-2 border-line px-4 py-2 text-sm font-semibold">Retry</button>
+        <button onclick={again} class="rounded-lg border-2 border-line px-4 py-2 text-sm font-semibold">{tr("Retry")}</button>
       {/if}
     </div>
   </section>

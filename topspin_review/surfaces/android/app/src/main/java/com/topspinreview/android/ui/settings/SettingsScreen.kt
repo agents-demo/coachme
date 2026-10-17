@@ -335,7 +335,7 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = hiltViewModel()) 
         SettingsTab("API", Icons.Outlined.Cloud),
         SettingsTab("Profile", Icons.Outlined.Person),
         SettingsTab("Analysis", Icons.Outlined.Tune),
-        SettingsTab("Style", Icons.Outlined.Palette),
+        SettingsTab("Appearance", Icons.Outlined.Palette),
     )
     val snackbar = remember { SnackbarHostState() }
     val haptics = LocalHapticFeedback.current

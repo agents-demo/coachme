@@ -9,3 +9,4 @@ class AnalyzeRequest(BaseModel):
     video_path: str
     region_box: list[float] | None = None
     agentic: bool = False
+    language: str = "en"

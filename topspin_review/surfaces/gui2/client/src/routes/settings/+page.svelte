@@ -1,19 +1,26 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { onMount } from "svelte";
   import { readiness, getProfile, saveProfile, getConfig } from "$lib/api";
-  import { theme, palette, setTheme, setPalette } from "$lib/appearance";
+  import { theme, palette, language, setTheme, setPalette, setLanguage } from "$lib/appearance";
 
   const tabs = [
     { value: "api", label: "API" },
     { value: "profile", label: "Profile" },
     { value: "analysis", label: "Analysis" },
-    { value: "style", label: "Style" },
+    { value: "style", label: "Appearance" },
   ];
 
   const themes = [
     { value: "system", label: "System", hint: "Follow the device" },
     { value: "light", label: "Light", hint: "Always light" },
     { value: "dark", label: "Dark", hint: "Always dark" },
+  ];
+
+  const languages = [
+    { value: "system", label: "System", hint: "Match the browser" },
+    { value: "en", label: "English", hint: "Always English" },
+    { value: "zh", label: "中文", hint: "简体中文" },
   ];
 
   const palettes = [
@@ -106,41 +113,40 @@
   }
 
   function onOff(value) {
-    return value == null ? "—" : value ? "On" : "Off";
+    return value == null ? "—" : value ? tr("On") : tr("Off");
   }
 </script>
 
 <section class="flex flex-wrap items-start justify-between gap-3">
   <div>
-    <h1 class="font-display text-3xl font-extrabold">Settings</h1>
+    <h1 class="font-display text-3xl font-extrabold">{tr("Settings")}</h1>
     <p class="mt-1 max-w-2xl text-sm text-muted">
-      Profile changes apply to new analyses. Endpoint and analysis settings live in the server
-      environment; appearance is saved on this device.
+      {tr("Profile changes apply to new analyses. Endpoint and analysis settings live in the server\n      environment; appearance is saved on this device.")}
     </p>
   </div>
   <button
     onclick={() => (showChecks = true)}
-    title="Open environment checks"
+    title={tr("Open environment checks")}
     class="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface/50 px-3 py-1.5 text-xs font-semibold text-muted transition hover:border-accent hover:text-app"
   >
     <span class="h-2 w-2 rounded-full {checks.length && missing ? 'bg-warn' : 'bg-good'}"></span>
     {checks.length
       ? missing
-        ? `${missing} issue${missing === 1 ? "" : "s"}`
-        : "Environment ready"
-      : "Environment"}
+        ? tr(`${missing} issue${missing === 1 ? "" : "s"}`)
+        : tr("Environment ready")
+      : tr("Environment")}
     <span aria-hidden="true" class="text-sm leading-none">›</span>
   </button>
 </section>
 
 {#if showChecks}
-  <div class="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Environment readiness">
+  <div class="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={tr("Environment readiness")}>
     <button class="absolute inset-0 bg-black/50 backdrop-blur-md" aria-label="Close" onclick={() => (showChecks = false)}></button>
     <div class="relative w-full max-w-md rounded-2xl border-2 border-line bg-surface/85 p-5 shadow-2xl backdrop-blur-xl">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <h2 class="font-display text-lg font-bold">Environment</h2>
-          <p class="mt-0.5 text-xs text-muted">API, models, pose, PDF and sample assets.</p>
+          <h2 class="font-display text-lg font-bold">{tr("Environment")}</h2>
+          <p class="mt-0.5 text-xs text-muted">{tr("API, models, pose, PDF and sample assets.")}</p>
         </div>
         <button
           onclick={() => (showChecks = false)}
@@ -153,17 +159,17 @@
         <span class="text-xs font-semibold {missing ? 'text-warn' : 'text-good'}">
           {checks.length
             ? missing
-              ? `${missing} of ${checks.length} need attention`
-              : `All ${checks.length} checks passed`
-            : "Checking…"}
+              ? tr(`${missing} of ${checks.length} need attention`)
+              : tr(`All ${checks.length} checks passed`)
+            : tr("Checking…")}
         </span>
-        <button onclick={loadStatus} class="text-xs font-semibold text-muted transition hover:text-app">Refresh</button>
+        <button onclick={loadStatus} class="text-xs font-semibold text-muted transition hover:text-app">{tr("Refresh")}</button>
       </div>
 
       {#if statusError}
         <p class="mt-3 text-sm text-bad">{statusError}</p>
       {:else if !checks.length}
-        <p class="mt-3 text-sm text-muted">No readiness checks reported.</p>
+        <p class="mt-3 text-sm text-muted">{tr("No readiness checks reported.")}</p>
       {:else}
         <ul class="mt-3 max-h-[55vh] space-y-2 overflow-y-auto pr-1">
           {#each checks as c}
@@ -172,8 +178,8 @@
                 {c.ok ? "✓" : "!"}
               </span>
               <span class="min-w-0">
-                <span class="text-sm font-medium">{c.name}</span>
-                {#if c.detail}<span class="mt-0.5 block text-xs text-muted">{c.detail}</span>{/if}
+                <span class="text-sm font-medium">{tr(c.name)}</span>
+                {#if c.detail}<span class="mt-0.5 block text-xs text-muted">{tr(c.detail)}</span>{/if}
               </span>
             </li>
           {/each}
@@ -192,15 +198,15 @@
       class="shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition {tab === t.value
         ? 'bg-accent text-white'
         : 'bg-surface text-muted hover:text-app'}"
-    >{t.label}</button>
+    >{tr(t.label)}</button>
   {/each}
 </div>
 
 {#if tab === "api"}
   <section class="card mt-4 p-5">
-    <h2 class="font-display text-lg font-bold">Model API</h2>
+    <h2 class="font-display text-lg font-bold">{tr("Model API")}</h2>
     <p class="mt-1 text-xs text-muted">
-      Read-only. Set in the server environment (<code>.env</code>); the key is never sent to the browser.
+      {tr("Read-only. Set in the server environment (")}<code>{tr(".env")}</code>{tr("); the key is never sent to the browser.")}
     </p>
     {#if configError}
       <p class="mt-3 text-sm text-bad">{configError}</p>
@@ -212,13 +218,13 @@
           ["Vision model", config.vision_model || "—"],
         ] as [label, value]}
           <div class="flex items-start justify-between gap-4 py-2.5">
-            <dt class="text-sm text-muted">{label}</dt>
-            <dd class="text-right text-sm font-medium">{value}</dd>
+            <dt class="text-sm text-muted">{tr(label)}</dt>
+            <dd class="text-right text-sm font-medium">{tr(value)}</dd>
           </div>
         {/each}
       </dl>
     {:else}
-      <p class="mt-3 text-sm text-muted">Loading…</p>
+      <p class="mt-3 text-sm text-muted">{tr("Loading…")}</p>
     {/if}
   </section>
 
@@ -227,14 +233,14 @@
 {#if tab === "profile"}
   <section class="card mt-4 p-5">
     <div class="flex items-baseline justify-between gap-3">
-      <h2 class="font-display text-lg font-bold">Player profile</h2>
+      <h2 class="font-display text-lg font-bold">{tr("Player profile")}</h2>
       {#if saveState}
         <span class="text-xs {saveState === 'Save failed' ? 'text-bad' : 'text-muted'}">{saveState}</span>
       {/if}
     </div>
-    <p class="mt-1 text-xs text-muted">Feeds the prompts and the scoring rubric.</p>
+    <p class="mt-1 text-xs text-muted">{tr("Feeds the prompts and the scoring rubric.")}</p>
 
-    <label class="mt-4 block text-xs font-semibold uppercase tracking-wide text-muted" for="sport">Sport</label>
+    <label class="mt-4 block text-xs font-semibold uppercase tracking-wide text-muted" for="sport">{tr("Sport")}</label>
     <input
       id="sport"
       list="sport-suggestions"
@@ -251,7 +257,7 @@
       { key: "hand", label: "Dominant hand", options: handOptions },
       { key: "goal", label: "Goal", options: goalOptions },
     ] as field}
-      <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">{field.label}</p>
+      <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">{tr(field.label)}</p>
       <div class="mt-2 flex flex-wrap gap-2">
         {#each withCurrent(field.options, profile[field.key]) as option}
           <button
@@ -260,7 +266,7 @@
             class="rounded-full border-2 px-3.5 py-1.5 text-sm font-semibold capitalize transition {profile[field.key] === option
               ? 'border-accent bg-accent/10 text-accent'
               : 'border-line text-muted hover:text-app'}"
-          >{option}</button>
+          >{tr(option)}</button>
         {/each}
       </div>
     {/each}
@@ -269,9 +275,9 @@
 
 {#if tab === "analysis"}
   <section class="card mt-4 p-5">
-    <h2 class="font-display text-lg font-bold">Analysis</h2>
+    <h2 class="font-display text-lg font-bold">{tr("Analysis")}</h2>
     <p class="mt-1 text-xs text-muted">
-      Read-only. These are set in the server environment (<code>.env</code>) and apply to new analyses.
+      {tr("Read-only. These are set in the server environment (")}<code>{tr(".env")}</code>{tr(") and apply to new analyses.")}
     </p>
     {#if configError}
       <p class="mt-3 text-sm text-bad">{configError}</p>
@@ -287,13 +293,13 @@
           ["Demo fallback", onOff(config.demo_fallback)],
         ] as [label, value]}
           <div class="flex items-start justify-between gap-4 py-2.5">
-            <dt class="text-sm text-muted">{label}</dt>
-            <dd class="text-right text-sm font-medium">{value}</dd>
+            <dt class="text-sm text-muted">{tr(label)}</dt>
+            <dd class="text-right text-sm font-medium">{tr(value)}</dd>
           </div>
         {/each}
       </dl>
     {:else}
-      <p class="mt-3 text-sm text-muted">Loading…</p>
+      <p class="mt-3 text-sm text-muted">{tr("Loading…")}</p>
     {/if}
   </section>
 {/if}
@@ -301,8 +307,32 @@
 {#if tab === "style"}
   <section class="card mt-4 p-5">
     <div class="flex items-baseline justify-between gap-3">
-      <h2 class="font-display text-lg font-bold">Theme</h2>
-      <span class="text-[11px] uppercase tracking-wide text-muted">System / Light / Dark</span>
+      <h2 class="font-display text-lg font-bold">{tr("Language")}</h2>
+      <span class="text-[11px] uppercase tracking-wide text-muted">{tr("UI + reports")}</span>
+    </div>
+    <div class="mt-3 grid grid-cols-3 gap-2">
+      {#each languages as l}
+        <button
+          onclick={() => setLanguage(l.value)}
+          aria-pressed={$language === l.value}
+          class="rounded-xl border-2 px-3 py-3 text-left transition {$language === l.value
+            ? 'border-accent bg-accent/10 text-accent'
+            : 'border-line text-muted hover:border-accent/60 hover:text-app'}"
+        >
+          <span class="block text-sm font-semibold">{tr(l.label)}</span>
+          <span class="mt-0.5 block text-[11px] text-muted">{tr(l.hint)}</span>
+        </button>
+      {/each}
+    </div>
+    <p class="mt-3 text-xs text-muted">
+      {tr("New reports and answers follow this language; existing reports are unchanged.")}
+    </p>
+  </section>
+
+  <section class="card mt-4 p-5">
+    <div class="flex items-baseline justify-between gap-3">
+      <h2 class="font-display text-lg font-bold">{tr("Theme")}</h2>
+      <span class="text-[11px] uppercase tracking-wide text-muted">{tr("System / Light / Dark")}</span>
     </div>
     <div class="mt-3 grid grid-cols-3 gap-2">
       {#each themes as t}
@@ -313,8 +343,8 @@
             ? 'border-accent bg-accent/10 text-accent'
             : 'border-line text-muted hover:border-accent/60 hover:text-app'}"
         >
-          <span class="block text-sm font-semibold">{t.label}</span>
-          <span class="mt-0.5 block text-[11px] text-muted">{t.hint}</span>
+          <span class="block text-sm font-semibold">{tr(t.label)}</span>
+          <span class="mt-0.5 block text-[11px] text-muted">{tr(t.hint)}</span>
         </button>
       {/each}
     </div>
@@ -322,8 +352,8 @@
 
   <section class="card mt-4 p-5">
     <div class="flex items-baseline justify-between gap-3">
-      <h2 class="font-display text-lg font-bold">Palette</h2>
-      <span class="text-[11px] uppercase tracking-wide text-muted">Accent + session layout</span>
+      <h2 class="font-display text-lg font-bold">{tr("Palette")}</h2>
+      <span class="text-[11px] uppercase tracking-wide text-muted">{tr("Accent + session layout")}</span>
     </div>
     <div class="mt-3 grid grid-cols-2 gap-3">
       {#each palettes as p}
@@ -335,11 +365,11 @@
             : 'border-line hover:border-accent/60'}"
         >
           <span class="block h-16 rounded-xl" style={`background: linear-gradient(135deg, ${p.from}, ${p.to})`}></span>
-          <span class="mt-2 block text-sm font-semibold {$palette === p.value ? 'text-accent' : ''}">{p.label}</span>
-          <span class="mt-0.5 block text-[11px] leading-snug text-muted">{p.hint}</span>
+          <span class="mt-2 block text-sm font-semibold {$palette === p.value ? 'text-accent' : ''}">{tr(p.label)}</span>
+          <span class="mt-0.5 block text-[11px] leading-snug text-muted">{tr(p.hint)}</span>
         </button>
       {/each}
     </div>
-    <p class="mt-3 text-xs text-muted">Dynamic color (Material You) is available in the Android app only.</p>
+    <p class="mt-3 text-xs text-muted">{tr("Dynamic color (Material You) is available in the Android app only.")}</p>
   </section>
 {/if}

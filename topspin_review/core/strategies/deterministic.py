@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from topspin_review.core import config
+from topspin_review.core.i18n import language_instruction
 from topspin_review.core.params import Params
 from topspin_review.core.progress import Progress, tick
 from topspin_review.core.stages import observe
@@ -191,7 +192,8 @@ class DeterministicStrategy(Strategy):
             + (f"Baseline (previous session):\n{baseline}\n\n" if baseline else "")
             + f"Check the player against this technique rubric (issues should map to it):\n{rubric}\n\n"
             "Save the report with save_report (schema with evidence_times and confidence), "
-            "then give me a short summary."
+            "then give me a short summary.\n\n"
+            + language_instruction(params.language)
         )
         result = await self._run_report_agent(
             params, self._build_report_agent(params), query, progress, stage="agent writing report", pct=80

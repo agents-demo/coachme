@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from topspin_review.core.i18n import language_instruction
 from topspin_review.core.params import Params
 from topspin_review.core.progress import Progress
 from topspin_review.core.stages import observe
@@ -115,7 +116,8 @@ class AgenticStrategy(Strategy):
             f"Analyze my {params.profile.get('sport', 'table tennis')} session video at {params.video_path} "
             f"({self._profile_line(params)}).\n"
             f"History: {history}\n"
-            "Start with get_measurements, inspect the interesting windows, then save the report."
+            "Start with get_measurements, inspect the interesting windows, then save the report.\n\n"
+            + language_instruction(params.language)
         )
         result = await self._run_report_agent(params, agent, query, progress, stage="agent: analyzing", pct=45)
         return result, {}

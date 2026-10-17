@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { fmtTime, POSE_SERIES } from "$lib/format";
 
   let { report, chrome = true } = $props();
@@ -43,17 +44,16 @@
       <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
         {#each SERIES as s (s.key)}
           <span class="inline-flex items-center gap-1.5">
-            <span class="inline-block h-2 w-3 rounded-full" style={`background:${s.color}`}></span>{s.label}
+            <span class="inline-block h-2 w-3 rounded-full" style={`background:${s.color}`}></span>{tr(s.label)}
           </span>
         {/each}
         <span class="ml-auto">0°–180° · {fmtTime(tMax)}</span>
       </div>
       <p class="mt-1 text-xs text-muted">
-        Joint angles over the clip (from the sampled frames). Useful for spotting a knee/elbow dip during the
-        stroke. Values are pose estimates, not clinical measurements.
+        {tr("Joint angles over the clip (from the sampled frames). Useful for spotting a knee/elbow dip during the\n        stroke. Values are pose estimates, not clinical measurements.")}
       </p>
     {/if}
   </div>
 {:else}
-  <p class="text-sm text-muted">No pose angles for this run (pose unavailable or no person detected).</p>
+  <p class="text-sm text-muted">{tr("No pose angles for this run (pose unavailable or no person detected).")}</p>
 {/if}

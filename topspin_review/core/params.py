@@ -20,6 +20,7 @@ class Params:
     video_path: str
     region_box: tuple[float, float, float, float] | None = None
     progress: Progress | None = None
+    language: str = "en"
 
     # populated during the run
     profile: dict = field(default_factory=dict)

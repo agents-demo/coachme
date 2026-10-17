@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   let { points = [], color = "#4f46e5", caption = "", unit = "" } = $props();
 
   const W = 320;
@@ -27,6 +28,6 @@
       {/each}
     </svg>
   {:else}
-    <p class="mt-2 text-xs text-muted">Need ≥ 2 sessions to show a trend.</p>
+    <p class="mt-2 text-xs text-muted">{tr("Need ≥ 2 sessions to show a trend.")}</p>
   {/if}
 </div>

@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { onMount } from "svelte";
   import { base } from "$app/paths";
   import { goto } from "$app/navigation";
@@ -41,15 +42,12 @@
   <div class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-accent/25 blur-3xl"></div>
   <div class="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-accent2/20 blur-3xl"></div>
   <div class="relative">
-    <span class="inline-flex items-center gap-1 rounded-full border border-line bg-ink/50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted">Vision-powered coaching</span>
+    <span class="inline-flex items-center gap-1 rounded-full border border-line bg-ink/50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{tr("Vision-powered coaching")}</span>
     <h1 class="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-4xl">
-      Turn a session video into a
-      <span class="bg-gradient-to-r from-accent to-accent2 bg-clip-text text-transparent">coaching report</span>
+      {tr("Turn a session video into a")}
+      <span class="bg-gradient-to-r from-accent to-accent2 bg-clip-text text-transparent">{tr("coaching report")}</span>
     </h1>
-    <p class="mt-2 max-w-2xl text-sm text-muted">
-      Record a rally from the side. Get measured form &amp; footwork insights, the things to fix, and drills —
-      from a vision model that actually watches your frames.
-    </p>
+    <p class="mt-2 max-w-2xl text-sm text-muted">{tr("Record a rally from the side. Get measured form & footwork insights, the things to fix, and drills — from a vision model that actually watches your frames.")}</p>
   </div>
 </section>
 
@@ -57,16 +55,16 @@
   <div class="mt-4 grid grid-cols-2 gap-3">
     <div class="card p-4 text-center">
       <div class="font-display text-2xl font-bold">{reports.length}</div>
-      <div class="text-[11px] uppercase tracking-wide text-muted">Sessions</div>
+      <div class="text-[11px] uppercase tracking-wide text-muted">{tr("Sessions")}</div>
     </div>
     <div class="card p-4 text-center">
       <div class="font-display text-2xl font-bold">{totalIssues}</div>
-      <div class="text-[11px] uppercase tracking-wide text-muted">Open issues</div>
+      <div class="text-[11px] uppercase tracking-wide text-muted">{tr("Open issues")}</div>
     </div>
   </div>
 {/if}
 
-<h2 class="mt-5 font-display text-lg font-bold">{showNew ? "New analysis" : "Sessions"}</h2>
+<h2 class="mt-5 font-display text-lg font-bold">{showNew ? tr("New analysis") : tr("Sessions")}</h2>
 
 {#if showNew}
   <NewAnalysis onqueued={(id) => (jobId = id)} />
@@ -78,9 +76,9 @@
 
 {#if !showNew}
   {#if loading}
-    <p class="mt-6 text-sm text-muted">Loading…</p>
+    <p class="mt-6 text-sm text-muted">{tr("Loading…")}</p>
   {:else if !reports.length}
-    <p class="mt-6 text-sm text-muted">No sessions yet. Start a new analysis above.</p>
+    <p class="mt-6 text-sm text-muted">{tr("No sessions yet. Start a new analysis above.")}</p>
   {:else}
     <!-- Sport mode: 2-col portrait grid (full-bleed, image-forward).
          Default mode: 3-col landscape grid with metadata below the thumbnail. -->
@@ -108,6 +106,6 @@
     class="fixed bottom-5 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3.5 text-sm font-semibold text-white shadow-xl shadow-accent/25 transition hover:scale-[1.03] hover:opacity-95 sm:bottom-7 sm:right-7"
   >
     <span class="text-lg leading-none">+</span>
-    New analysis
+    {tr("New analysis")}
   </a>
 {/if}

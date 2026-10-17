@@ -12,6 +12,7 @@ from typing import Any
 
 from PIL import Image
 
+from topspin_review.core.i18n import language_instruction
 from topspin_review.core.stages.observe import prompts, render_images
 from topspin_review.core.stages.observe.ask_agent import ask
 from topspin_review.core.video import metrics
@@ -48,6 +49,7 @@ async def coarse(
         metrics=metrics.text(measured),
         duration=_duration(meta, timestamps),
     )
+    prompt += "\n\n" + language_instruction(profile.get("language"))
     parsed = await ask(agent, f"{prompt}\n\nFirst call read_file on: {sheet_path}")
     parsed.setdefault("overall", "")
     parsed.setdefault("attentive_windows", [])
@@ -81,6 +83,7 @@ async def fine(
         metrics=metrics.text(measured),
         windows=rendered,
     )
+    prompt += "\n\n" + language_instruction(profile.get("language"))
     files = "\n".join(f"read_file: {p}" for p in paths)
     parsed = await ask(agent, f"{prompt}\n\nRead these images:\n{files}")
     parsed.setdefault("observations", "")
@@ -98,6 +101,7 @@ async def analyze_still(frame: Image.Image, profile: dict, *, agent: Any, media_
         hand=profile.get("dominant_hand", "right"),
         goal=profile.get("goal", "improve"),
     )
+    prompt += "\n\n" + language_instruction(profile.get("language"))
     parsed = await ask(agent, f"{prompt}\n\nFirst call read_file on: {still_path}")
     parsed.setdefault("observations", "")
     parsed.setdefault("signals", [])

@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { source, saveAnnotations } from "$lib/api";
   import { fmtTime } from "$lib/format";
 
@@ -211,7 +212,7 @@
         </div>
       {/if}
     {:else}
-      <p class="rounded-[14px] border-2 border-line p-6 text-sm text-muted">Media not found on disk.</p>
+      <p class="rounded-[14px] border-2 border-line p-6 text-sm text-muted">{tr("Media not found on disk.")}</p>
     {/if}
 
     <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
@@ -221,7 +222,7 @@
         class:border-accent={drawMode}
         class:bg-surface={drawMode}
         class:border-line={!drawMode}
-      >✏ {drawMode ? "Drawing" : "Draw"}</button>
+      >✏ {drawMode ? tr("Drawing") : tr("Draw")}</button>
       {#if drawMode}
         {#each [["arrow", "Arrow"], ["circle", "Circle"], ["pen", "Pen"], ["angle", "Angle"]] as [id, label]}
           <button
@@ -229,12 +230,12 @@
             class="rounded-lg border-2 px-2.5 py-1 text-xs font-semibold transition"
             class:border-accent2={tool === id}
             class:border-line={tool !== id}
-          >{label}</button>
+          >{tr(label)}</button>
         {/each}
-        {#if tool === "angle"}<span class="text-xs text-muted">click 3 points — angle is at the 2nd</span>{/if}
-        <button onclick={undo} class="rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold">Undo</button>
-        <button onclick={clear} class="rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold">Clear</button>
-        <button onclick={save} disabled={!dirty} class="rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-white disabled:opacity-50">Save</button>
+        {#if tool === "angle"}<span class="text-xs text-muted">{tr("click 3 points — angle is at the 2nd")}</span>{/if}
+        <button onclick={undo} class="rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold">{tr("Undo")}</button>
+        <button onclick={clear} class="rounded-lg border-2 border-line px-2.5 py-1 text-xs font-semibold">{tr("Clear")}</button>
+        <button onclick={save} disabled={!dirty} class="rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-white disabled:opacity-50">{tr("Save")}</button>
         {#if status}<span class="text-xs text-muted">{status}</span>{/if}
       {/if}
       {#if report.has_source && !isPhoto}

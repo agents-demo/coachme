@@ -75,6 +75,7 @@ class Strategy:
 
         store.set_current_video(params.video_path)
         params.profile = store.get_profile()
+        params.profile["language"] = params.language
 
         measured = measure(params.video_path, params.region_box, progress)
         params.meta = measured.meta

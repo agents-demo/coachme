@@ -1,4 +1,5 @@
 // Small shared helpers for the gui2 client.
+import { tr } from "$lib/appearance";
 
 export const pretty = (v) => {
   if (v == null || v === "") return "";
@@ -103,7 +104,7 @@ export const POSE_SERIES = [
 ];
 
 export function shortLabel(stage) {
-  return STEP_NAME[stage] || stage || "";
+  return tr(STEP_NAME[stage] || stage || "");
 }
 
 // The pipeline stage each step belongs to (architecture name in parentheses).

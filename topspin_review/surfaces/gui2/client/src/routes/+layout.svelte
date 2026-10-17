@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import "../app.css";
   import { onMount } from "svelte";
   import { page } from "$app/stores";
@@ -18,6 +19,10 @@
     initAppearance();
   });
 
+  $effect(() => {
+    if (typeof document !== "undefined") document.title = tr("Topspin Review");
+  });
+
   // View Transitions API: seamless fade+slide between sessions list and result.
   onNavigate((navigation) => {
     if (!document.startViewTransition) return;
@@ -34,8 +39,8 @@
   <header class="sticky top-0 z-30 h-14 border-b-2 border-line bg-ink/85 backdrop-blur">
     <div class="mx-auto flex h-full max-w-5xl items-center gap-2 px-4">
       <a href={`${base}/`} class="flex shrink-0 items-center gap-2 font-display text-lg font-bold">
-        <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent to-accent2 text-[11px] font-extrabold text-white">TR</span>
-        <span class="hidden sm:inline">Topspin Review</span>
+        <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent to-accent2 text-[11px] font-extrabold text-white">{tr("TR")}</span>
+        <span class="hidden sm:inline">{tr("Topspin Review")}</span>
       </a>
       <nav class="ml-auto flex items-center gap-1">
         {#each tabs as t}
@@ -45,13 +50,13 @@
             class:bg-surface={here(t.href)}
             class:text-app={here(t.href)}
             class:text-muted={!here(t.href)}
-          >{t.label}</a>
+          >{tr(t.label)}</a>
         {/each}
 
         <a
           href={`${base}/settings`}
-          aria-label="Settings"
-          title="Settings"
+          aria-label={tr("Settings")}
+          title={tr("Settings")}
           class="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-line text-muted transition hover:border-accent hover:text-app"
           class:border-accent={here(`${base}/settings`)}
           class:bg-accent={here(`${base}/settings`)}

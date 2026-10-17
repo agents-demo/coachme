@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { base } from "$app/paths";
   import { deleteReport, thumb } from "$lib/api";
 
@@ -46,7 +47,7 @@
         <div class="grid h-full w-full place-items-center text-5xl">🏓</div>
       {/if}
       {#if report.is_photo}
-        <span class="absolute bottom-2 right-2 rounded-full bg-ink/75 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted backdrop-blur">photo</span>
+        <span class="absolute bottom-2 right-2 rounded-full bg-ink/75 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted backdrop-blur">{tr("photo")}</span>
       {/if}
     </div>
 
@@ -57,8 +58,8 @@
       </div>
       <p class="mt-1 line-clamp-2 text-xs text-muted">{report.summary || report.focus || "—"}</p>
       <div class="mt-2 flex items-center gap-2 text-xs text-muted">
-        <span class="rounded-full border border-line px-2 py-0.5">{report.issue_count} issue{report.issue_count === 1 ? "" : "s"}</span>
-        {#if report.has_pose}<span class="rounded-full border border-line px-2 py-0.5" title="A body-pose skeleton overlay is available">pose</span>{/if}
+        <span class="rounded-full border border-line px-2 py-0.5">{report.issue_count} {tr("issue")}{report.issue_count === 1 ? "" : "s"}</span>
+        {#if report.has_pose}<span class="rounded-full border border-line px-2 py-0.5" title="A body-pose skeleton overlay is available">{tr("pose")}</span>{/if}
         {#if report.focus}<span class="truncate">{report.focus}</span>{/if}
       </div>
     </div>

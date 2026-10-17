@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { callImage } from "$lib/api";
   import { pretty, shortLabel, STEP_SHORT, STEP_GROUP, GROUP_ORDER, MODEL_STEP } from "$lib/format";
 
@@ -53,35 +54,32 @@
 
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
   <div class="card p-3">
-    <div class="text-xs uppercase text-muted">Model calls</div>
+    <div class="text-xs uppercase text-muted">{tr("Model calls")}</div>
     <div class="font-display text-2xl font-bold">{nCalls}</div>
     <div class="mt-1 text-xs text-muted">
-      <span class="font-mono text-app">{usage.vision?.calls ?? 0}</span> vision ·
-      <span class="font-mono text-app">{usage.text?.calls ?? 0}</span> text
+      <span class="font-mono text-app">{usage.vision?.calls ?? 0}</span> {tr("vision")}
+      <span class="font-mono text-app">{usage.text?.calls ?? 0}</span> {tr("text")}
     </div>
   </div>
   <div class="card p-3">
-    <div class="text-xs uppercase text-muted">Tokens billed</div>
+    <div class="text-xs uppercase text-muted">{tr("Tokens billed")}</div>
     <div class="font-display text-2xl font-bold">{tokens.toLocaleString()}</div>
     <div class="mt-1 text-xs text-muted">
-      <span class="font-mono text-app">{(usage.vision?.total_tokens || 0).toLocaleString()}</span> vision ·
-      <span class="font-mono text-app">{(usage.text?.total_tokens || 0).toLocaleString()}</span> text
-      {#if cachedTotal}<span> · <span class="font-mono text-app">{cachedTotal.toLocaleString()}</span> cached</span>{/if}
+      <span class="font-mono text-app">{(usage.vision?.total_tokens || 0).toLocaleString()}</span> {tr("vision")}
+      <span class="font-mono text-app">{(usage.text?.total_tokens || 0).toLocaleString()}</span> {tr("text")}
+      {#if cachedTotal}<span> · <span class="font-mono text-app">{cachedTotal.toLocaleString()}</span> {tr("cached")}</span>{/if}
     </div>
   </div>
 </div>
 
 <p class="mt-2 text-xs text-muted">
-  Tokens are the model's own counts. <b>in</b> = the whole prompt sent that call (system prompt +
-  full history + question), so the same context is billed again on every turn; <b>out</b> = the
-  reply.   <b>cached</b> is the discounted subset the provider serves from its prompt cache.
+  {tr("Tokens are the model's own counts. in = the whole prompt sent that call (system prompt + full history + question), so the same context is billed again on every turn; out = the reply. cached is the discounted subset the provider serves from its prompt cache.")}
 </p>
 
 {#if report.artifacts?.pose}
   <p class="mt-1 text-xs text-muted">
-    The <b>pose overlay</b> is computed <b>locally</b> by mediapipe (PoseLandmarker) — a small on-device model,
-    not an API call — so it uses no tokens and is not counted above.
-  </p>
+  {tr("The pose overlay is computed locally by mediapipe (PoseLandmarker) - a small on-device model, not an API call - so it uses no tokens and is not counted above.")}
+</p>
 {/if}
 
 <div class="mt-5 flex gap-5">
@@ -93,7 +91,7 @@
       class:text-app={view === t}
       class:border-transparent={view !== t}
       class:text-muted={view !== t}
-    >{t}</button>
+    >{tr(t)}</button>
   {/each}
 </div>
 
@@ -102,7 +100,7 @@
     {#if timeline.length}
       {#each grouped as g}
         <div class="mt-3 first:mt-0">
-          <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{g.name}</div>
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-accent">{tr(g.name)}</div>
           <ol class="mt-1 space-y-1.5">
             {#each g.items as t}
               {@const secs = Number(t.seconds) || 0}
@@ -116,7 +114,7 @@
                     <span
                       class="shrink-0 rounded border border-line px-1 text-[9px] font-semibold uppercase {MODEL_STEP[t.stage] === 'vision' ? 'text-accent2' : 'text-accent'}"
                       title={modelName(t.stage)}
-                    >{MODEL_STEP[t.stage]}</span>
+                    >{tr(MODEL_STEP[t.stage] || "")}</span>
                   {/if}
                 </div>
                 <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
@@ -125,33 +123,28 @@
                     style={`width:${totalSeconds ? Math.max(1.5, (secs / totalSeconds) * 100) : 0}%`}
                   ></div>
                 </div>
-                <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(2)}s</span>
+                <span class="w-14 shrink-0 text-right font-mono text-xs text-muted">{secs.toFixed(2)}{tr("s")}</span>
               </li>
             {/each}
           </ol>
         </div>
       {/each}
       <p class="mt-3 text-xs text-muted">
-        Total run: <span class="font-semibold text-app">{totalSeconds.toFixed(2)}s</span>
-        &nbsp;·&nbsp;bars and numbers are <b>durations</b>. Each row is a <b>step</b>, grouped under the
-        <b>stage</b> it runs in (Measure → Vision → Report). Steps tagged
-        <span class="rounded border border-line px-1 text-[9px] font-semibold uppercase text-accent2">vision</span> /
-        <span class="rounded border border-line px-1 text-[9px] font-semibold uppercase text-accent">text</span>
-        call a model; hover a step for what it does.
+        {tr("Total run:")} <span class="font-semibold text-app">{totalSeconds.toFixed(2)}{tr("s")}</span> &nbsp;·&nbsp; {tr("bars and numbers are durations. Each row is a step, grouped under the stage it runs in (Measure → Vision → Report). Steps tagged vision / text call a model; hover a step for what it does.")}
       </p>
     {:else}
-      <p class="text-sm text-muted">No stage timings saved.</p>
+      <p class="text-sm text-muted">{tr("No stage timings saved.")}</p>
     {/if}
   {:else}
     {#if events.length}
       {#each byStage as g}
         <h4 class="mt-4 flex items-baseline gap-2 text-sm font-semibold first:mt-0">
-          <span class="text-accent">{g.stage && g.stage !== "—" ? shortLabel(g.stage) : "Other"}</span>
+          <span class="text-accent">{g.stage && g.stage !== "—" ? shortLabel(g.stage) : tr("Other")}</span>
           {#if g.stage && g.stage !== "—" && STEP_GROUP[g.stage]}
-            <span class="text-[11px] font-normal uppercase tracking-wide text-muted">{STEP_GROUP[g.stage]}</span>
+            <span class="text-[11px] font-normal uppercase tracking-wide text-muted">{tr(STEP_GROUP[g.stage])}</span>
           {/if}
           <span class="ml-auto text-[11px] font-normal text-muted">
-            {g.items.length} event{g.items.length === 1 ? "" : "s"}
+            {g.items.length} {tr("event")}
           </span>
         </h4>
         <div class="mt-1 space-y-2">
@@ -161,38 +154,37 @@
               <details class="card p-3 text-sm">
                 <summary class="cursor-pointer font-semibold">
                   {#if c.probe}
-                    🔍 image-support probe
+                    🔍 {tr("image-support probe")}
                   {:else}
-                    ↳ Model call {c.model ? `· ${c.model}` : ""}
+                    ↳ {tr("Model call")} {c.model ? `· ${c.model}` : ""}
                   {/if}
                   <span class="ml-2 text-xs text-muted">
-                    {c.prompt_tokens ?? 0} in / {c.completion_tokens ?? 0} out{#if c.cached_tokens} · {c.cached_tokens} cached{/if}{#if c.seconds} · {Number(c.seconds).toFixed(2)}s{/if}
+                    {c.prompt_tokens ?? 0} {tr("in /")} {c.completion_tokens ?? 0} {tr("out")}{#if c.cached_tokens} · {c.cached_tokens} {tr("cached")}{/if}{#if c.seconds} · {Number(c.seconds).toFixed(2)}{tr("s")}{/if}
                   </span>
                 </summary>
                 {#if c.probe}
                   <p class="mt-2 text-xs text-muted">
-                    A one-word self-check that the model can read images
-                    (“What color is this image?” → “{c.output}”). Not part of the analysis.
+                    {tr("A one-word self-check that the model can read images\n                    (“What color is this image?” → “")}{c.output}{tr("”). Not part of the analysis.")}
                   </p>
                 {/if}
                 <div class="mt-2 space-y-2">
                   <div>
                     <div class="mb-1 inline-block rounded-md bg-accent2/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-accent2">
-                      Input — everything sent to the model
+                      {tr("Input — everything sent to the model")}
                     </div>
                     {#if c.input?.length}
                       {#each c.input as m}
                         <div class="mt-1">
-                          <span class="rounded border border-line px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">{m.role}</span>
+                          <span class="rounded border border-line px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">{tr(m.role)}</span>
                           <pre class="mt-1 overflow-auto rounded bg-ink/40 p-2 text-xs">{m.content}</pre>
                         </div>
                       {/each}
                     {:else}
-                      <p class="text-xs text-muted">Input not saved (SAVE_CALL_IO is off) or unavailable.</p>
+                      <p class="text-xs text-muted">{tr("Input not saved (SAVE_CALL_IO is off) or unavailable.")}</p>
                     {/if}
                     {#if c.images?.length}
                       <div class="mt-2">
-                        <div class="text-[11px] text-muted">Images sent to the model ({c.images.length})</div>
+                        <div class="text-[11px] text-muted">{tr("Images sent to the model (")}{c.images.length})</div>
                         <div class="mt-1 flex flex-wrap gap-2">
                           {#each c.images as p}
                             <img
@@ -208,11 +200,11 @@
                   </div>
                   <div class="border-t-2 border-line pt-3">
                     <div class="mb-1 inline-block rounded-md bg-good/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-good">
-                      Output — what the model produced
+                      {tr("Output — what the model produced")}
                     </div>
                     {#if c.requested?.length}
                       {#each c.requested as tc}
-                        <div class="mt-1 text-xs">↳ requested tool <code class="text-accent2">{tc.name}</code> with:</div>
+                        <div class="mt-1 text-xs">🔧 {tr("requested tool")} <code class="text-accent2">{tc.name}</code> {tr("with:")}</div>
                         {#if tc.arguments}
                           <pre class="mt-1 overflow-auto rounded bg-ink/40 p-2 text-xs">{tc.arguments}</pre>
                         {/if}
@@ -221,7 +213,7 @@
                     {#if c.output}
                       <pre class="mt-1 overflow-auto rounded bg-ink/40 p-2 text-xs">{c.output}</pre>
                     {:else if !c.requested?.length}
-                      <p class="mt-1 text-xs text-muted">Output not saved (SAVE_CALL_IO is off) or the model produced no text.</p>
+                      <p class="mt-1 text-xs text-muted">{tr("Output not saved (SAVE_CALL_IO is off) or the model produced no text.")}</p>
                     {/if}
                   </div>
                 </div>
@@ -230,18 +222,18 @@
               {@const t = e.data}
               <details class="card p-3 text-sm">
                 <summary class="cursor-pointer font-semibold">
-                  🔧 Tool · {t.name || "tool"}{#if t.seconds}<span class="ml-2 text-xs text-muted">{Number(t.seconds).toFixed(2)}s</span>{/if}
+                  🔧 {tr("Tool")} {t.name || "tool"}{#if t.seconds}<span class="ml-2 text-xs text-muted">{Number(t.seconds).toFixed(2)}{tr("s")}</span>{/if}
                 </summary>
                 <div class="mt-2 space-y-2">
                   <div>
                     <div class="mb-1 inline-block rounded-md bg-accent2/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-accent2">
-                      Input — arguments passed to the tool
+                      {tr("Input — arguments passed to the tool")}
                     </div>
                     <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{pretty(t.arguments) || "{}"}</pre>
                   </div>
                   <div class="border-t-2 border-line pt-3">
                     <div class="mb-1 inline-block rounded-md bg-good/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-good">
-                      Output — result the tool returned
+                      {tr("Output — result the tool returned")}
                     </div>
                     {#if t.error}<p class="text-xs text-bad">{t.error}</p>{/if}
                     <pre class="overflow-auto rounded bg-ink/40 p-2 text-xs">{t.result || "(empty)"}</pre>
@@ -253,10 +245,10 @@
         </div>
       {/each}
       <p class="mt-4 text-xs text-muted">
-        Merged model + tool events, grouped under the step they ran in and ordered by sequence.
+        {tr("Merged model + tool events, grouped under the step they ran in and ordered by sequence.")}
       </p>
     {:else}
-      <p class="text-sm text-muted">No call detail saved (SAVE_CALL_IO may be off).</p>
+      <p class="text-sm text-muted">{tr("No call detail saved (SAVE_CALL_IO may be off).")}</p>
     {/if}
   {/if}
 </div>

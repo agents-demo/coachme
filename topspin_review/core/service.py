@@ -50,21 +50,27 @@ def parse_region_box(value: Any) -> tuple[float, float, float, float] | None:
 
 
 async def analyze_video(
-    video_path: str, region_box: tuple[float, float, float, float] | None = None
+    video_path: str,
+    region_box: tuple[float, float, float, float] | None = None,
+    language: str = "en",
 ) -> dict[str, Any]:
     from topspin_review.core import DETERMINISTIC, Params, get_strategy
 
     strategy = get_strategy(DETERMINISTIC)
-    return await strategy.analyze(Params(video_path=video_path, region_box=region_box))
+    return await strategy.analyze(
+        Params(video_path=video_path, region_box=region_box, language=language)
+    )
 
 
 def analyze_video_sync(
-    video_path: str, region_box: tuple[float, float, float, float] | None = None
+    video_path: str,
+    region_box: tuple[float, float, float, float] | None = None,
+    language: str = "en",
 ) -> dict[str, Any]:
-    return run_async(analyze_video(video_path, region_box=region_box))
+    return run_async(analyze_video(video_path, region_box=region_box, language=language))
 
 
-async def ask(stem: str, question: str) -> str:
+async def ask(stem: str, question: str, language: str = "en") -> str:
     """Answer a follow-up question grounded in the stored report."""
     report = store.find_report(stem) if stem else None
     if report is None:
@@ -86,13 +92,15 @@ async def ask(stem: str, question: str) -> str:
     try:
         from topspin_review.integrations.agents import run_text
 
-        return await run_text(QA_SYSTEM, prompt)
+        from topspin_review.core.i18n import language_instruction
+
+        return await run_text(QA_SYSTEM + " " + language_instruction(language), prompt)
     except Exception as exc:  # noqa: BLE001
         return f"Could not answer: {exc}"
 
 
-def ask_sync(stem: str, question: str) -> str:
-    return run_async(ask(stem, question))
+def ask_sync(stem: str, question: str, language: str = "en") -> str:
+    return run_async(ask(stem, question, language=language))
 
 
 def describe() -> dict[str, Any]:

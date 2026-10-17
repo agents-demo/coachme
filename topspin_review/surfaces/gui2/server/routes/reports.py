@@ -52,12 +52,12 @@ def save_annotations(stem: str, payload: AnnotationsRequest) -> dict:
 
 
 @router.get("/reports/{stem}/ask")
-def ask(stem: str, q: str) -> dict:
+def ask(stem: str, q: str, language: str = "en") -> dict:
     if not q.strip():
         raise HTTPException(status_code=400, detail="empty question")
     if read.get_report(stem) is None:
         raise HTTPException(status_code=404, detail="unknown report")
-    return {"answer": service.ask_sync(stem, q)}
+    return {"answer": service.ask_sync(stem, q, language=language)}
 
 
 @router.get("/compare")

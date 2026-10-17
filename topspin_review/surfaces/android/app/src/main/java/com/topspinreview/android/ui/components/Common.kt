@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.topspinreview.android.ui.i18n.tr
 import com.topspinreview.android.ui.theme.Bad
 import com.topspinreview.android.ui.theme.Good
 import com.topspinreview.android.ui.theme.SpaceGrotesk
@@ -303,7 +304,7 @@ fun LogoBadge(modifier: Modifier = Modifier, size: Dp = 30.dp) {
         modifier.size(size).clip(RoundedCornerShape(size / 3)).background(heroBrush()),
         contentAlignment = Alignment.Center,
     ) {
-        Text("🏓", fontSize = (size.value * 0.5f).sp)
+        Text(tr("TR"), fontSize = (size.value * 0.38f).sp, fontWeight = FontWeight.Bold, color = Color.White, fontFamily = SpaceGrotesk)
     }
 }
 

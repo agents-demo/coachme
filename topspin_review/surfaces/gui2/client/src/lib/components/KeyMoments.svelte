@@ -1,4 +1,5 @@
 <script>
+  import { tr } from "$lib/appearance";
   import { source } from "$lib/api";
   import { issueGroups, fmtTime, CONF_TONE, CONF_HELP } from "$lib/format";
 
@@ -40,7 +41,7 @@
     {/each}
   </div>
 {:else if !groups.length}
-  <p class="text-sm text-muted">No timestamped issues in this report.</p>
+  <p class="text-sm text-muted">{tr("No timestamped issues in this report.")}</p>
 {:else}
   <ol class="space-y-2">
     {#each groups as g, i}
@@ -49,7 +50,7 @@
         <div class="mt-2 flex flex-wrap items-center gap-1.5">
           {#if g.confidence}
             <span class="shrink-0 rounded-full border-2 border-line px-2 py-0.5 text-xs {CONF_TONE[g.confidence] || 'text-muted'}" title={CONF_HELP}>
-              confidence: {g.confidence}
+              {tr("confidence:")} {tr(g.confidence)}
             </span>
           {/if}
           {#each g.times as t}

@@ -21,7 +21,9 @@ def analyze(request: AnalyzeRequest) -> dict:
         raise HTTPException(status_code=400, detail=f"file not found: {request.video_path}")
     try:
         outcome = service.analyze_video_sync(
-            request.video_path, region_box=service.parse_region_box(request.region_box)
+            request.video_path,
+            region_box=service.parse_region_box(request.region_box),
+            language=request.language,
         )
     except Exception as exc:  # noqa: BLE001
         return {"error": str(exc)}
@@ -40,5 +42,6 @@ def analyze_async(request: AnalyzeRequest) -> dict:
         request.video_path,
         region_box=service.parse_region_box(request.region_box),
         agentic=request.agentic,
+        language=request.language,
     )
     return {"job_id": job_id, "status_url": f"/jobs/{job_id}"}
