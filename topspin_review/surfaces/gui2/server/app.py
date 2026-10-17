@@ -6,6 +6,10 @@
 
 from __future__ import annotations
 
+import shutil
+from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, Response
@@ -13,12 +17,38 @@ from pydantic import BaseModel
 
 from topspin_review.core import config as app_config
 from topspin_review.integrations.agents import settings as agent_settings
-from topspin_review.integrations.storage import store
+from topspin_review.integrations.storage import runtime, store
 from topspin_review.surfaces.gui2.server import config
 from topspin_review.surfaces.gui2.server.routes import analyze, ingest, jobs, media, reports, trends
 from topspin_review.surfaces.readiness import checks as readiness_checks
 
-app = FastAPI(title="Topspin Review")
+# Directory containing bundled demo reports (committed to the repo).
+_DEMO_DIR = Path(__file__).parents[5] / "demo"
+
+
+def _seed_demo() -> None:
+    """Copy bundled demo reports into runtime/data on a fresh install.
+
+    Only runs when the data directory contains no reports yet, so real user
+    sessions are never overwritten.
+    """
+    data_dir = runtime.DATA_DIR
+    data_dir.mkdir(parents=True, exist_ok=True)
+    if any(data_dir.glob("*_report.json")):
+        return  # real sessions already exist — leave them alone
+    for src in _DEMO_DIR.glob("*_report.json"):
+        dst = data_dir / src.name
+        if not dst.exists():
+            shutil.copy2(src, dst)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    _seed_demo()
+    yield
+
+
+app = FastAPI(title="Topspin Review", lifespan=lifespan)
 
 # Allow the SvelteKit dev server (5174) to call the API during development.
 app.add_middleware(

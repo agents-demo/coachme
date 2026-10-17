@@ -1,0 +1,108 @@
+{
+  "source": "/Users/mishka/Downloads/Michael-Osher.mp4",
+  "sport": "table tennis",
+  "date": "2026-10-17",
+  "name": "Michael Osher – Backhand Topspin Drill",
+  "tags": ["backhand", "topspin", "drill", "club-session"],
+  "notes": "Left-handed player. Backhand topspin rally from backhand corner. Club training session, coach observing on the far side. Butterfly tables, professional environment.",
+  "summary": "Michael is working through a backhand topspin drill and shows a repeatable, consistent stroke pattern — a solid foundation. However, the stroke is currently producing a drive, not a topspin: the swing arc is too horizontal rather than brushing upward through the ball. This single issue explains why spin generation is limited. Two mechanical causes drive it: the elbow drops below the wrist during backswing (which forces the paddle to swing forward-flat rather than forward-up), and the body stays upright rather than loading weight forward through the shot. Fixing the backswing position and the forward body lean will convert this from a safe drive to a genuine topspin within a few focused sessions.",
+  "strengths": [
+    "Stroke is compact and repeatable — the same swing shape comes back reliably every ball, which is the right foundation to build quality on top of",
+    "Contact point is consistently in front of the body — Michael is not letting the ball get jammed into his hip, which is a common and harder-to-fix error",
+    "Knee bend is maintained throughout the clip — he stays in a loaded athletic stance and does not stand up between shots"
+  ],
+  "issues": [
+    {
+      "issue": "Stroke arc is too horizontal — the paddle sweeps forward rather than upward through the ball. A backhand topspin loop requires a diagonal upward brushing motion (roughly 45° upward). What is visible is closer to a flat drive: forward, minimal upward component. This limits topspin generation and ball trajectory control.",
+      "evidence_times": [0.7, 1.9, 3.8, 5.6, 7.0, 8.3],
+      "confidence": "high"
+    },
+    {
+      "issue": "Elbow drops below wrist level during backswing preparation. The elbow should stay at approximately waist height through the backswing so the paddle can naturally brush upward at contact. When the elbow drops, the paddle angle closes and the swing can only go forward — not upward — which directly causes the flat arc in issue 1.",
+      "evidence_times": [1.5, 3.1, 7.0],
+      "confidence": "high"
+    },
+    {
+      "issue": "Torso stays upright throughout — no forward lean into the shot. For a backhand topspin, body weight should drive forward and slightly into the ball at the moment of contact, with the torso tilting forward. Michael remains relatively upright in all strokes observed, meaning the legs and trunk contribute no forward drive energy into the ball.",
+      "evidence_times": [0.0, 2.2, 4.5, 6.7, 8.3],
+      "confidence": "high"
+    },
+    {
+      "issue": "No weight transfer — front foot (right foot for a left-handed player at the backhand corner) does not step into the ball before contact. Feet remain stationary for the entire 10-second clip. Every stroke is played from a static base, so the only power source is the arm. Against a stronger incoming ball or wider ball placement this will break down immediately.",
+      "evidence_times": [0.0, 3.0, 6.0, 9.0],
+      "confidence": "medium"
+    },
+    {
+      "issue": "Free arm (right arm) is passive throughout most of the clip — hanging or slightly bent at the side rather than actively counterbalancing the swing. A well-coordinated backhand has the free arm pulling back as the playing arm moves forward, stabilising the body axis. This is only seen correctly in the final seconds of the clip.",
+      "evidence_times": [0.0, 2.2, 5.2, 6.7],
+      "confidence": "medium"
+    }
+  ],
+  "drills": [
+    "Backhand shadow loops — away from the table, no ball. Focus entirely on the upward brush arc: start with elbow at waist height, swing forward AND upward, finish with the paddle at chin height. Do 3 sets of 20 with a coach watching the elbow does not drop on backswing.",
+    "Multi-ball backhand topspin with elbow-height check: feeder delivers the ball slowly to the same spot. Before each stroke, Michael must consciously set the elbow at waist height in the backswing. If the elbow drops, the shot is reset. Start slow, build speed only after the preparation position is reliable.",
+    "Forward lean drill — dip-and-drive into the backhand: exaggerate the forward body lean into each backhand. The chest should move toward the table slightly on every contact. Use a mirror or video feedback to see the torso movement.",
+    "Step-then-hit footwork drill: front foot (right foot) steps forward into the ball before every backhand contact. If the foot does not step, the shot is not played. Start with very slow multi-ball until the step-then-hit timing becomes automatic.",
+    "Recovery reset drill: place a cone behind the ready position. After every stroke, touch the cone with the free (right) hand before the next ball. This forces the free arm to pull back into a counterbalance and enforces active recovery between shots."
+  ],
+  "focus": "Fix the elbow-drops-on-backswing issue first — this is the root cause of the flat arc. Once the elbow stays high in preparation, the upward brush becomes structurally possible and issues 1 and 3 will partially self-correct.",
+  "progress": "",
+  "limitations": [
+    "Camera is positioned side-on at moderate distance with multiple players in frame — exact racket angle, wrist snap, and contact point on the rubber cannot be precisely measured.",
+    "10-second clip covers one drill scenario only; forehand, serve, in-game movement patterns, and response to varied placement are not assessable.",
+    "Ball trajectory partially occluded by the STIGA side barriers and other players — ball tracking data is incomplete for some stroke cycles."
+  ],
+  "metrics": {
+    "strokes": [
+      {"t": 0.7, "hand": "left"},
+      {"t": 1.9, "hand": "left"},
+      {"t": 3.1, "hand": "left"},
+      {"t": 4.4, "hand": "left"},
+      {"t": 5.6, "hand": "left"},
+      {"t": 7.0, "hand": "left"},
+      {"t": 8.3, "hand": "left"},
+      {"t": 9.5, "hand": "left"}
+    ],
+    "pose_summary": {
+      "l_knee_mean": 143,
+      "r_knee_mean": 146,
+      "l_elbow_mean": 88,
+      "r_elbow_mean": 108,
+      "crouch_mean": 0.16
+    },
+    "pose3d_summary": {
+      "torso_lean_mean": 7,
+      "shoulder_twist_mean": 11,
+      "hip_twist_mean": 7
+    },
+    "mechanics": {
+      "lower_lateral_range": 0.04,
+      "lower_direction_changes": 2
+    },
+    "ball": {
+      "segments": [
+        {"start": 0.4, "end": 3.3, "label": "backhand rally"},
+        {"start": 3.6, "end": 7.2, "label": "backhand rally"},
+        {"start": 7.5, "end": 10.5, "label": "backhand rally"}
+      ],
+      "stats": {
+        "hits": [0.8, 2.0, 3.2, 4.5, 5.7, 7.1, 8.4, 9.6],
+        "bounces": [1.3, 2.6, 3.9, 5.1, 6.4, 7.7, 9.0],
+        "visible_frames": 188,
+        "x_range": 0.38,
+        "y_range": 0.22,
+        "max_speed": 0.31
+      }
+    },
+    "mean_energy": 5.8
+  },
+  "timings": [
+    {"stage": "startup", "s": 0.4},
+    {"stage": "frames", "s": 1.1},
+    {"stage": "motion", "s": 0.8},
+    {"stage": "pose", "s": 2.3},
+    {"stage": "ball", "s": 1.6},
+    {"stage": "coach", "s": 4.1}
+  ],
+  "artifacts": {}
+}
