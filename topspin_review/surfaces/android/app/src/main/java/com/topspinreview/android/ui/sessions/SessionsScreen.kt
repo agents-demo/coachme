@@ -28,12 +28,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -193,7 +192,6 @@ fun SessionsScreen(
     val totalPractice = reports.sumOf { it.drills.size }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var menuOpen by remember { mutableStateOf(false) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
 
@@ -201,19 +199,11 @@ fun SessionsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TspTopBar(title = "Topspin Review") {
-                Box {
-                    IconButton(onClick = { menuOpen = true }) { Icon(Icons.Filled.MoreVert, "More options") }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Compare sessions") },
-                            enabled = reports.size >= 2,
-                            onClick = { menuOpen = false; onCompare() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Settings") },
-                            onClick = { menuOpen = false; onSettings() },
-                        )
-                    }
+                IconButton(onClick = onCompare, enabled = reports.size >= 2) {
+                    Icon(Icons.Filled.Compare, "Compare sessions")
+                }
+                IconButton(onClick = onSettings) {
+                    Icon(Icons.Filled.Settings, "Settings")
                 }
             }
         },

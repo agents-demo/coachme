@@ -30,6 +30,14 @@ export const cancel = (id) => api(`/jobs/${encodeURIComponent(id)}/cancel`, { me
 export const retry = (id) => api(`/jobs/${encodeURIComponent(id)}/retry`, { method: "POST" });
 export const jobs = () => api("/jobs");
 export const readiness = () => api("/ready");
+export const getProfile = () => api("/profile");
+export const saveProfile = (profile) =>
+  api("/profile", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(profile),
+  });
+export const getConfig = () => api("/config");
 export const samples = () => api("/samples");
 
 export const source = (stem) => `/source/${encodeURIComponent(stem)}`;

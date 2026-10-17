@@ -4,47 +4,21 @@
   import { page } from "$app/stores";
   import { base } from "$app/paths";
   import { onNavigate } from "$app/navigation";
-  import { sportMode } from "$lib/stores";
+  import { initAppearance } from "$lib/appearance";
 
   let { children } = $props();
   const tabs = [
     { href: `${base}/`, label: "Sessions" },
+    { href: `${base}/compare`, label: "Compare" },
   ];
   const here = (href) =>
     href === `${base}/` ? $page.url.pathname === `${base}/` : $page.url.pathname.startsWith(href);
 
-  let theme = $state("dark");
-
-  function applyTheme() {
-    document.documentElement.dataset.theme = theme;
-    try { localStorage.setItem("topspin.theme", theme); } catch {}
-  }
-  function toggleTheme() {
-    theme = theme === "dark" ? "light" : "dark";
-    applyTheme();
-  }
-
-  function toggleSport() {
-    $sportMode = !$sportMode;
-    if ($sportMode) {
-      document.documentElement.dataset.sport = "";
-    } else {
-      delete document.documentElement.dataset.sport;
-    }
-    try { localStorage.setItem("topspin.sport", String($sportMode)); } catch {}
-  }
-
   onMount(() => {
-    const savedTheme = localStorage.getItem("topspin.theme");
-    theme = savedTheme || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-    applyTheme();
-
-    const savedSport = localStorage.getItem("topspin.sport") === "true";
-    $sportMode = savedSport;
-    if (savedSport) document.documentElement.dataset.sport = "";
+    initAppearance();
   });
 
-  // View Transitions API — seamless fade+slide between sessions list and result.
+  // View Transitions API: seamless fade+slide between sessions list and result.
   onNavigate((navigation) => {
     if (!document.startViewTransition) return;
     return new Promise((resolve) => {
@@ -59,45 +33,35 @@
 <div class="min-h-screen bg-ink text-app">
   <header class="sticky top-0 z-30 h-14 border-b-2 border-line bg-ink/85 backdrop-blur">
     <div class="mx-auto flex h-full max-w-5xl items-center gap-2 px-4">
-      <a href={`${base}/`} class="flex items-center gap-2 font-display text-lg font-bold">
-        <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent to-accent2 text-sm text-white">🏓</span>
-        Topspin Review
+      <a href={`${base}/`} class="flex shrink-0 items-center gap-2 font-display text-lg font-bold">
+        <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent to-accent2 text-[11px] font-extrabold text-white">TR</span>
+        <span class="hidden sm:inline">Topspin Review</span>
       </a>
       <nav class="ml-auto flex items-center gap-1">
         {#each tabs as t}
           <a
             href={t.href}
-            class="rounded-full px-4 py-1.5 text-sm font-semibold transition"
+            class="rounded-full px-3 py-1.5 text-sm font-semibold transition sm:px-4"
             class:bg-surface={here(t.href)}
             class:text-app={here(t.href)}
             class:text-muted={!here(t.href)}
           >{t.label}</a>
         {/each}
 
-        <!-- Primary CTA — bordered pill so it reads as an action, not a nav link. -->
         <a
-          href={`${base}/?new=1`}
-          class="rounded-full border-2 border-accent px-4 py-1.5 text-sm font-semibold text-accent transition hover:bg-accent hover:text-white"
-        >＋ New</a>
-
-        <!-- Sport mode toggle -->
-        <button
-          onclick={toggleSport}
-          title={$sportMode ? "Sport mode on · click to switch off" : "Switch to sport mode (orange palette + grid)"}
-          class="grid h-9 w-9 place-items-center rounded-full border-2 text-sm transition"
-          class:border-accent={$sportMode}
-          class:bg-accent={$sportMode}
-          class:text-white={$sportMode}
-          class:border-line={!$sportMode}
-          class:text-muted={!$sportMode}
-        >🏅</button>
-
-        <!-- Theme toggle -->
-        <button
-          onclick={toggleTheme}
-          title="Toggle light / dark"
-          class="grid h-9 w-9 place-items-center rounded-full border-2 border-line text-sm text-muted transition hover:border-accent hover:text-app"
-        >{theme === "dark" ? "☀️" : "🌙"}</button>
+          href={`${base}/settings`}
+          aria-label="Settings"
+          title="Settings"
+          class="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-line text-muted transition hover:border-accent hover:text-app"
+          class:border-accent={here(`${base}/settings`)}
+          class:bg-accent={here(`${base}/settings`)}
+          class:text-white={here(`${base}/settings`)}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+          </svg>
+        </a>
       </nav>
     </div>
   </header>

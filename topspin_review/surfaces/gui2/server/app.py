@@ -9,7 +9,11 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, Response
+from pydantic import BaseModel
 
+from topspin_review.core import config as app_config
+from topspin_review.integrations.agents import settings as agent_settings
+from topspin_review.integrations.storage import store
 from topspin_review.surfaces.gui2.server import config
 from topspin_review.surfaces.gui2.server.routes import analyze, ingest, jobs, media, reports
 from topspin_review.surfaces.readiness import checks as readiness_checks
@@ -40,6 +44,43 @@ def health() -> dict:
 def ready() -> dict:
     """Environment readiness (model / vision / pose / pdf / sample) for the UI."""
     return {"checks": readiness_checks()}
+
+
+class ProfilePayload(BaseModel):
+    sport: str = "table tennis"
+    level: str = "intermediate"
+    dominant_hand: str = "right"
+    goal: str = "improve"
+
+
+@app.get("/profile")
+def get_profile() -> dict:
+    return store.get_profile()
+
+
+@app.put("/profile")
+def put_profile(payload: ProfilePayload) -> dict:
+    profile = store.get_profile()
+    profile.pop("hand", None)
+    profile.update(payload.model_dump())
+    return store.set_profile(profile)
+
+
+@app.get("/config")
+def get_config() -> dict:
+    """Read-only, non-secret configuration used by new analyses."""
+    return {
+        "api_base": agent_settings.api_base(),
+        "text_model": agent_settings.text_model_name(),
+        "vision_model": agent_settings.vision_model_name(),
+        "max_frames": app_config.max_frames(),
+        "max_width": app_config.max_width(),
+        "zoom_frames": app_config.zoom_frames(),
+        "max_windows": app_config.max_windows(),
+        "agentic": app_config.agentic_mode(),
+        "verify_reports": app_config.verify_reports(),
+        "demo_fallback": app_config.demo_fallback(),
+    }
 
 
 @app.get("/")
