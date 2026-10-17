@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -27,10 +28,12 @@ _DEMO_DIR = Path(__file__).parents[5] / "demo"
 
 
 def _seed_demo() -> None:
-    """Copy bundled demo reports into runtime/data on a fresh install.
+    """Copy bundled demo reports (and their videos) into runtime/data on a fresh install.
 
     Only runs when the data directory contains no reports yet, so real user
-    sessions are never overwritten.
+    sessions are never overwritten.  For each report the corresponding video
+    (same stem, any extension) is also copied so playback works on any machine
+    without knowing the original file path.
     """
     data_dir = runtime.DATA_DIR
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -38,8 +41,22 @@ def _seed_demo() -> None:
         return  # real sessions already exist — leave them alone
     for src in _DEMO_DIR.glob("*_report.json"):
         dst = data_dir / src.name
-        if not dst.exists():
-            shutil.copy2(src, dst)
+        if dst.exists():
+            continue
+        # Copy the report JSON, then patch the source path to the local copy.
+        report = json.loads(src.read_text())
+        stem = src.stem.removesuffix("_report")
+        # Copy the companion video if present in demo/.
+        video_dst: Path | None = None
+        for ext in (".mp4", ".mov", ".avi", ".mkv", ".webm"):
+            video_src = _DEMO_DIR / f"{stem}{ext}"
+            if video_src.exists():
+                video_dst = data_dir / video_src.name
+                shutil.copy2(video_src, video_dst)
+                break
+        if video_dst:
+            report["source"] = str(video_dst)
+        dst.write_text(json.dumps(report, ensure_ascii=False, indent=2))
 
 
 @asynccontextmanager
