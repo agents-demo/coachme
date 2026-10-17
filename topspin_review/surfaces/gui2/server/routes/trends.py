@@ -13,9 +13,9 @@ router = APIRouter()
 
 # Metric keys we surface in the trend view (from report["metrics"]["mechanics"]).
 _METRIC_KEYS = [
-    ("lower_lateral_range", "Footwork range"),
-    ("mean_energy", "Mean energy"),
-    ("impact_count", "Impacts"),
+    ("lower_lateral_range", "Footwork range", ("mechanics",)),
+    ("mean_energy", "Mean energy", ()),
+    ("lower_direction_changes", "Direction changes", ("mechanics",)),
 ]
 
 
@@ -42,7 +42,7 @@ def trends() -> dict:
             if isinstance(issue, str):
                 text = issue
             elif isinstance(issue, dict):
-                text = issue.get("text") or issue.get("title") or ""
+                text = issue.get("issue") or issue.get("text") or issue.get("title") or ""
             else:
                 text = str(issue)
             text = text.strip()[:100]
@@ -59,11 +59,13 @@ def trends() -> dict:
 
     # --- metric trajectories ---
     metrics: list[dict] = []
-    for key, label in _METRIC_KEYS:
+    for key, label, path in _METRIC_KEYS:
         points: list[dict] = []
         for r in reversed(reports):  # oldest first for the chart
-            mech = (r.get("metrics") or {}).get("mechanics") or {}
-            val = mech.get(key)
+            node = r.get("metrics") or {}
+            for part in path:
+                node = node.get(part) or {}
+            val = node.get(key)
             if val is None:
                 continue
             try:

@@ -36,7 +36,10 @@
 
   function ondone(stem) {
     if (stem) goto(`${base}/result?stem=${encodeURIComponent(stem)}`);
-    else load();
+    else {
+      load();
+      loadTrends();
+    }
   }
 
   const totalIssues = $derived(reports.reduce((a, r) => a + (r.issue_count || 0), 0));
@@ -85,9 +88,9 @@
   <section class="mt-4 card p-4">
     <h2 class="font-display text-sm font-bold uppercase tracking-wide text-accent">{tr("Trends")}</h2>
     {#if trends.top_issues?.length}
+      {@const max = trends.top_issues[0]?.count || 1}
       <div class="mt-3">
         <div class="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">{tr("Recurring issues")}</div>
-        {@const max = trends.top_issues[0]?.count || 1}
         <div class="space-y-1.5">
           {#each trends.top_issues.slice(0, 5) as iss}
             <div class="flex items-center gap-2 text-xs">
@@ -106,7 +109,7 @@
     {#if trends.metrics?.length}
       <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {#each trends.metrics as m}
-          {@const vals = m.sessions.map((s) => s.value)}
+          {@const vals = m.points.map((s) => s.value)}
           {@const mn = Math.min(...vals)}
           {@const mx = Math.max(...vals) || 1}
           {@const w = 120}
@@ -115,9 +118,9 @@
           <div>
             <div class="text-[10px] text-muted">{m.label}</div>
             <svg viewBox="0 0 {w} {h}" class="w-full h-8 overflow-visible">
-              <polyline points={pts} fill="none" stroke="var(--color-accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+              <polyline points={pts} fill="none" stroke="rgb(var(--c-accent))" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
               {#each vals as v, i}
-                <circle cx={Math.round((i / Math.max(vals.length - 1, 1)) * w)} cy={Math.round(h - ((v - mn) / (mx - mn || 1)) * (h - 4) - 2)} r="2" fill="var(--color-accent)" />
+                <circle cx={Math.round((i / Math.max(vals.length - 1, 1)) * w)} cy={Math.round(h - ((v - mn) / (mx - mn || 1)) * (h - 4) - 2)} r="2" fill="rgb(var(--c-accent))" />
               {/each}
             </svg>
           </div>
