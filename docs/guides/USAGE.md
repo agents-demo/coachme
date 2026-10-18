@@ -264,6 +264,6 @@ runtime/
 
 ## 11. Going further
 
-- **Architecture & rules**: [`architecture.md`](architecture.md).
-- **Contributing** (setup, layers, where to add things): [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
-- **Quick reference**: [`../QUICKSTART.md`](../QUICKSTART.md).
+- **Architecture & rules**: [`architecture.md`](../engineering/architecture.md).
+- **Contributing** (setup, layers, where to add things): [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md).
+- **Quick reference**: [`../../QUICKSTART.md`](../../QUICKSTART.md).

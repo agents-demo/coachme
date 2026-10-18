@@ -31,7 +31,7 @@ them with our agentic, evidence-grounded, self-hosted angle.
 ## 1. Where we are today
 
 What the app does today is documented in [architecture.md](architecture.md) and
-[USAGE.md](USAGE.md); this roadmap lists only the work that is **not** done.
+[USAGE.md](../guides/USAGE.md); this roadmap lists only the work that is **not** done.
 
 **Shipped since the last revision:** Android app, English/Chinese UI and reports, ask-by-voice,
 3D body view, automatic rally segments, footage-quality guidance, progress/compare, share card and

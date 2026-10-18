@@ -9,10 +9,11 @@ Record a session — table tennis, tennis, badminton, squash, padel — and get 
 New here? See **[QUICKSTART.md](QUICKSTART.md)** for copy-paste commands to install and run the
 Web UI / CLI.
 
-- **Run a demo step by step:** [docs/RUN_DEMO.md](docs/RUN_DEMO.md).
-- **Full guide:** [docs/USAGE.md](docs/USAGE.md) — setup, surfaces, workflow, API, scripts, settings, troubleshooting.
-- **Design:** [docs/architecture.md](docs/architecture.md).
-- **Roadmap:** [docs/ROADMAP.md](docs/ROADMAP.md) — competitor feature plan for later implementation.
+- **Run a demo step by step:** [docs/guides/RUN_DEMO.md](docs/guides/RUN_DEMO.md).
+- **Full guide:** [docs/guides/USAGE.md](docs/guides/USAGE.md) — setup, surfaces, workflow, API, scripts, settings, troubleshooting.
+- **Design:** [docs/engineering/architecture.md](docs/engineering/architecture.md).
+- **Roadmap:** [docs/engineering/ROADMAP.md](docs/engineering/ROADMAP.md) — competitor feature plan for later implementation.
+- **Management pitch:** [docs/pitch/](docs/pitch/) — executive roadmap, Huawei pitch and talking points.
 
 The rest of this file covers what it does, the architecture, and the knobs.
 
@@ -135,7 +136,10 @@ topspin-review/
 │   ├── integration/          # full-pipeline checks (need a model endpoint)
 │   │                         #   + dev tools: make_sample, evaluate_reports
 │   └── eval/expected.json    # labeled expectations for quality checks
-├── docs/architecture.md
+├── docs/
+│   ├── engineering/             # architecture, pipeline research, roadmap
+│   ├── guides/                  # usage and run-a-demo guides
+│   └── pitch/                   # management pitch, talking points, executive roadmap
 ├── .github/workflows/ci.yml
 ├── .env
 └── requirements.txt          # everything: analysis, pose, PDF, API, MCP, tests

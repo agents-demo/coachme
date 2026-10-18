@@ -86,5 +86,5 @@ result = analyze_video_sync("runtime/data/session.mp4")
 ```
 
 See [README.md](README.md) for what it does, the architecture, and the `.env` knobs.
-For a step-by-step demo, see [docs/RUN_DEMO.md](docs/RUN_DEMO.md); the full guide is
-[docs/USAGE.md](docs/USAGE.md).
+For a step-by-step demo, see [docs/guides/RUN_DEMO.md](docs/guides/RUN_DEMO.md); the full guide is
+[docs/guides/USAGE.md](docs/guides/USAGE.md).

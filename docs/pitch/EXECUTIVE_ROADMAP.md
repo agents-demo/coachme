@@ -112,7 +112,7 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 | Sync across phone and computer | — |
 | Connect to watches and health apps | Read (sensor) |
 
-*Details, effort sizes and ordering are in the full plan: [ROADMAP.md](ROADMAP.md).*
+*Details, effort sizes and ordering are in the full plan: [ROADMAP.md](../engineering/ROADMAP.md).*
 
 ---
 
