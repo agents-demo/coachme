@@ -24,7 +24,7 @@ from topspin_review.surfaces.gui2.server.routes import analyze, ingest, jobs, me
 from topspin_review.surfaces.readiness import checks as readiness_checks
 
 # Directory containing bundled demo reports (committed to the repo).
-_DEMO_DIR = Path(__file__).parents[5] / "demo"
+_DEMO_DIR = Path(__file__).parents[4] / "demo"
 
 
 def _seed_demo() -> None:
@@ -44,7 +44,7 @@ def _seed_demo() -> None:
         if dst.exists():
             continue
         # Copy the report JSON, then patch the source path to the local copy.
-        report = json.loads(src.read_text())
+        report = json.loads(src.read_text(encoding="utf-8"))
         stem = src.stem.removesuffix("_report")
         # Copy the companion video if present in demo/.
         video_dst: Path | None = None
@@ -56,7 +56,7 @@ def _seed_demo() -> None:
                 break
         if video_dst:
             report["source"] = str(video_dst)
-        dst.write_text(json.dumps(report, ensure_ascii=False, indent=2))
+        dst.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 @asynccontextmanager
