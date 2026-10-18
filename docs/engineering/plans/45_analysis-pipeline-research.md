@@ -1,11 +1,14 @@
-# Analysis Pipeline Improvement Ideas
+# Analysis Pipeline Research
 
-**Role:** research backlog for measurement ideas, not an execution plan.
-# Topspin Review — Coach-Driven Pipeline Research
+**Status:** reference — informs stubs 46–55 and enriches 19, 28, 29, 30, 31
+**Phase:** B.5 / C — Measure stage + Analysis depth
+**Role:** feasibility assessment for coach-driven measurement ideas. Each Tier A
+item has its own plan file (46–54). Tier B detail is folded into existing plan
+files. This file is the technical reference behind those stubs.
 
-*Research document: what a table-tennis coach would want the pipeline to measure, assessed
-against the current implementation. Revised for technical accuracy: each proposal states its
-data prerequisites, platform scope, acceptance criteria and failure modes.*
+*What a table-tennis coach would want the pipeline to measure, assessed against
+the current implementation. Each proposal states its data prerequisites,
+platform scope, acceptance criteria, and failure modes.*
 
 ---
 

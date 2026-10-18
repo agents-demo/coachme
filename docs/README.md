@@ -13,7 +13,7 @@ How the system is built and what we plan to change. Start with the [engineering 
 - [Benchmark UI plan](engineering/plans/02_benchmark-ui.md) - local review, labelling and blind-rating UI.
 - [Priorities](engineering/plans/00_priorities.md) - what to build next across the product.
 - [Architecture](engineering/reference/architecture.md) - layers and dependency rules.
-- [Analysis ideas](engineering/research/analysis-ideas.md) - research backlog, not committed work.
+- [Analysis pipeline research](engineering/plans/45_analysis-pipeline-research.md) - pipeline analytics feasibility (Tier A–C), not committed work.
 
 ## Guides
 

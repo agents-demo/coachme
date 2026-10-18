@@ -92,6 +92,34 @@ must stay green.
 
 ---
 
+## 6.5. Pipeline analytics (Tier A — unlock after M3)
+
+Low-effort metrics that use only pose landmarks + dense stroke windows. All
+require stroke segmentation (M3) and benefit from calibration (0.2). Full
+feasibility detail in [45_analysis-pipeline-research.md](45_analysis-pipeline-research.md).
+
+| # | Feature | File | Effort | Key dependency |
+|---|---|---|---|---|
+| A1 | Recovery time between shots | [46_recovery-time.md](46_recovery-time.md) | S | M3 (dense window) |
+| A2 | Late-feet timing | [47_late-feet-timing.md](47_late-feet-timing.md) | S | M3 |
+| A3 | Hip / shoulder sequencing | [48_hip-shoulder-sequencing.md](48_hip-shoulder-sequencing.md) | S | M3 |
+| A4 | Elbow position at contact | [49_elbow-contact-position.md](49_elbow-contact-position.md) | S | M3 |
+| A5 | Backswing / stroke arc | [50_stroke-arc.md](50_stroke-arc.md) | S–M | M3 |
+| A6 | Ready position frequency | [51_ready-position.md](51_ready-position.md) | S | M3 |
+| A7 | Technique drift / fatigue | [52_technique-drift.md](52_technique-drift.md) | S | M3, ≥6 strokes |
+| A8 | Rally length distribution | [53_rally-distribution.md](53_rally-distribution.md) | S | ball tracking |
+| A9 | Cross-session numeric trends | [43_multi-session-trends.md](43_multi-session-trends.md) | M | ≥3 sessions + 0.2 |
+| A10 | Structured drill schema | [54_structured-drills.md](54_structured-drills.md) | M | — |
+| C1* | Stroke consistency score | [55_stroke-consistency.md](55_stroke-consistency.md) | M | M3 + C1 shot type |
+| C3* | Similar-session retrieval | [56_similar-session-retrieval.md](56_similar-session-retrieval.md) | M | 0.2 + ≥5 sessions |
+
+*C1\*/C3\* are pipeline-analytics additions; do not confuse with Phase C items C1 and C3.*
+
+**Build order within Tier A:** M3 → A1–A8 (any order) → A10 → A9/C1\*/C3\* once
+calibration (0.2) is stable.
+
+---
+
 ## 7. Phase C — Analysis depth (the hard moat)
 
 | # | Feature | File | Effort | Key dependency |
@@ -302,4 +330,6 @@ useful?" (from 0.3 👍) and "would you pay?". Wire both to the metrics in §11.
 ---
 
 *Per-feature detail (goal, where it lives, acceptance, risks) lives in the
-numbered plan files 04–44. Write a full spec in the stub file before building.*
+numbered plan files 04–56. `45` is a research reference (not a build plan);
+`46`–`56` are pipeline analytics stubs. Write a full spec in the stub file
+before building.*

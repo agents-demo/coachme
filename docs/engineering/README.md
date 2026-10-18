@@ -5,13 +5,15 @@
 | Doc | One-line summary | Use when |
 |---|---|---|
 | [Architecture](reference/architecture.md) | Layers, dependency direction, package map and runtime structure. | Changing structure or adding a module |
-| [Analysis ideas](research/analysis-ideas.md) | Research backlog of coach-driven measurement and CV ideas. | Looking for analysis improvements |
+| [Analysis pipeline research](plans/45_analysis-pipeline-research.md) | Feasibility assessment of coach-driven CV metrics; Tier A–C items with effort/risk. | Looking for analysis improvements or planning pipeline analytics |
 
 ## Plans (`plans/`)
 
 Files are numbered `XX_name.md`. `00` is the master roadmap. `01`–`03` are
 full implementation specs (ready to build from). `04`–`44` are stubs (goal,
 effort, dependencies defined; full spec to be written before building).
+`45` is the pipeline analytics research reference. `46`–`56` are analytics
+stubs derived from that research.
 
 ### Full specs — ready to build from
 
@@ -82,6 +84,25 @@ effort, dependencies defined; full spec to be written before building).
 | [42_cross-device-sync.md](plans/42_cross-device-sync.md) | D11 Cross-device sync | M–L |
 | [43_multi-session-trends.md](plans/43_multi-session-trends.md) | D12 Multi-session trend view | M |
 | [44_annotated-clips.md](plans/44_annotated-clips.md) | D13 Annotated coaching clips | M |
+
+### Research reference + Pipeline Analytics stubs
+
+| File | Item | Effort |
+|---|---|---|
+| [45_analysis-pipeline-research.md](plans/45_analysis-pipeline-research.md) | Research reference: Tier A–C feasibility with effort/risk (not a build plan) | — |
+| [46_recovery-time.md](plans/46_recovery-time.md) | A1 Recovery time between shots | S |
+| [47_late-feet-timing.md](plans/47_late-feet-timing.md) | A2 Late-feet timing | S |
+| [48_hip-shoulder-sequencing.md](plans/48_hip-shoulder-sequencing.md) | A3 Hip / shoulder sequencing | S |
+| [49_elbow-contact-position.md](plans/49_elbow-contact-position.md) | A4 Elbow position at contact | S |
+| [50_stroke-arc.md](plans/50_stroke-arc.md) | A5 Backswing / stroke arc | S–M |
+| [51_ready-position.md](plans/51_ready-position.md) | A6 Ready position frequency | S |
+| [52_technique-drift.md](plans/52_technique-drift.md) | A7 Technique drift / fatigue detection | S |
+| [53_rally-distribution.md](plans/53_rally-distribution.md) | A8 Rally length distribution | S |
+| [54_structured-drills.md](plans/54_structured-drills.md) | A10 Structured drill schema | M |
+| [55_stroke-consistency.md](plans/55_stroke-consistency.md) | C1* Stroke consistency score | M |
+| [56_similar-session-retrieval.md](plans/56_similar-session-retrieval.md) | C3* Similar-session retrieval | M |
+
+*A9 (numeric cross-session trends) is covered by [43_multi-session-trends.md](plans/43_multi-session-trends.md). C1*/C3* are pipeline-analytics variants distinct from the C1/C3 items in `00_priorities.md`.*
 
 ---
 

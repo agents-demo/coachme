@@ -28,5 +28,15 @@ being treated as ordinary rally strokes.
 False positives: a high backswing can look like a toss. Toss is often cropped
 in phone footage. Keep confidence thresholds conservative.
 
+## Short vs long classification (B5 from feasibility research)
+
+Short/long serve classification and second-bounce projection depend on table
+detection (31_table-heatmap.md B2). Without a calibrated table-plane:
+- "short/long" is a guess based on ball trajectory angle — label it speculative.
+- Do not ship short/long classification until table calibration is solid.
+
+**Build order:** serve flag (this file) first; short/long after B2 passes.
+
 ---
 *See [00_priorities.md](00_priorities.md) §8 item C11 for sequencing context.*
+*Full feasibility detail: [45_analysis-pipeline-research.md](45_analysis-pipeline-research.md) §3 B5.*
