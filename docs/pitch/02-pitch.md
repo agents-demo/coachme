@@ -12,6 +12,8 @@ They repeat the same mistakes for years without ever knowing it.
 
 This is not a niche problem. Table tennis alone has approximately 300 million recreational players (ITTF estimate); across table tennis, tennis, badminton, padel and squash, the combined participant base exceeds 500 million. Most train regularly with little or no expert feedback between sessions.
 
+**China is the primary market.** Approximately 85 million people play at a club level daily in China; around 10 million compete seriously. The 双减 policy (2021) banned for-profit academic tutoring and redirected ¥400B+ of parental spending toward sport — a structural, policy-driven demand shift that directly benefits table tennis coaching. For junior players, the buyer is the parent, not the child. English-speaking markets are the second priority.
+
 ---
 
 ## What This Is
@@ -177,9 +179,10 @@ This is a real output. Not mocked beyond the data input.
 - Data advantage: every session improves coaching quality over time
 
 **TAM signal:**
-- Table tennis: ~300 million recreational players globally (ITTF estimate), ~40M serious recreational players in the tier who would pay
+- **Primary market — China:** ~85M daily club players, ~10M competitive; 双减-driven ¥400B+ children's sports industry growing at 15%+/year. Parents are the buyers for junior players. Pricing: RMB 30–50/month (~USD 4–7), not a USD 10 conversion.
+- Table tennis globally: ~300M recreational players (ITTF estimate), ~40M serious players in the tier who would pay
 - Racket sports combined (table tennis, tennis, badminton, padel, squash, pickleball): 500M+ participants — not additive; many players play more than one sport
-- At $10/month × 0.1% of addressable serious table-tennis players: $5M ARR from table tennis alone
+- At $10/month × 0.1% of addressable serious table-tennis players: $5M ARR from table tennis alone; China adds a separately-sized, RMB-denominated market on top
 
 ---
 
