@@ -60,7 +60,7 @@ The mode proposed here is different:
 > decides, step by step, what to examine. Measurement is a tool, not a stage.**
 
 This is the model-directed investigation behaviour described in
-[What this AI can see](../../pitch/05-the-ai-advantage.md): the agent may ignore
+[Four moments](../../pitch/03-the-moments.md): the agent may ignore
 ball placement entirely, or may spend most of its budget on racket angle and wrist
 mechanics because that is where its hypothesis leads.
 

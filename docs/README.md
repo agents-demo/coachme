@@ -27,8 +27,9 @@ How to run and use the app.
 Materials for managers and external stakeholders. Start with the [pitch index](pitch/README.md), which gives the reading order.
 
 - [One-pager](pitch/01-one-pager.md) — problem, users, market, competitors and roadmap.
-- [Huawei pitch](pitch/02-huawei-pitch.md) — narrative, differentiator and Ascend story.
-- [Executive roadmap](pitch/03-executive-roadmap.md) — plain-English plan from demo to product.
+- [The pitch](pitch/02-pitch.md) — narrative, differentiator and Ascend story.
+- [Four moments](pitch/03-the-moments.md) — four scenarios showing the real AI advantage.
 - [Meeting guide](pitch/04-meeting-guide.md) — how to run the room: delivery, objections, Q&A.
-- [What this AI can see](pitch/05-the-ai-advantage.md) — four scenarios showing the real advantage.
+- [The plan](pitch/05-plan.md) — plain-English workstreams, gates and milestones.
 - [Market research](pitch/06-market-research.md) — market size, trends and forecasts.
+- [Architecture](pitch/07-architecture.md) — why the pipeline has to change.

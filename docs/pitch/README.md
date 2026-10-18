@@ -1,40 +1,36 @@
 # Pitch
 
-Terminology: see the [glossary](../GLOSSARY.md). Use **evidence-backed adaptive coaching**
-as the differentiator, **Standard / Investigator** for modes, **model-directed** only to
-explain the mechanism.
+Terminology: see the [glossary](../GLOSSARY.md).
+Differentiator: **evidence-backed adaptive coaching**.
+Modes: **Standard** (demo-ready) / **Investigator** (benchmark in progress).
 
 ---
 
-## Before the meeting — read in this order
+## The pitch — read in this order
 
-**1. [The pitch narrative](02-huawei-pitch.md)**
-The written pitch. Problem → what the app is → why it matters for Huawei → current
-state → ask. Start here.
+### 1. [The pitch narrative](02-pitch.md)
+What the product is, why it matters for Huawei, what the ask is.
+*Start here. This is the content.*
 
-**2. [What this AI can see](05-the-ai-advantage.md)**
-Four concrete scenarios that show why this product is different from everything else
-in the market. Read this before walking into the room. It is where the conviction
-comes from.
+### 2. [Four moments](03-the-moments.md)
+Four concrete scenarios showing what this AI can do that nothing else can.
+*Read this before walking into the room. This is where conviction comes from.*
 
-**3. [The meeting guide](04-meeting-guide.md)**
-How to run the room: opening, demo flow, objections, Chinese business dynamics, what
-earns credibility and what loses it. Read last, closest to the meeting.
+### 3. [Meeting guide](04-meeting-guide.md)
+How to open, how to run the demo, how to answer every objection, how Huawei
+internal meetings work.
+*Read last. This is how to deliver the content from 1 and 2.*
 
 ---
 
-## Reference and backup
+## Reference
 
-**4. [One-pager](01-one-pager.md)**
-The Huawei lab submission form. Full product story in a table.
-
-**5. [The plan](03-executive-roadmap.md)**
-Workstreams, gates and milestones. Use when someone asks "what exactly gets built
-and in what order?"
-
-**6. [Market research](06-market-research.md)**
-Market sizing, competitive map, consumer behaviour and strategic recommendations.
-Not first-reading; use when challenged on the market or business case.
+| File | What it is |
+|------|------------|
+| [One-pager](01-one-pager.md) | The Huawei lab submission form — full story in a table |
+| [The plan](05-plan.md) | Workstreams, gates and milestones — use when asked "what exactly gets built?" |
+| [Market research](06-market-research.md) | Market sizing, competitive map, consumer behaviour |
+| [Architecture](07-architecture.md) | Why the pipeline has to change — for technical questions |
 
 ---
 
@@ -51,13 +47,13 @@ adapts to what it finds — rather than running the same fixed checks every sess
 
 ## The Huawei angle in one sentence
 
-A useful app with daily real-world use creates recurring inference and training
-demand that Ascend is built to serve.
+A useful app with daily real use creates recurring inference and training demand
+that Ascend is built to serve.
 
 ---
 
 ## Removed
 
 The old `TopSpin_Huawei_Pitch.pptx` was deleted — it predated the Investigator
-story and incorrectly claimed the fixed pipeline was agentic. Recreate a deck from
-the one-pager and narrative once the message is stable.
+story and incorrectly claimed the fixed pipeline was agentic. Recreate a deck
+from the one-pager and narrative once the message is stable.

@@ -1,6 +1,10 @@
-# Pitch Talking Points — Huawei Internal Managers
+# Meeting Guide — Huawei Internal Managers
 
-These are the strategic insights for the conversation, not slide content. What to say, what order, what to emphasise, what to avoid.
+*Delivery guidance for [02-pitch.md](02-pitch.md). Read the pitch first — this
+document is about how to present it, in what order, and how to handle every
+question that comes up in the room.*
+
+---
 
 ---
 

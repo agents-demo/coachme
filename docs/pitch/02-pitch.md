@@ -193,3 +193,8 @@ This is a real output. Not mocked beyond the data input.
 2. **Evaluation clips and coach labels** — the benchmark set that decides whether Investigator is ready
 3. **Ascend/CANN access and deployment guidance** for Phase 3 cloud/edge inference and training
 4. **Design support** — one UX/UI pass to make the app look like a Huawei product, not a prototype
+
+---
+
+*For how to present this in the room: [04-meeting-guide.md](04-meeting-guide.md)*
+*For the four scenarios that make the case most concretely: [03-the-moments.md](03-the-moments.md)*
