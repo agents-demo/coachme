@@ -71,6 +71,8 @@ Today: Standard mode is the reliable default. Investigator is opt-in while the b
 | Table landing heatmap (needs 4-corner calibration) | Watch · Show |
 | **Understand audio too — voice notes, racket sound** | Listen |
 
+*Low-effort unlocks (available once stroke segmentation is done, before any of the above):* recovery time between shots, late-feet timing, hip/shoulder sequencing, elbow position at contact, backswing arc, ready-position frequency, technique drift across a session, rally-length distribution. These use existing pose data — no new models required.
+
 *Shot speed and spin are stretch goals; ship them only when the measurement quality supports the claim.*
 
 ### Workstream 3 — Match play *(market area)*

@@ -143,15 +143,73 @@ the others.
 
 ### 1.6 China as a strategic market
 
-China combines a very large table-tennis culture, high smartphone penetration, mobile payment habits,
-and parents who invest heavily in children’s development. Policy changes that reduced academic
-tutoring coincided with a broader push toward sport, arts and holistic skills. For a bilingual,
-Android-ready product, China is a strategically attractive early market.
+China is not one opportunity among several — it is the single largest addressable market for table
+tennis coaching software on earth. Approximately 85 million people play table tennis daily at a
+club level; around 10 million compete seriously. The sport is taught in school PE curricula
+nationwide, has national hero status, and is embedded in community life at a scale that has no
+equivalent anywhere else.
 
-The same market is demanding: local competitors, price sensitivity, platform fragmentation, data
-rules and a strong preference for WeChat-based distribution. China is best approached through
-partners — clubs, schools, hardware makers and local distribution — rather than as a direct-to-consumer
-launch from outside.
+**The 双减 (Double Reduction) structural shift.** In August 2021, Beijing banned for-profit academic
+tutoring during school terms and weekends for core K-9 subjects, dismantling a $100B+ private
+tutoring industry almost overnight. The policy explicitly encouraged families to redirect that
+spending toward sport. The result: China's children's sports industry grew to more than ¥400 billion
+RMB (~USD 55 billion) and is expanding at 15%+ per year. The youth sports market alone was valued
+at USD 3.95 billion in 2024 with an 11% projected CAGR. Parents who were spending on maths tutors
+are now spending on table tennis coaches. This is a policy-driven demand shift, not a trend — and
+it favours any product that makes that coaching investment trackable and evidenced.
+
+**Distribution: no Google Play, five major stores.** There is no Google Play Store in China. Android
+distribution is fragmented across device-maker stores: Huawei AppGallery (~27% share, 340M MAU),
+Tencent MyApp (~14%, 172M MAU), Vivo, OPPO and Xiaomi GetApps collectively account for roughly
+another 35%. Publishing on the top five or six stores covers approximately 80% of the Android
+audience. iOS has a significant presence: iPhones account for roughly 25–30% of smartphones in
+China, so an iOS gap is a meaningful exclusion, not just a minor gap.
+
+**WeChat MiniProgram as a first step.** For a video-upload-and-analyse workflow, a WeChat
+MiniProgram is technically viable and strategically important. Users upload a clip to Tencent Cloud
+Object Storage from inside the MiniProgram; a cloud function triggers analysis and returns a
+structured coaching report. This architecture is well-documented and deployed by other media-heavy
+apps in China. Discovery travels by shared links and WeChat search rather than app-store browsing —
+the product spreads through coaching communities and parent groups rather than advertising. A
+MiniProgram alone does not replace a native Android app for a full experience, but it removes the
+ICP filing and app-store hurdles for an initial China pilot.
+
+**PIPL and data compliance (hard requirements, not optional).** China's Personal Information
+Protection Law treats video containing identifiable individuals as personal information. Facial and
+biometric data — which may include pose landmarks — are classified as sensitive personal information,
+requiring separate explicit consent beyond a general privacy policy. Since June 2025, deploying any
+feature that processes facial data requires a Personal Information Protection Impact Assessment;
+companies storing such data for 100,000+ users must register with provincial-level authorities.
+Cross-border transfer of personal data is restricted and requires a security assessment or standard
+contractual clauses. Any app commercially distributed in China also requires an ICP filing. None of
+these is a reason to avoid China; all of them are reasons to design for compliance from the start
+rather than retrofit it.
+
+**Chinese AI coaching competitors.** The domestic market is not empty. PingPi (乒球AI) offers AI
+table tennis video analysis with biomechanics metrics directly on the App Store. PingMentor AI
+targets coaches. Chinese academic groups have published multimodal LLM coaching systems with
+measured accuracy on stroke classification. ByteDance operates Douyin with growing sport-specific AI
+capabilities. Tencent Sports and Alibaba's sports infrastructure are distribution forces. The
+competitive risk is not that a well-resourced Western app fails to reach China; it is that a local
+product, built for Chinese infrastructure, reaches scale first with an acceptable-quality pipeline.
+
+**Huawei as a partner, not just a market.** Huawei AppGallery is the single largest Android
+distribution channel in China, and Huawei Ascend inference hardware (310/310P) is the basis for
+private-cloud and on-device AI deployment in the Chinese market. A product that supports Ascend
+inference and distributes through AppGallery simultaneously solves the data-localisation concern and
+the Android distribution problem. HarmonyOS (鸿蒙) is Huawei's own OS, now shipping on hundreds of
+millions of devices. Building a HarmonyOS-native app is a longer-term option; AppGallery Android
+distribution is achievable in the near term.
+
+**Approach: partner-first, pilot with WeChat, then native.** China is best entered through clubs,
+schools, and hardware makers — not as a direct-to-consumer app launch from outside. The sequence
+that makes sense: (1) launch a WeChat MiniProgram with Tencent Cloud backend for the initial pilot;
+(2) build Android apps certified for the top five Chinese stores with full PIPL compliance and local
+hosting; (3) negotiate an AppGallery featured placement and Ascend co-marketing with Huawei;
+(4) pursue iOS only after the Android pilot shows retention. The pricing should be calibrated to
+RMB 30–50/month (approximately USD 4–7), not a direct USD 10 conversion — the price point that
+works in China reflects local purchasing power and competitive benchmarks, which directly affects
+the unit economics model.
 
 ### 1.7 What is not happening
 
@@ -218,7 +276,7 @@ unsettled.
 
 | Metric | Planning estimate | Notes |
 |---|---:|---|
-| Global racket-sport participants | 500M+ | Table tennis ~300M, tennis ~87M, badminton 200M+, padel ~30M, squash ~20M, pickleball 50M US; overlaps |
+| Global racket-sport participants | 500M+ | Table tennis ~300M, tennis ~87M, badminton 200M+, padel ~35M, squash ~20M, pickleball ~24M US (~22M globally active); overlaps |
 | Serious, frequent players | 100–150M | Play weekly, own a smartphone, willing to improve |
 | Serious table-tennis players | ~40M | Topspin's primary serviceable market |
 | Smartphone + payment + language reachable | 20–30M | Excludes markets without payment or localisation |
@@ -329,13 +387,48 @@ measure.
 
 ### 3.4 China-specific behaviour
 
-- Table tennis is a mass-participation, culturally central sport.
-- Parents are heavily involved in purchasing and progress decisions.
-- WeChat is a distribution and payment layer, not just a messaging app.
-- Short video and live streaming are dominant discovery channels.
-- Hardware companions (smart speakers, reading pens, AI toys) have trained families to pay for
-  connected educational devices.
-- Data localisation and content rules matter; local hosting and partners reduce friction.
+**The buyer is usually the parent, not the player.** For junior players — the primary growth
+segment after 双减 — the purchasing decision is almost entirely parent-driven. Parents want
+evidence of progress: specific, timestamped, credible feedback they can show the coach. An app that
+produces a coaching report with measurements and drill assignments is not a novelty to Chinese
+parents; it resembles the progress reports they were already paying for in academic tutoring. This
+is the strongest demand overlap in the entire market.
+
+**Discovery and distribution mechanics differ from the West.** There is no equivalent to Google
+Play store browsing. Product discovery travels through:
+
+- **Douyin (抖音)** short-video demonstrations (before/after stroke comparisons, "what the AI sees"
+  moments) — this is the dominant acquisition channel for consumer apps in China
+- **Bilibili (B站)** long-form content — coaching creators and table tennis technique channels have
+  large, engaged audiences, and mid-roll app recommendations are effective
+- **WeChat groups** — parent communities, club group chats, coach recommendation threads. A coach
+  sharing a report in a group chat can seed dozens of trials at zero cost
+- **QR codes at clubs and tournaments** — the standard in-person call-to-action; QR scan to
+  MiniProgram has zero friction in China
+
+**The club network is a structured B2B2C channel.** China has tens of thousands of registered table
+tennis clubs and hundreds of thousands of school programs. A product adopted by club coaches spreads
+through entire class cohorts automatically. Coach recommendation is a disproportionately powerful
+signal: parents trust a coach's endorsement over an ad.
+
+**AI-assisted training is already normalised.** Chinese sports education companies have been
+deploying CV-based tools at academies since at least 2022. Parents and coaches are not sceptical of
+AI coaching; they are used to it. The bar is whether the analysis is accurate and specific, not
+whether it is legitimate. This is different from Western markets where trust in AI coaching still
+needs to be established.
+
+**Payment expectations are mobile and friction-free.** WeChat Pay and Alipay are the default
+payment methods; subscription billing through either is frictionless. But the price point must
+reflect local benchmarks — RMB 30–50/month (~USD 4–7) is the competitive zone for premium
+children's education tools, not a USD 10–15 conversion. A higher price is possible in club/school
+licence formats, not in B2C consumer.
+
+**Platform and data rules are non-negotiable.** Video data of identifiable individuals requires
+explicit PIPL consent. Facial/biometric data requires a separate consent layer and from June 2025,
+a compliance assessment for large deployments. Data must be hosted domestically. An ICP filing is
+required for any commercial distribution. These are not hypothetical — enforcement is real, and
+app-store rejection for non-compliant apps is common. The architecture must separate China
+deployments from global ones at the data-storage layer.
 
 ### 3.5 Demand hypotheses to test
 
@@ -391,7 +484,7 @@ Topspin is positioned at stage 4 and is building toward stage 5. Stage 2 is beco
 
 | Player | Category | Strength | Gap / threat to Topspin |
 |---|---|---|---|
-| SwingVision | Tennis CV + stats | Strong tennis brand, line calls, stats, Apple ecosystem | Tennis-only; limited coaching prescription |
+| SwingVision | Tennis + pickleball CV + AI coaching | Strong tennis/pickleball brand, line calls, stats, AI Coach feature with prescriptions and drill recommendations, Apple ecosystem | Apple-only (no Android — ~2B Android users are unreachable); tennis and pickleball only; coaching layer is newer and less validated than its statistics layer |
 | Sportsbox AI | 3D biomechanics | Deep mechanics, coach tools | Golf-first; not a multi-sport coaching loop |
 | Onform | Golf video + coach | Coach workflow, video comparison | Golf-only; manual review still central |
 | HomeCourt | Basketball CV | Live shot tracking, engaging UX | Not racket sports; limited drills |
@@ -400,7 +493,10 @@ Topspin is positioned at stage 4 and is building toward stage 5. Stage 2 is beco
 | Coach's Eye | Manual video review | Simple, familiar | No AI measurement or coaching |
 | PlaySight | Smart courts / venues | Automated capture, enterprise | Hardware-heavy; venue-locked |
 | Generic AI assistants | Chat + video understanding | Broad knowledge, low friction | No reliable measurement, no sport-specific pipeline |
-| Local Chinese apps / hardware | Table-tennis content and devices | Distribution, price, local content | Fragmented analytics; limited evidence-grounded coaching |
+| PingPi (乒球AI) | AI table tennis coaching | App Store and Android; biomechanics metrics (elbow angle, body position, CoM); stroke-level reports; directly targets the Topspin use case | Uncertain analysis depth and evidence-grounding; no confirmed drills, longitudinal progress or multi-sport; no clear engagement or coaching report quality data |
+| PingMentor AI | AI coaching tools for table tennis coaches | Coach-facing platform; structured workflow | Coach tool, not player-direct; limited public data on capabilities |
+| ByteDance / Douyin sports AI | Sports AI on Douyin | Massive distribution (700M+ Douyin DAU), sports content ecosystem, in-house AI capabilities | No table-tennis-specific coaching pipeline; currently content rather than analysis; but platform leverage is a structural threat if prioritised |
+| Chinese hardware + content ecosystem | DHS (红双喜), Sanwei (三维) and similar equipment makers; sports education platforms | Distribution through club and retail networks; potential smart-equipment bundles | Fragmented analytics; limited evidence-grounded coaching; hardware focus over software depth |
 
 Among the players reviewed, **none clearly owns the full racket-sport coaching loop**. Tennis has
 strong statistics; golf has strong biomechanics; team sports have strong capture; generic AI has
@@ -500,8 +596,16 @@ and makes their feedback consistent can reinforce consumer retention, but it doe
 need for direct consumer demand.
 
 **7. China and Southeast Asia.**
-Large participation, mobile-first behaviour and growing sports spend make these regions attractive.
-Local partners, language and payment integration are prerequisites.
+China is the single largest growth opportunity and deserves treatment as a primary market, not a
+future expansion. The 双减 policy created a structural, policy-driven shift of parent spending from
+academic tutoring to sports coaching — with the children's sports market now worth ¥400B+ and
+growing at 15%+ annually. Table tennis is the direct beneficiary. The product already supports
+Chinese UI and bilingual reports; the next steps are distribution (WeChat MiniProgram first,
+Android stores second) and compliance (PIPL, ICP filing, domestic hosting). Southeast Asia (Vietnam,
+Thailand, Malaysia, Indonesia) has very large badminton and table tennis bases and mobile-first
+behaviour; it is an extension of the same motion-analysis coaching loop. For both markets,
+partnerships with clubs, schools and hardware makers are the most capital-efficient entry — not
+direct consumer advertising.
 
 **8. Privacy and regulation.**
 Video of players, especially minors, is sensitive. Consent, retention limits, local processing and
@@ -518,6 +622,7 @@ clear data policies will become purchase criteria, not footnotes.
 | Commoditisation | Generic AI can imitate surface features | Depth in one sport, coaching knowledge, workflow, data |
 | Privacy | Video of minors is high-risk | Local-first, consent, retention, deletion, local hosting |
 | Distribution | Consumer CAC is high | Social/video content, app-store intent, parent communities; coaches/clubs as complement |
+| China market entry | No Google Play; PIPL/ICP compliance; facial data rules; domestic hosting required; local competitors; RMB pricing affects unit economics | WeChat MiniProgram first; PIPL-compliant design from day one; domestic hosting; Huawei AppGallery partnership; price at RMB 30–50/month not USD 10 |
 | Multi-sport validation | One sport does not prove another | Validate table tennis first; expand with labelled data |
 | Platform dependence | App stores and model providers change terms | Web/PWA, provider abstraction, self-hosted option |
 
@@ -570,8 +675,13 @@ coach-only review tool or club white-label — not to add features or spend more
    the confidence. Explicitly state what the system cannot see.
 5. **Delay generic expansion.** Add iOS, accounts and sync when retention justifies them, not because
    competitors have them.
-6. **Use China/SEA as a beachhead.** Partner with clubs, schools and hardware makers; support WeChat
-   distribution and local hosting where required.
+6. **Treat China as a primary market, not a future expansion.** The 双减 policy has created a
+   structural, policy-driven demand for trackable sports coaching. Table tennis is the direct
+   beneficiary. The product already supports Chinese; the gaps are distribution and compliance:
+   launch a WeChat MiniProgram first (async video upload → Tencent Cloud analysis), publish on
+   Huawei AppGallery and the top five Android stores with full PIPL compliance and domestic hosting,
+   price at RMB 30–50/month. Do not attempt a direct-to-consumer advertising launch; enter through
+   clubs, schools and coaching communities first.
 7. **Treat cost and evaluation as product features.** Track inference cost per session and report
    quality per clip. A cheaper, more honest report beats an expensive, inconsistent one.
 8. **Use agentic capability where it changes the outcome.** Adaptive investigation, contradictory
@@ -647,9 +757,16 @@ Three cautions:
 | FIP / Padel Intelligence estimates | Padel growth |
 | SFIA participation data | Pickleball and US racquet trends |
 | Grand View Research, Statista and adjacent analyst reports | Sports analytics, digital fitness and coaching market ranges |
-| Company websites and product documentation: SwingVision, Sportsbox AI, Onform, HomeCourt, V1 Sports, Hudl, Veo, Coach's Eye, PlaySight | Competitive feature comparison |
+| Company websites and product documentation: SwingVision, Sportsbox AI, Onform, HomeCourt, V1 Sports, Hudl, Veo, Coach's Eye, PlaySight, PingPi, PingMentor AI | Competitive feature comparison |
 | Topspin Review internal documents: architecture, roadmap, Huawei pitch, executive roadmap | Product position, current capabilities and gaps |
 | openJiuwen platform documentation | Agentic architecture and platform context |
+| China PIPL (Personal Information Protection Law, 2021) and CAC Face Recognition Measures (2025) | China compliance requirements for video data and biometric/facial data |
+| AppInChina App Store Index; HiCom Asia China app launch guides | China Android app store landscape and distribution |
+| Tencent WeChat MiniProgram and CloudBase documentation | WeChat MiniProgram video analysis architecture |
+| Daxue Consulting China Youth Sports Market Report; China Briefing sports industry analysis | 双减 policy impact and Chinese youth sports market sizing |
+| PingSunday table tennis participation data; ITTF Foundation WTTD 2025 reports | China-specific table tennis participation |
+| FIP World Padel Report 2025 | Padel global participation (35M confirmed) |
+| SFIA participation data; Pickleball.com industry reports; Global Pickleball Federation | Pickleball participation (24M US active; ~22M globally active across tracked markets) |
 
 ## Appendix C — Definitions
 
