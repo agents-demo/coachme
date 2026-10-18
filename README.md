@@ -4,7 +4,7 @@ Record a session — table tennis, tennis, badminton, squash, padel — and get 
 
 **No third-party integrations.** A local video file goes in; a local report comes out. Two models are used: a **vision** model (`deepseek-v4-flash-vision-exp`) to read sampled frames, and a text model to write the coaching report.
 
-Two analysis modes are being built. **Standard** is the deterministic, reliable default. **Investigator** is experimental: the model chooses which tools and windows to examine, may ignore irrelevant signals, and must cite tool evidence for every finding. The differentiator is model-directed, evidence-grounded investigation, not the 'agentic' label.
+Two analysis modes are being built. **Standard** is the deterministic, reliable default. **Investigator** is experimental: the model chooses which tools and windows to examine, may ignore irrelevant signals, and must cite tool evidence for every finding. The differentiator is **evidence-backed adaptive coaching**, not the 'agentic' label.
 
 ## Quick start
 

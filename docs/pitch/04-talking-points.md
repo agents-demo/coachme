@@ -166,7 +166,7 @@ Many people in the room may not know what agentic AI means. Do not assume they d
 
 > "A regular AI app takes your input and gives you one output. In Investigator mode, the model makes a chain of decisions itself: it chooses what to measure, what to look at next, what evidence is sufficient, and when to stop. The reliable Standard mode does not do that - it follows a fixed pipeline. Investigator is the mode where the model is actually in control."
 
-That is the differentiator. Do not describe the fixed pipeline as agentic. Do not go deeper unless they ask.
+That is **evidence-backed adaptive coaching**. Do not describe the fixed pipeline as agentic. Do not go deeper unless they ask.
 ---
 
 ## The competitive landscape — be ready but do not volunteer it

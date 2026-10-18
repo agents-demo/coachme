@@ -9,13 +9,13 @@ removed.*
 
 Film a training session and get back what to fix and how to practice — a coach you can replay.
 
-## The core differentiator - model-directed investigation
+## The core differentiator - evidence-backed adaptive coaching
 
 The reliable product runs a fixed pipeline: watch the video, measure movement and body mechanics, write the coaching findings, then verify. That is the baseline.
 
-The **Investigator** mode changes who owns the investigation. The model chooses which tools and time windows to inspect, may ignore ball tracking if irrelevant, and may dig into wrist or racket mechanics because the evidence led there. Every finding must cite measured evidence.
+**Evidence-backed adaptive coaching** means the coaching adapts to what the AI finds, and every finding must cite measured evidence. The **Investigator** mode is how it works: the model chooses which tools and time windows to inspect, may ignore ball tracking if irrelevant, and may dig into wrist or racket mechanics because the evidence led there.
 
-The supporting advantage is **multimodal in and out**: it watches video, reads its own measurements, writes and speaks the coaching, and shows annotated video/images. Multimodal is how the coaching reaches the user; model-directed investigation is the differentiator.
+The supporting advantage is **multimodal in and out**: it watches video, reads its own measurements, writes and speaks the coaching, and shows annotated video/images. Multimodal is how the coaching reaches the user; evidence-backed adaptive coaching is the differentiator.
 
 Today: Standard mode is the reliable default. Investigator is opt-in while the benchmark confirms better outcomes at acceptable cost and latency.
 
@@ -128,6 +128,5 @@ Today: Standard mode is the reliable default. Investigator is opt-in while the b
 
 ## The one thing to remember
 
-The pipeline works and every finding is traceable to evidence. Our primary edge is **model-directed, evidence-grounded
-investigation**; multimodal input/output is the supporting delivery layer. The remaining work is
+The pipeline works and every finding is traceable to evidence. Our primary edge is **evidence-backed adaptive coaching**; multimodal input/output is the supporting delivery layer. The remaining work is
 packaging, validation, audio input and scale.

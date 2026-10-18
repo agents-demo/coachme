@@ -1,5 +1,7 @@
 # Pitch
 
+Terminology: see the [glossary](../GLOSSARY.md). Use **evidence-backed adaptive coaching** as the differentiator, **Standard / Guided / Investigator** for modes, and **model-directed** only to explain the mechanism.
+
 Start here. These files are ordered by how to use them, not alphabetically.
 
 ## Build a small pitch
@@ -14,7 +16,7 @@ Start here. These files are ordered by how to use them, not alphabetically.
 ## The short version
 
 - **User value first:** a phone video becomes a coaching report with timestamped evidence, drills and progress.
-- **Differentiator:** model-directed, evidence-grounded investigation. The model can choose what to examine, ignore irrelevant signals and must cite tool evidence.
+- **Differentiator:** evidence-backed adaptive coaching. The AI chooses what to examine, ignores irrelevant signals, and ties every finding to measured video evidence.
 - **Reliable default:** the deterministic Standard pipeline.
 - **Huawei win-win:** a useful app creates recurring inference/training demand; Ascend and openJiuwen/Ascend integration are the scale path. The app is backend-agnostic.
 

@@ -26,19 +26,19 @@ The app is deliberately **backend-agnostic**. Its value is the coaching loop, no
 
 ## Why This Matters for Huawei / openJiuwen
 
-### 1. The real differentiator: model-directed investigation
+### 1. The real differentiator: evidence-backed adaptive coaching
 
 The reliable product today runs a fixed baseline: observe, measure, focused vision, then write a
 coaching report with timestamped evidence. That pipeline is not the differentiator. It is the
 **reliable default**.
 
-The **Investigator** mode changes who owns the investigation. The model becomes the
-orchestrator: it chooses which tools and time windows to use, may ignore ball tracking if it is not
+The **Investigator** mode is how it works. The model directs the investigation: it chooses which tools and time windows to use, may ignore ball tracking if it is not
 relevant, may dig into wrist/racket mechanics because the evidence led there, and must cite evidence
 IDs returned by tools. It can stop when the evidence is sufficient.
 
-This is qualitatively different from a fixed pipeline and from a generic chatbot. It is the
-next step, with Standard remaining the default until the benchmark proves it across more clips.
+This is evidence-backed adaptive coaching: the coaching adapts to what the AI finds, and every claim
+stays tied to measured video evidence. It is qualitatively different from a fixed pipeline and from
+a generic chatbot.
 It is opt-in today, with Standard remaining the default during the rollout.
 
 ### 2. Multi-modal throughout

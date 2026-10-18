@@ -1,7 +1,13 @@
-# Model-as-Orchestrator: Free Investigation Analysis
+# Investigator: Model-as-Orchestrator Analysis
+
+**Role:** implementation plan for the Investigator feature. Start here only when building Investigator.
 
 **Status:** MVP spec; implementation in progress (revision 1.2)
 **Scope:** a new opt-in analysis mode for Topspin Review
+**Implementer entry point:** [START_HERE.md](START_HERE.md).
+
+**Terms:** **Evidence-backed adaptive coaching** is the marketing differentiator. **Investigator** is the product mode. **Model-as-orchestrator** is the architecture. **Model-directed, evidence-grounded investigation** is the mechanism/behaviour. "Free investigation" is internal shorthand only. See [Glossary](../GLOSSARY.md).
+
 **Goal:** make the model own the investigation, not just write the report
 
 *Revision 1.1 incorporates an independent architecture review: run-scoped storage,
@@ -34,7 +40,7 @@ The mode proposed here is different:
 > **The model is the orchestrator. It receives a small set of investigation tools and
 > decides, step by step, what to examine. Measurement is a tool, not a stage.**
 
-This is the “free investigation” behaviour described in
+This is the model-directed investigation behaviour described in
 [Why agentic](../pitch/05-why-agentic.md): the agent may ignore
 ball placement entirely, or may spend most of its budget on racket angle and wrist
 mechanics because that is where its hypothesis leads.
@@ -74,8 +80,8 @@ described above:
 - It does not generate the normal artifacts, so the report/UI is thinner.
 - It is exposed as an “Advanced” checkbox and via `--agentic` / `AGENTIC_MODE`.
 
-So we already have **agentic reporting with a fixed measurement layer**. The new
-mode is **agentic analysis**: the model owns the investigation.
+So we already have **Guided reporting with a fixed measurement layer**. The new
+mode is **Investigator**: the model owns the investigation.
 
 ### 2.3 What openjiuwen already gives us
 
@@ -1458,63 +1464,25 @@ after publish.
 
 ---
 
-## 24. Evaluation dataset and gates
+## 24. Evaluation and release gates
 
-### 24.1 Dataset
+The benchmark is a shared workstream, not part of the Investigator module. It is
+owned by [EVALUATION_PLAN.md](EVALUATION_PLAN.md), which defines the clips, coach
+labels, blind A/B protocol, metrics and scoring harness.
 
-Create `tests/eval/investigation/` with:
+Investigator cannot become a user-facing default until the shared gates pass:
 
-- 8 clips total for MVP:
-  - 4 table tennis: clean side-on, two players, overhead, poor lighting;
-  - 2 tennis or badminton: clean and one difficult;
-  - 1 clip with a stroke-type switch;
-  - 1 still photo.
-- `manifest.json`: source path, sport, duration, capture notes.
-- `labels.json`: coach-labelled top findings, expected themes, key timestamps,
-  expected coverage (pose/ball/vision) and acceptable limitations.
-- Keep clips out of the repo if large; use a downloadable fixture with checksums.
+- 100% evidence integrity;
+- precision at least Standard minus 5 points;
+- recall at least equal to Standard;
+- median cost at most 2.5? Standard;
+- p95 latency at most 2? Standard;
+- no increase in hallucination flags;
+- clear coach preference for Investigator on a majority of clips;
+- at least three distinct investigation paths across the benchmark.
 
-**Label acquisition is a separate dependency, not a 2–3 day coding task.** It needs
-a coach/analyst, a labelling rubric and review time. Plan **1–2 weeks** for the
-first 8 clips, and do not schedule the quality gates as if labels already exist.
-The engineering runner can be built in parallel, but the gates wait for labels.
-
-### 24.2 Metrics
-
-- **Evidence integrity:** issues with valid evidence IDs and in-window timestamps.
-- **Finding precision:** labelled findings matched by theme + timestamp tolerance.
-- **Finding recall:** labelled findings found.
-- **Coverage honesty:** untested capabilities are declared; no false coverage.
-- **Hallucination flags:** reuse `domain/evaluate.py` plus new rules for
-  investigator evidence.
-- **Cost:** tokens, tool seconds, frame decodes.
-- **Latency:** median and p95.
-- **Path diversity:** unique tool sequences across clips.
-- **Failure rate:** crashes, validation failures, timeouts.
-
-### 24.3 Benchmarks
-
-Run each clip with:
-
-1. deterministic;
-2. investigator, text + `look`;
-3. (phase 3 experiment) multimodal orchestrator.
-
-Store traces under `tests/eval/investigation/runs/<date>/`.
-
-### 24.4 Gates for experimental release
-
-- Evidence integrity: **100%**.
-- Precision: not more than **5 points below** deterministic.
-- Recall: **at least equal** to deterministic on labelled themes.
-- Median cost: **≤ 2.5×** deterministic.
-- p95 latency: **≤ 2×** deterministic.
-- No increase in hallucination flags.
-- At least **3 distinct tool sequences** across the 8 clips.
-
-If a gate fails, Investigator remains hidden or limited to internal demos.
-
----
+If the gates fail, Investigator stays opt-in or is narrowed. Do not tune the
+benchmark to make the mode look finished.
 
 ## 25. Prompt, versioning and observability
 
@@ -1584,7 +1552,7 @@ Estimates assume one focused engineer. Dependencies are listed.
 | 13 | Progress events + SSE investigation feed | 12 | 1–2d | UI shows tool calls live |
 | 14 | NewAnalysis mode selector + result Investigation panel | 13 | 2d | hidden when feature flag off |
 | 15 | Evaluation runner (labels are separate) | 8 | 2–3d | metrics report generated |
-| 16 | Evaluation labels (coach/analyst) | clips selected | **1–2w** | labels reviewed |
+| 16 | Evaluation labels (owned by EVALUATION_PLAN) | clips selected | **1-2w** | labels reviewed |
 | 17 | Benchmark and gate run | 15,16 | 2d | gates pass or mode stays hidden |
 | 18 | Documentation + privacy review | 14–17 | 1d | docs updated; no secrets in traces |
 

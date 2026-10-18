@@ -1,5 +1,7 @@
 # Topspin Review — Roadmap & Competitor Feature Plan
 
+**Role:** top-level product/engineering roadmap. Start here for ?what next.?
+
 *Planning document for the work **still ahead**. Completed features have been removed; this lists only
 open items, grouped by phase so we can cherry-pick.*
 

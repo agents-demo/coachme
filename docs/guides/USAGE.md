@@ -87,7 +87,7 @@ One engine, several inbound adapters. All expose the same analysis.
 
 - **Sessions** — history; open or delete a session.
 - **Analyze** — upload a video/photo or use the built-in sample; **Advanced** (frames, seconds cap,
-  agentic mode, region box).
+  Guided mode, region box).
 - **Result** — Report / Movement / Details / Technical tabs, plus an **Ask** box.
 - **Practice** — the drills as a checklist.
 - **Progress** — the trend across sessions and a compare tool.

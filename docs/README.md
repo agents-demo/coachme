@@ -2,14 +2,26 @@
 
 Docs are grouped by audience.
 
+- [Glossary](GLOSSARY.md) ? canonical terms for Standard, Guided, Investigator, model-as-orchestrator and Ascend.
+
 ## Engineering
 
 How the system is built and what we plan to change.
 
+**Implementer? Start with [START_HERE](engineering/START_HERE.md).**
+
+**Plan hierarchy ? read in this order:**
+
+1. **[Roadmap](engineering/ROADMAP.md)** ? the top-level product roadmap. Start here for ?what next.?
+2. **[Investigator plan](engineering/AGENTIC_INVESTIGATION_PLAN.md)** ? implementation plan for one roadmap item. Start here only when building Investigator.
+3. **[Evaluation plan](engineering/EVALUATION_PLAN.md)** ? shared benchmark and release gates. Use this to decide whether Investigator is ready.
+4. **[Analysis pipeline improvements](engineering/analysis_pipeline_improvements.md)** ? research backlog for measurement ideas, not an execution plan.
+
 - [Architecture](engineering/architecture.md) — layers, dependency rules, runtime layout.
 - [Analysis pipeline improvements](engineering/analysis_pipeline_improvements.md) — coach-driven measurement research and proposals.
 - [Roadmap](engineering/ROADMAP.md) — remaining product/engineering work and competitor feature plan.
-- [Model-as-orchestrator plan](engineering/AGENTIC_INVESTIGATION_PLAN.md) — free investigation mode: tools, evidence ledger, budgets, openjiuwen integration and rollout.
+- [Evaluation plan](engineering/EVALUATION_PLAN.md) ? shared Standard vs Investigator benchmark, labels and release gates.
+- [Model-as-orchestrator plan](engineering/AGENTIC_INVESTIGATION_PLAN.md) ? Investigator mode: tools, evidence ledger, budgets, openjiuwen integration and rollout.
 
 ## Guides
 

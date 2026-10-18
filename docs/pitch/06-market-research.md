@@ -48,10 +48,10 @@ Topspin Review is positioned at the intersection of measurement, coaching and pr
 product turns a practice video into a structured coaching report with timestamped evidence, drills,
 progress comparison, bilingual web and Android experiences, and local-first processing.
 
-The intended differentiator is **model-directed, evidence-grounded investigation**: the
-experimental Investigator mode lets the model choose tools and windows, ignore irrelevant signals
-and dig into a specific mechanic, while every finding must cite tool evidence. The reliable
-deterministic pipeline remains the default; Investigator is not yet proven. Table-tennis depth,
+The intended differentiator is **evidence-backed adaptive coaching**: the coaching adapts to what
+the AI finds, and every finding cites measured evidence. The Investigator mode is how it works: the
+model chooses tools and windows, ignores irrelevant signals and digs into a specific mechanic. The
+reliable deterministic pipeline remains the default; Investigator is not yet proven. Table-tennis depth,
 local-first processing and bilingual web/Android support the thesis. Multi-sport coverage is a
 strategic direction, not yet an advantage.
 
@@ -439,7 +439,7 @@ The model itself is not a moat. Model quality is converging; workflow and trust 
 - Web app (FastAPI + SvelteKit) and Android app.
 - English and Chinese UI and reports.
 - Local-first storage, PDF/share exports, one-click delete.
-- Deterministic pipeline built on openJiuwen, with an experimental model-directed Investigator mode.
+- Deterministic pipeline built on openJiuwen, with an opt-in Investigator mode for evidence-backed adaptive coaching.
 
 **What is not yet product-ready**
 
@@ -599,8 +599,7 @@ to pay for improvement. The technology is now good enough for useful products, b
 quality and workflow remain unsolved.
 
 Topspin Review has a credible position: table-tennis depth, evidence-grounded reports, drills,
-progress, bilingual web and Android, local-first processing, and an experimental model-directed
-Investigator mode that can choose what to examine while citing evidence. Its weaknesses are equally clear: no iOS, no accounts or sync, no
+progress, bilingual web and Android, local-first processing, and an opt-in Investigator mode for evidence-backed adaptive coaching: the model can choose what to examine while citing evidence. Its weaknesses are equally clear: no iOS, no accounts or sync, no
 coach workspace, limited multi-sport validation, and a product that still depends on good filming.
 
 The next phase should be disciplined. Win one consumer workflow. Make the evidence trustworthy.

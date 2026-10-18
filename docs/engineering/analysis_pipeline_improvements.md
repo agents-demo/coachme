@@ -1,4 +1,6 @@
 # Analysis Pipeline Improvement Ideas
+
+**Role:** research backlog for measurement ideas, not an execution plan.
 # Topspin Review — Coach-Driven Pipeline Research
 
 *Research document: what a table-tennis coach would want the pipeline to measure, assessed
