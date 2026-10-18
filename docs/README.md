@@ -22,6 +22,7 @@ How to run and use the app.
 Materials for managers and external stakeholders.
 
 - [Executive roadmap](pitch/EXECUTIVE_ROADMAP.md) — plain-English plan from demo to product.
+- [Market research](pitch/TOPSPIN_MARKET_RESEARCH.md) — market size, trends, competition and forecasts to 2030.
 - [Huawei pitch](pitch/HUAWEI_PITCH.md) — problem, product and platform story.
 - [Pitch talking points](pitch/PITCH_TALKING_POINTS.md) — what to say, in what order, and what to avoid.
 - [Why an agentic platform](pitch/WHY_AGENTIC_PLATFORM.md) — honest architectural argument for openJiuwen.
