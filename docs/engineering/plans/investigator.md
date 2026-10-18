@@ -4,11 +4,30 @@
 
 **Status:** MVP spec; implementation in progress (revision 1.2)
 **Scope:** a new opt-in analysis mode for Topspin Review
-**Implementer entry point:** [START_HERE](../START_HERE.md).
-
 **Terms:** **Evidence-backed adaptive coaching** is the marketing differentiator. **Investigator** is the product mode. **Model-as-orchestrator** is the architecture. **Model-directed, evidence-grounded investigation** is the mechanism/behaviour. "Free investigation" is internal shorthand only. See [Glossary](../../GLOSSARY.md).
 
 **Goal:** make the model own the investigation, not just write the report
+
+## Status and next action
+
+**Working:** Standard pipeline; Investigator strategy and six tools; evidence ledger and report validation; CLI/API mode; settings persistence; token-usage sync; cancellation event; 75 unit tests.
+
+**Partial:** inspector restriction is prompt-only; atomic publish and per-stem lock; job queue; SSE/UI feed; partial-report exercise; UI selector and Investigation panel.
+
+**Not started:** coach-labelled benchmark; Standard vs Investigator benchmark; final budget calibration.
+
+**Milestones**
+
+| Milestone | Required |
+|---|---|
+| Internal demo / pitch | NewAnalysis mode selector, Investigation panel, 3-5 manual A/B clips. Skip atomic/queue/SSE for now. |
+| Experimental user release | Permission restriction, atomic publish, per-stem lock, cancellation queue, SSE feed, coach-labelled benchmark, budget calibration. |
+| General availability | Pilot, privacy/cost review, regression suite, docs. |
+
+**Start with the internal demo:** add the mode selector and Investigation panel. Do not start production hardening first.
+
+**Required validation:** [Benchmark plan](benchmark.md). Investigator is not ready until its gates pass.
+
 
 *Revision 1.1 incorporates an independent architecture review: run-scoped storage,
 single `save_report`, per-run token budget, deferred `compare_windows`, explicit

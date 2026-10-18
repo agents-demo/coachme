@@ -8,7 +8,6 @@ Docs are grouped by audience.
 
 How the system is built and what we plan to change. Start with the [engineering index](engineering/README.md).
 
-- [START_HERE](engineering/START_HERE.md) - implementer entry point and current status.
 - [Investigator plan](engineering/plans/investigator.md) - implementation spec.
 - [Benchmark plan](engineering/plans/benchmark.md) - Standard vs Investigator evaluation and gates.
 - [Priorities](engineering/plans/priorities.md) - what to build next across the product.
