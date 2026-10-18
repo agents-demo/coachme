@@ -18,7 +18,7 @@ PROFILE_PATH = DATA_DIR / "profile.json"
 UI_SETTINGS_PATH = DATA_DIR / "ui_settings.json"
 REPORT_SUFFIX = "_report.json"
 
-DEFAULT_UI_SETTINGS: dict[str, Any] = {"show_demo": True}
+DEFAULT_UI_SETTINGS: dict[str, Any] = {"show_demo": True, "investigator_enabled": False}
 
 _current_video: str | None = None
 
@@ -65,6 +65,7 @@ def get_ui_settings() -> dict[str, Any]:
     if isinstance(saved, dict):
         settings.update(saved)
     settings["show_demo"] = bool(settings.get("show_demo", True))
+    settings["investigator_enabled"] = bool(settings.get("investigator_enabled", False))
     return settings
 
 
@@ -73,6 +74,8 @@ def set_ui_settings(patch: dict[str, Any]) -> dict[str, Any]:
     settings = get_ui_settings()
     if "show_demo" in patch:
         settings["show_demo"] = bool(patch["show_demo"])
+    if "investigator_enabled" in patch:
+        settings["investigator_enabled"] = bool(patch["investigator_enabled"])
     _write(UI_SETTINGS_PATH, settings)
     return settings
 

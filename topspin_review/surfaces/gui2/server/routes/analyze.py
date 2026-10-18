@@ -24,6 +24,7 @@ def analyze(request: AnalyzeRequest) -> dict:
             request.video_path,
             region_box=service.parse_region_box(request.region_box),
             language=request.language,
+            mode=request.mode or ("agentic" if request.agentic else None),
         )
     except Exception as exc:  # noqa: BLE001
         return {"error": str(exc)}

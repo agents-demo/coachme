@@ -53,10 +53,11 @@ async def analyze_video(
     video_path: str,
     region_box: tuple[float, float, float, float] | None = None,
     language: str = "en",
+    mode: str | None = None,
 ) -> dict[str, Any]:
     from topspin_review.core import DETERMINISTIC, Params, get_strategy
 
-    strategy = get_strategy(DETERMINISTIC)
+    strategy = get_strategy(mode or DETERMINISTIC)
     return await strategy.analyze(
         Params(video_path=video_path, region_box=region_box, language=language)
     )
@@ -66,8 +67,11 @@ def analyze_video_sync(
     video_path: str,
     region_box: tuple[float, float, float, float] | None = None,
     language: str = "en",
+    mode: str | None = None,
 ) -> dict[str, Any]:
-    return run_async(analyze_video(video_path, region_box=region_box, language=language))
+    return run_async(
+        analyze_video(video_path, region_box=region_box, language=language, mode=mode)
+    )
 
 
 async def ask(stem: str, question: str, language: str = "en") -> str:
@@ -90,9 +94,8 @@ async def ask(stem: str, question: str, language: str = "en") -> str:
     }
     prompt = f"Report:\n{json.dumps(context, ensure_ascii=False)}\n\nQuestion: {question}"
     try:
-        from topspin_review.integrations.agents import run_text
-
         from topspin_review.core.i18n import language_instruction
+        from topspin_review.integrations.agents import run_text
 
         return await run_text(QA_SYSTEM + " " + language_instruction(language), prompt)
     except Exception as exc:  # noqa: BLE001
