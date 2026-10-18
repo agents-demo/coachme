@@ -7,7 +7,7 @@ removed.*
 
 ## The product in one line
 
-Film a training session and get back what to fix and how to practice — a coach you can replay.
+Film a practice session. Get back a coaching report — what to fix, at exactly which timestamp, and which drill will correct it. An AI coach available after every session.
 
 ## The core differentiator - evidence-backed adaptive coaching
 

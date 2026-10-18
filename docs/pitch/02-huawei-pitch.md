@@ -20,7 +20,7 @@ A mobile + web app that accepts a practice video and returns a structured coachi
 
 **Not** a chatbot. Not "describe your swing and I'll give tips." The AI *watches* the video, detects body mechanics and ball behavior, and writes findings that are grounded in what it actually measured.
 
-The app is deliberately **backend-agnostic**. Its value is the coaching loop, not the engine underneath it. Different model providers and compute backends can run it. Ascend and the openJiuwen/Ascend integration are the Huawei scale path: if the app earns repeated consumer use, that use creates recurring inference and training demand that can be served on Ascend.
+The app is deliberately **backend-agnostic** (the coaching logic does not depend on any specific AI provider or compute hardware). Its value is the coaching loop, not the engine underneath it. Different model providers and compute backends can run it. Ascend and the openJiuwen/Ascend integration are the Huawei scale path: if the app earns repeated consumer use, that use creates recurring inference and training demand that can be served on Ascend.
 
 ---
 
@@ -71,7 +71,7 @@ trained on **Ascend 910-class** systems through **CANN** and **MindSpore**. Priv
 deployment is a natural fit; on-device inference is a separate optimization, not the Ascend story.
 
 This is not a user who sends one text message. This is a user who burns meaningful compute every time
-they practice ? potentially five times a week.
+they practice — potentially five times a week.
 
 The app does not need Ascend to be useful. The win-win is that a useful app, adopted repeatedly, creates the kind of recurring inference and training demand that Ascend is built to serve.
 
@@ -190,6 +190,6 @@ This is a real output. Not mocked beyond the data input.
 ## What We Need to Proceed
 
 1. **Green light on Phase 1** — 4–6 weeks of focused engineering to make the demo bulletproof
-2. **Evaluation clips and coach labels** ? the benchmark set that decides whether Investigator is ready
+2. **Evaluation clips and coach labels** — the benchmark set that decides whether Investigator is ready
 3. **Ascend/CANN access and deployment guidance** for Phase 3 cloud/edge inference and training
 4. **Design support** — one UX/UI pass to make the app look like a Huawei product, not a prototype
