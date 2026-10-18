@@ -5,10 +5,10 @@
   import { theme, palette, language, setTheme, setPalette, setLanguage } from "$lib/appearance";
 
   const tabs = [
-    { value: "api", label: "API" },
-    { value: "profile", label: "Profile" },
+    { value: "general", label: "General" },
+    { value: "player", label: "Player" },
     { value: "analysis", label: "Analysis" },
-    { value: "style", label: "Appearance" },
+    { value: "diagnostics", label: "Diagnostics" },
   ];
 
   const themes = [
@@ -45,8 +45,7 @@
   const goalOptions = ["improve", "consistency", "power", "footwork", "match play"];
   const sportSuggestions = ["table tennis", "tennis", "badminton", "squash", "padel"];
 
-  let tab = $state("api");
-  let showChecks = $state(false);
+  let tab = $state("general");
   let checks = $state([]);
   let config = $state(null);
   let configError = $state("");
@@ -138,11 +137,11 @@
   <div>
     <h1 class="font-display text-3xl font-extrabold">{tr("Settings")}</h1>
     <p class="mt-1 max-w-2xl text-sm text-muted">
-      {tr("Profile changes apply to new analyses. Endpoint and analysis settings live in the server\n      environment; appearance is saved on this device.")}
+      {tr("Profile changes apply to new analyses. Endpoint and analysis settings live in the server\n      environment; general preferences are saved on this device.")}
     </p>
   </div>
   <button
-    onclick={() => (showChecks = true)}
+    onclick={() => (tab = "diagnostics")}
     title={tr("Open environment checks")}
     class="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface/50 px-3 py-1.5 text-xs font-semibold text-muted transition hover:border-accent hover:text-app"
   >
@@ -155,56 +154,6 @@
     <span aria-hidden="true" class="text-sm leading-none">›</span>
   </button>
 </section>
-
-{#if showChecks}
-  <div class="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={tr("Environment readiness")}>
-    <button class="absolute inset-0 bg-black/50 backdrop-blur-md" aria-label="Close" onclick={() => (showChecks = false)}></button>
-    <div class="relative w-full max-w-md rounded-2xl border-2 border-line bg-surface/85 p-5 shadow-2xl backdrop-blur-xl">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <h2 class="font-display text-lg font-bold">{tr("Environment")}</h2>
-          <p class="mt-0.5 text-xs text-muted">{tr("API, models, pose, PDF and sample assets.")}</p>
-        </div>
-        <button
-          onclick={() => (showChecks = false)}
-          class="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-line text-muted transition hover:border-accent hover:text-app"
-          aria-label="Close"
-        >✕</button>
-      </div>
-
-      <div class="mt-3 flex items-center justify-between gap-3">
-        <span class="text-xs font-semibold {missing ? 'text-warn' : 'text-good'}">
-          {checks.length
-            ? missing
-              ? tr(`${missing} of ${checks.length} need attention`)
-              : tr(`All ${checks.length} checks passed`)
-            : tr("Checking…")}
-        </span>
-        <button onclick={loadStatus} class="text-xs font-semibold text-muted transition hover:text-app">{tr("Refresh")}</button>
-      </div>
-
-      {#if statusError}
-        <p class="mt-3 text-sm text-bad">{statusError}</p>
-      {:else if !checks.length}
-        <p class="mt-3 text-sm text-muted">{tr("No readiness checks reported.")}</p>
-      {:else}
-        <ul class="mt-3 max-h-[55vh] space-y-2 overflow-y-auto pr-1">
-          {#each checks as c}
-            <li class="flex items-start gap-3 rounded-xl border border-line bg-surface px-3.5 py-3">
-              <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold {c.ok ? 'bg-good/15 text-good' : 'bg-warn/15 text-warn'}">
-                {c.ok ? "✓" : "!"}
-              </span>
-              <span class="min-w-0">
-                <span class="text-sm font-medium">{tr(c.name)}</span>
-                {#if c.detail}<span class="mt-0.5 block text-xs text-muted">{tr(c.detail)}</span>{/if}
-              </span>
-            </li>
-          {/each}
-        </ul>
-      {/if}
-    </div>
-  </div>
-{/if}
 
 <div class="mt-5 flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Settings sections">
   {#each tabs as t}
@@ -219,7 +168,7 @@
   {/each}
 </div>
 
-{#if tab === "api"}
+{#if tab === "analysis"}
   <section class="card mt-4 p-5">
     <h2 class="font-display text-lg font-bold">{tr("Model API")}</h2>
     <p class="mt-1 text-xs text-muted">
@@ -247,7 +196,7 @@
 
 {/if}
 
-{#if tab === "profile"}
+{#if tab === "player"}
   <section class="card mt-4 p-5">
     <div class="flex items-baseline justify-between gap-3">
       <h2 class="font-display text-lg font-bold">{tr("Player profile")}</h2>
@@ -321,7 +270,7 @@
   </section>
 {/if}
 
-{#if tab === "style"}
+{#if tab === "general"}
   <section class="card mt-4 p-5">
     <div class="flex items-baseline justify-between gap-3">
       <h2 class="font-display text-lg font-bold">{tr("Language")}</h2>
@@ -419,5 +368,50 @@
         {/each}
       </div>
     </div>
+  </section>
+{/if}
+
+{#if tab === "diagnostics"}
+  <section class="card mt-4 p-5">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h2 class="font-display text-lg font-bold">{tr("Environment")}</h2>
+        <p class="mt-1 text-xs text-muted">{tr("API, models, pose, PDF and sample assets.")}</p>
+      </div>
+      <button
+        onclick={loadStatus}
+        class="shrink-0 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-muted transition hover:border-accent hover:text-app"
+      >{tr("Refresh")}</button>
+    </div>
+
+    <div class="mt-4 flex items-center justify-between gap-3">
+      <span class="text-xs font-semibold {checks.length && !missing ? 'text-good' : missing ? 'text-warn' : 'text-muted'}">
+        {checks.length
+          ? missing
+            ? tr(`${missing} of ${checks.length} need attention`)
+            : tr(`All ${checks.length} checks passed`)
+          : tr("Checking...")}
+      </span>
+    </div>
+
+    {#if statusError}
+      <p class="mt-3 text-sm text-bad">{statusError}</p>
+    {:else if !checks.length}
+      <p class="mt-3 text-sm text-muted">{tr("No readiness checks reported.")}</p>
+    {:else}
+      <ul class="mt-3 space-y-2">
+        {#each checks as c}
+          <li class="flex items-start gap-3 rounded-xl border border-line bg-surface px-3.5 py-3">
+            <span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold {c.ok ? 'bg-good/15 text-good' : 'bg-warn/15 text-warn'}">
+              {c.ok ? "OK" : "!"}
+            </span>
+            <span class="min-w-0">
+              <span class="text-sm font-medium">{tr(c.name)}</span>
+              {#if c.detail}<span class="mt-0.5 block text-xs text-muted">{tr(c.detail)}</span>{/if}
+            </span>
+          </li>
+        {/each}
+      </ul>
+    {/if}
   </section>
 {/if}

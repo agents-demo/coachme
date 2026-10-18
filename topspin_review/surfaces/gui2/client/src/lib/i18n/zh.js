@@ -1,4 +1,6 @@
 export const zh = {
+  "Profile changes apply to new analyses. Endpoint and analysis settings live in the server\n      environment; general preferences are saved on this device.": "个人资料更改适用于新分析。端点与分析设置位于服务器环境；通用偏好保存在此设备上。",
+  "General": "通用",
   "Save failed": "保存失败",
   "Saving...": "保存中...",
   "When off, the demo is hidden as soon as you have at least one real session.": "关闭后，一旦你有至少一个真实会话，演示会话就会隐藏。",
@@ -448,8 +450,6 @@ export const zhExtra = {
   "UI + reports": "界面与报告",
   "Accent + session layout": "强调色与训练布局",
   "System / Light / Dark": "跟随系统 / 浅色 / 深色",
-  "Profile changes apply to new analyses. Endpoint and analysis settings live in the server\n      environment; appearance is saved on this device.": "资料修改会应用于新分析。接口和分析设置位于服务器环境；外观保存在本设备。",
-  "Dynamic color (Material You) is available in the Android app only.": "动态取色（Material You）仅在 Android 应用中可用。",
   "Environment": "环境",
   "No readiness checks reported.": "没有就绪检查结果。",
   "Ask about this report": "询问此报告",
