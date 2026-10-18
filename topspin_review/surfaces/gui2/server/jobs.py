@@ -101,7 +101,8 @@ class JobManager:
             )
             job.stem = job.video_path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].rsplit(".", 1)[0]
             prog.finish(job.stem)
-            job.status = "cancelled" if job.status == "cancelled" else "done"
+            # Let the cancel_event be the authority — not the pre-set status field.
+            job.status = "cancelled" if job.cancel_event.is_set() else "done"
         except Exception as exc:  # noqa: BLE001
             job.error = f"{exc}\n\n{traceback.format_exc()}"
             prog.fail(str(exc))
@@ -120,13 +121,17 @@ class JobManager:
             return [job.snapshot(self._progress[job.id]) for job in self._jobs.values()]
 
     def cancel(self, job_id: str) -> bool:
-        """Signal cooperative cancellation and mark the job cancelled."""
+        """Signal cooperative cancellation.
+
+        The job status transitions to ``"cancelling"`` immediately (for the UI)
+        and to ``"cancelled"`` once the background thread confirms the stop.
+        """
         with self._lock:
             job = self._jobs.get(job_id)
         if job is None or job.status not in ("queued", "running"):
             return False
         job.cancel_event.set()
-        job.status = "cancelled"
+        job.status = "cancelling"  # intermediate — thread will write "cancelled"
         return True
 
     def retry(self, job_id: str) -> str | None:

@@ -52,7 +52,8 @@
   let statusError = $state("");
   let saveState = $state("");
   let uiSettings = $state({ show_demo: true, investigator_enabled: false });
-  let uiSaveState = $state("");
+  let uiSaveState = $state("");         // demo sessions toggle (General tab)
+  let investigatorSaveState = $state(""); // investigator toggle (Analysis tab)
   let profile = $state({
     sport: "table tennis",
     level: "intermediate",
@@ -107,12 +108,12 @@
 
   async function setInvestigatorEnabled(value) {
     uiSettings = { ...uiSettings, investigator_enabled: value };
-    uiSaveState = "Saving...";
+    investigatorSaveState = "Saving...";
     try {
       await saveSettings({ investigator_enabled: value });
-      uiSaveState = "Saved";
+      investigatorSaveState = "Saved";
     } catch {
-      uiSaveState = "Save failed";
+      investigatorSaveState = "Save failed";
     }
   }
 
@@ -290,7 +291,7 @@
       </span>
     </div>
     <p class="mt-1 text-xs text-muted">
-      {tr("The model chooses what to examine instead of following a fixed pipeline. Every issue it reports cites measured evidence — making findings more traceable but the run slower.")}
+      {tr("The model chooses what to examine instead of following a fixed pipeline. Every issue it reports cites measured evidence. Two runs on the same clip may reach different conclusions — the agent picks its own path each time. Some areas (e.g. ball tracking) may not be examined if the model judges them irrelevant.")}
     </p>
     <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-muted">
       <div class="rounded-xl border border-line bg-surface px-3 py-2.5">
@@ -300,18 +301,18 @@
       </div>
       <div class="rounded-xl border border-line bg-surface px-3 py-2.5">
         <p class="font-semibold text-app">{tr("Investigator")}</p>
-        <p class="mt-1">{tr("~60 – 120 s · higher cost")}</p>
+        <p class="mt-1">{tr("may take several minutes · higher cost")}</p>
         <p class="mt-0.5">{tr("Cites evidence per finding")}</p>
       </div>
     </div>
-    {#if uiSaveState}
-      <span class="mt-2 block text-xs {uiSaveState === 'Save failed' ? 'text-bad' : 'text-muted'}">{tr(uiSaveState)}</span>
+    {#if investigatorSaveState}
+      <span class="mt-2 block text-xs {investigatorSaveState === 'Save failed' ? 'text-bad' : 'text-muted'}">{tr(investigatorSaveState)}</span>
     {/if}
     <div class="mt-4 flex items-center justify-between gap-4 rounded-xl border-2 border-line px-4 py-3.5">
       <div class="min-w-0">
         <p class="text-sm font-semibold">{tr("Enable Investigator mode for new analyses")}</p>
         <p class="mt-0.5 text-xs text-muted">
-          {tr("When on, analyses use the investigator strategy. Results may vary between runs on the same clip.")}
+          {tr("When on, analyses use the investigator strategy. The agent brings its own API cost — check your usage after first runs.")}
         </p>
       </div>
       <div class="flex shrink-0 gap-1 rounded-full border-2 border-line p-1">

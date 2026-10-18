@@ -7,6 +7,7 @@ the sampled frames, measurements and session.
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -21,8 +22,8 @@ class Params:
     region_box: tuple[float, float, float, float] | None = None
     progress: Progress | None = None
     language: str = "en"
-    cancel_event: Any = None
-    """Threading event set by the caller to request cancellation mid-run."""
+    cancel_event: threading.Event | None = None
+    """Set by the caller to request cooperative cancellation mid-run."""
 
     # populated during the run
     profile: dict = field(default_factory=dict)

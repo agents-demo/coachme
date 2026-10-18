@@ -2306,25 +2306,45 @@ These are experiments, not unresolved design decisions.
 These are implementation gaps that must be closed before any user-facing release.
 They were identified in the architectural critique of the prototype (2026-10-18).
 
-**Status as of 2026-10-18 — fixed in this commit:**
+**Round 1 fixes (2026-10-18):**
 
 | # | Item | File(s) changed | Status |
 |---|---|---|---|
-| B1 | Token budget rail (`TokenBudgetRail.used`) was never written back to `Budget.tokens`. Every run reported `tokens: 0`. | `investigator.py` | ✅ Fixed: `ctx.budget.tokens = token_rail.used` after `run_agent()`. |
+| B1 | Token budget rail (`TokenBudgetRail.used`) was never written back to `Budget.tokens`. Every run reported `tokens: 0`. Also: the write was outside a `finally` block; exceptions in `run_agent` would skip it. | `investigator.py` | ✅ Fixed: `ctx.budget.tokens = token_rail.used` in `finally` block around `run_agent()`. |
 | B2 | Vision inspector had its own recorder; costs were not merged into the run's usage summary. | `observe/build_agent.py`, `investigate/tools.py`, `investigator.py` | ✅ Fixed: `recorder=` passed through to the vision builder. |
 | B3 | `InvestigationContext` accepted a `cancel_event` but the job manager never created or passed one. A hung run could not be stopped from the UI. | `params.py`, `jobs.py`, `investigator.py` | ✅ Fixed: `Job.cancel_event` is a `threading.Event`; `JobManager.cancel()` calls `.set()`; the event is threaded into `Params` and then into `InvestigationContext`. |
 | B4 | No CLI or API route recognised `--mode investigator`. The strategy was registered but inaccessible. | `cli/main.py`, `cli/commands/analyze.py`, `routes/analyze.py`, `models.py`, `jobs.py` | ✅ Fixed: `--mode {deterministic,agentic,investigator}` added to CLI; `mode` field added to `AnalyzeRequest` and `Job`; `JobManager._run()` calls `get_strategy(job.mode)` when set. |
 | B5 | No test proved two concurrent `InvestigationContext` instances share no state. | `tests/unit/test_concurrent_investigator.py` | ✅ Fixed: serial and concurrent isolation tests added. |
 | B6 | Strategy resolver had no regression test; deterministic path could silently break. | `tests/unit/test_strategy_resolver.py` | ✅ Fixed: tests for all three strategy names, unknown name, and default-not-investigator invariant. |
 
+**Round 2 fixes (2026-10-18, after fresh architectural + product critique):**
+
+| # | Item | File(s) changed | Status |
+|---|---|---|---|
+| B11 | `_save_partial` raised `RuntimeError` when zero evidence was collected (budget exhausted on first call, or immediate cancel). Caused silent job failure — the exact crash mode the partial-report path was designed to prevent. | `investigator.py` | ✅ Fixed: write minimal no-evidence report instead of raising. |
+| B12 | `time.monotonic()` was called twice after `impl()` returned — once for the ledger record and once for `budget.consume_tool()`. Ledger and budget reported different elapsed values; disk I/O between calls inflated the budget counter. | `context.py` | ✅ Fixed: capture `elapsed` once immediately after `impl()`. |
+| B13 | A cancelled run wrote an authoritative `final_report` as if it completed normally. `_finalize` did not check whether `cancel_event` was set before choosing the `_save_partial` path. | `investigator.py` | ✅ Fixed: `_finalize` checks `cancel_event.is_set()` and routes to `_save_partial("cancelled")`. |
+| B14 | `allow_partial = True` was set before `ctx.save_report()` was called; a failed save left partial mode permanently armed, allowing future `save_report` calls to bypass evidence requirements. | `investigator.py` | ✅ Fixed: revert `allow_partial = False` on save failure. Treat `REPORT_ALREADY_SAVED` as a non-error. |
+| B15 | `EvidenceLedger.coverage()` hard-coded `"ball": False`. When `track_ball` is added post-MVP the field would always report `False` even after the tool was called. | `ledger.py` | ✅ Fixed: `"ball": "track_ball" in used`. |
+| B16 | `JobManager.cancel()` set `job.status = "cancelled"` before the background thread confirmed the stop. The thread then checked `job.status == "cancelled"` to decide its own terminal state — a logic inversion where the caller pre-empted the worker. | `jobs.py` | ✅ Fixed: `cancel()` sets `job.status = "cancelling"` (intermediate); `_run()` sets the terminal status by checking `job.cancel_event.is_set()` directly. |
+| B17 | `Params.cancel_event` was typed `Any`. Passing a non-Event would fail silently at `.is_set()` instead of at construction. | `params.py` | ✅ Fixed: typed `threading.Event \| None`. |
+| B18 (UI) | Shared `uiSaveState` across General and Analysis tabs: confirming the demo toggle on the General tab left stale "Saved" text visible under the Investigator toggle on the Analysis tab. | `settings/+page.svelte` | ✅ Fixed: split into `uiSaveState` (demo) and `investigatorSaveState` (investigator). |
+| B19 (UI) | Investigator time estimate "~60–120 s" was based on a single prototype run (155.7 s actual). Stated time was unreliable and would break user trust. | `settings/+page.svelte` | ✅ Fixed: replaced with "may take several minutes" until multi-clip benchmarks are complete. |
+| B20 (UI) | Investigator toggle description did not explain non-determinism or tool-skipping. Users had no basis for calibrating trust. | `settings/+page.svelte` | ✅ Fixed: added note about two runs on the same clip potentially reaching different conclusions, and that some areas may be skipped. |
+
 **Still open (before experimental release to users):**
 
 | # | Item | Reason not yet done |
 |---|---|---|
-| B7 | Atomic rename / per-stem lock on final report write. Two simultaneous investigator jobs on the same video stem can clobber the final report. | Race is low-risk until concurrent UI submission exists; defer to hardening. |
+| B7 | Atomic rename / per-stem lock on final report write. Two simultaneous investigator jobs on the same video stem can clobber the final report. | Race is low-risk until concurrent UI submission exists; fix before Phase 2. |
 | B8 | Permission-level restriction on the vision inspector (currently prompt-only; `bash`/`list_files` not denied at the permission layer). | Requires openjiuwen permission API; deferred to Phase 3 hardening. |
-| B9 | `run_agent()` timeout / force-finish is not caught in `_run()`; on budget exhaustion the exception propagates to the base `Strategy.analyze()` fallback rather than triggering `_save_partial()`. | Requires wrapping `run_agent()` in a try/except that calls `_save_partial(reason="budget_exhausted")`. |
+| B9 | `run_agent()` budget exhaustion exception propagates to the base `Strategy.analyze()` fallback rather than triggering `_save_partial()`. | Requires try/except around `run_agent()` that calls `_save_partial(reason="budget_exhausted")`. |
 | B10 | Budget defaults (24 calls, 360 s, 80 k tokens, 160 frames) are from a single prototype run. Need calibration on ≥5 real clips before experimental release. | Depends on evaluation fixtures (task 16 in backlog). |
+| B21 | Blocking I/O on the asyncio event loop. `measure_motion` and `estimate_pose` call synchronous frame-decode and ML inference inside `run_tool`, blocking all HTTP request handling for the duration. | Fix: `asyncio.get_running_loop().run_in_executor(None, impl)` in `run_tool`, or make tool functions async. |
+| B22 | Inspector token costs bypass the orchestrator's `TokenBudgetRail`. Each `look()` call's sub-agent spend (12,143 tokens per call in the spike) is invisible to the budget rail; the token cap is therefore not enforced for vision costs. | Fix: after each `look()` call, read the inspector's token count from its recorder and add to `ctx.budget.tokens`. |
+| B23 | `store.set_current_video` is not called in `InvestigatorStrategy._prepare`. Downstream store calls that rely on `_current_video` (e.g. `reporting.write`) will use a stale path from the previous run in a long-lived server process. | Audit all `store.*` calls in `_finalize`; either call `store.set_current_video(params.video_path)` or switch every call to the run-scoped `store.add_report_at` API. |
+| B24 | `investigator_enabled` UI setting is saved to the store but never read back at job-submission time. The toggle is functionally a no-op without the `NewAnalysis.svelte` mode selector. | Build the `NewAnalysis` mode selector (Phase 2 UI, see §11.4). |
+| B25 | `NewAnalysis.svelte` mode selector does not exist. Without it, Investigator mode cannot be selected from the GUI even with the toggle enabled. | Phase 2 UI; required before any user-facing experimental release. |
 
 ---
 

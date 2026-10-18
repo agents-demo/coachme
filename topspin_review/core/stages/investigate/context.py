@@ -219,6 +219,7 @@ class InvestigationContext:
             result = impl()
             if inspect.isawaitable(result):
                 result = await result
+            elapsed = time.monotonic() - started  # capture once; used for both ledger and budget
             if not isinstance(result, dict):
                 result = {"summary": str(result)}
             record = self.ledger.add(
@@ -226,11 +227,11 @@ class InvestigationContext:
                 args=args,
                 window=window,
                 result=result,
-                seconds=time.monotonic() - started,
+                seconds=elapsed,
                 confidence=result.get("confidence"),
             )
             self.budget.consume_tool(
-                seconds=time.monotonic() - started,
+                seconds=elapsed,
                 frames=int(result.get("_frames") or args.get("frames") or 0),
             )
             self.emit(

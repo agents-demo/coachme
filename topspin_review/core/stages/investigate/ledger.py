@@ -97,7 +97,7 @@ class EvidenceLedger:
             "motion": bool(used & {"get_overview", "measure_motion"}),
             "pose": "estimate_pose" in used,
             "vision": "look" in used,
-            "ball": False,
+            "ball": "track_ball" in used,  # False until track_ball is added post-MVP
         }
 
     def untested(self) -> list[str]:

@@ -95,17 +95,19 @@ class InvestigatorStrategy(Strategy):
         )
         previous = self._previous_summary(params).get("text", "")
         tick(progress, "investigator: reasoning", 25)
-        result = await run_agent(
-            built.agent,
-            initial_query(
-                profile=params.profile,
-                history=previous,
-                language_instruction=language_instruction(params.language),
-            ),
-        )
-        # Sync token usage from the rail back into the budget so the snapshot
-        # and the per-run token limit are grounded in the actual count.
-        ctx.budget.tokens = token_rail.used
+        try:
+            result = await run_agent(
+                built.agent,
+                initial_query(
+                    profile=params.profile,
+                    history=previous,
+                    language_instruction=language_instruction(params.language),
+                ),
+            )
+        finally:
+            # Sync token usage from the rail back into the budget.
+            # Use finally so the count is preserved even when run_agent raises.
+            ctx.budget.tokens = token_rail.used
         tick(progress, "investigator: saving report", 92)
         return result, {"investigation": ctx.snapshot()}
 
@@ -118,7 +120,8 @@ class InvestigatorStrategy(Strategy):
     ) -> dict[str, Any]:
         ctx: InvestigationContext = params.investigation
         if not ctx.saved:
-            self._save_partial(ctx, "no_report")
+            cancelled = ctx.cancel_event is not None and ctx.cancel_event.is_set()
+            self._save_partial(ctx, "cancelled" if cancelled else "no_report")
 
         report = dict(ctx.saved_report or {})
         evidence = ctx.ledger.records()
@@ -185,32 +188,44 @@ class InvestigatorStrategy(Strategy):
 
     def _save_partial(self, ctx: InvestigationContext, reason: str) -> None:
         records = ctx.ledger.records()
+        # When zero evidence was collected (e.g. budget exhausted on the very
+        # first call, or the run was cancelled immediately) still write a
+        # minimal report rather than raising — a graceful degradation is always
+        # better than a silent job failure.
+        limitations = [f"Analysis stopped early: {reason}."]
+        untested = ctx.untested()
+        if untested:
+            limitations.append("Not assessed: " + ", ".join(untested) + ".")
         if not records:
-            raise RuntimeError(f"investigation failed before evidence: {reason}")
+            limitations.append("No evidence was collected before the run stopped.")
         report = {
             "date": date.today().isoformat(),
             "sport": ctx.profile.get("sport", "table tennis"),
-            "summary": f"Analysis stopped early: {reason}. Only the inspected evidence is reported.",
+            "summary": f"Analysis stopped early: {reason}." + (
+                " Only the inspected evidence is reported." if records else " No evidence was collected."
+            ),
             "strengths": [],
             "issues": [],
             "drills": [],
             "focus": "",
             "progress": "",
-            "limitations": [
-                f"Analysis stopped early: {reason}.",
-                "Not assessed: " + ", ".join(ctx.untested()) + ".",
-            ],
+            "limitations": limitations,
             "mode": "investigator",
             "evidence": [record.id for record in records],
             "investigation": {
                 "coverage": ctx.coverage(),
-                "untested": ctx.untested(),
+                "untested": untested,
                 "stop_reason": reason,
             },
         }
         ctx.allow_partial = True
         saved = json.loads(ctx.save_report(json.dumps(report)))
         if not saved.get("ok"):
+            error = saved.get("error") or {}
+            code = error.get("code", "") if isinstance(error, dict) else ""
+            if code == "REPORT_ALREADY_SAVED":
+                return  # a prior save succeeded; this is not a failure
+            ctx.allow_partial = False  # revert so future saves don't inherit partial mode
             raise RuntimeError(f"could not save partial report: {saved.get('error')}")
 
 
