@@ -75,6 +75,30 @@ def test_frame_budget_is_checked_before_tool_runs(tmp_path) -> None:
     assert progress.snapshot()["events"][-1]["kind"] == "tool_error"
 
 
+def test_wall_clock_budget_is_checked_before_tool_runs(tmp_path) -> None:
+    ctx, progress = _context(tmp_path, max_seconds=0.0)  # immediately exhausted
+    called = False
+
+    def impl():
+        nonlocal called
+        called = True
+        return {"summary": "should not run"}
+
+    envelope = json.loads(asyncio.run(ctx.run_tool("look", {"frames": 1}, window=(0, 1), impl=impl)))
+    assert called is False
+    assert envelope["ok"] is False
+    assert envelope["error"]["code"] == "BUDGET_EXHAUSTED"
+    assert "wall-clock" in envelope["error"]["message"]
+
+
+def test_set_tokens_is_thread_safe_and_clips_negative(tmp_path) -> None:
+    ctx, _ = _context(tmp_path)
+    ctx.budget.set_tokens(99)
+    assert ctx.budget.tokens == 99
+    ctx.budget.set_tokens(-5)  # negative input is clipped to 0
+    assert ctx.budget.tokens == 0
+
+
 def test_cancelled_context_does_not_run_tool(tmp_path) -> None:
     cancel = threading.Event()
     cancel.set()

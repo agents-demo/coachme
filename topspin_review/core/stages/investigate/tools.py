@@ -229,6 +229,12 @@ def _pose(ctx: InvestigationContext, start: float, end: float, frames: int) -> d
         path = Path(ctx.media_dir) / f"pose_{int(round(start * 1000))}_{int(round(end * 1000))}.png"
         imaging.save_png(annotated[index], path)
         paths.append(str(path))
+    # Use joint-angle data quality as the confidence signal.
+    # `sequence` is always truthy here (guard above already raised otherwise),
+    # so "high" is used only when the summary has valid angle readings.
+    angle_keys = ("l_knee_mean", "r_knee_mean", "l_elbow_mean", "r_elbow_mean")
+    has_angles = any(summary.get(k) is not None for k in angle_keys)
+    pose_confidence = "high" if has_angles else "medium"
     return {
         "summary": (
             f"knee {summary.get('l_knee_mean')}/{summary.get('r_knee_mean')}, "
@@ -237,7 +243,7 @@ def _pose(ctx: InvestigationContext, start: float, end: float, frames: int) -> d
         ),
         "details": metrics.text(measured)[:2000],
         "times": [event["t"] for event in strokes] or ([peak] if peak is not None else []),
-        "confidence": "high" if sequence else "low",
+        "confidence": pose_confidence,
         "artifacts": paths,
         "_frames": len(window.frames),
     }

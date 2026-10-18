@@ -80,7 +80,8 @@ class JobManager:
         return job_id
 
     def _run(self, job: Job, prog: Progress) -> None:
-        job.status = "running"
+        with self._lock:
+            job.status = "running"
         try:
             from topspin_review.core import get_strategy
 
@@ -102,11 +103,13 @@ class JobManager:
             job.stem = job.video_path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].rsplit(".", 1)[0]
             prog.finish(job.stem)
             # Let the cancel_event be the authority — not the pre-set status field.
-            job.status = "cancelled" if job.cancel_event.is_set() else "done"
+            with self._lock:
+                job.status = "cancelled" if job.cancel_event.is_set() else "done"
         except Exception as exc:  # noqa: BLE001
             job.error = f"{exc}\n\n{traceback.format_exc()}"
             prog.fail(str(exc))
-            job.status = "failed"
+            with self._lock:
+                job.status = "failed"
 
     def status(self, job_id: str) -> dict[str, Any]:
         with self._lock:

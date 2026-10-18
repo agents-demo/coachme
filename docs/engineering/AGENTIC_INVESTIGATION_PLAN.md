@@ -2332,6 +2332,17 @@ They were identified in the architectural critique of the prototype (2026-10-18)
 | B19 (UI) | Investigator time estimate "~60–120 s" was based on a single prototype run (155.7 s actual). Stated time was unreliable and would break user trust. | `settings/+page.svelte` | ✅ Fixed: replaced with "may take several minutes" until multi-clip benchmarks are complete. |
 | B20 (UI) | Investigator toggle description did not explain non-determinism or tool-skipping. Users had no basis for calibrating trust. | `settings/+page.svelte` | ✅ Fixed: added note about two runs on the same clip potentially reaching different conclusions, and that some areas may be skipped. |
 
+**Round-3 critique fixes (B26–B31, all fixed in the same commit):**
+
+| # | Finding | File | Verdict |
+|---|---|---|---|
+| B26 (Critical) | `Budget.max_seconds` stored but never enforced: no `check_seconds()` call existed, so the wall-clock cap was advisory only. | `context.py` | ✅ Fixed: added `Budget.check_seconds()`, called in `run_tool` before the impl, same slot as `check_tool_call`. |
+| B27 (Major) | `_pose` confidence dead branch: `"confidence": "high" if sequence else "low"` is always "high" because the `if not sequence: raise` guard above ensures `sequence` is truthy. All pose results reported "high" regardless of quality. | `tools.py` | ✅ Fixed: confidence is now "high" only when the pose summary contains at least one non-None joint angle; otherwise "medium". |
+| B28 (Major) | `_save_partial` exception safety: if `ctx.coverage()`, `ctx.untested()`, or `json.dumps(report)` raised, no partial report was written at all, leaving the job status as "failed" with no output file. | `investigator.py` | ✅ Fixed: wrapped the report construction block in try/except; on failure, an absolute-minimum hardcoded report (empty strengths/issues/drills) is saved instead. |
+| B29 (Minor) | `Budget.tokens` written without holding `_lock` from the `finally` block in `_run`. | `context.py`, `investigator.py` | ✅ Fixed: added `Budget.set_tokens(n)` which acquires `_lock`; `investigator.py` now calls `ctx.budget.set_tokens(token_rail.used)`. |
+| B30 (Major) | `JobManager._run` mutated `job.status` ("running", terminal states) without holding `self._lock`, racing with `cancel()` which reads `job.status` under the lock. | `jobs.py` | ✅ Fixed: all three status assignments in `_run` now hold `self._lock`. |
+| B31 (Critical) | `tools.py` had zero unit test coverage — `build_tools`, `_look` validation, `_motion`, `_pose`, and the pure helpers were all untested. | `tests/unit/test_tools.py` (new) | ✅ Fixed: added 19 tests covering validation guards, pure helper functions, `_pose` confidence signal, `build_tools` contract, and the wall-clock budget check. |
+
 **Still open (before experimental release to users):**
 
 | # | Item | Reason not yet done |
@@ -2345,6 +2356,10 @@ They were identified in the architectural critique of the prototype (2026-10-18)
 | B23 | `store.set_current_video` is not called in `InvestigatorStrategy._prepare`. Downstream store calls that rely on `_current_video` (e.g. `reporting.write`) will use a stale path from the previous run in a long-lived server process. | Audit all `store.*` calls in `_finalize`; either call `store.set_current_video(params.video_path)` or switch every call to the run-scoped `store.add_report_at` API. |
 | B24 | `investigator_enabled` UI setting is saved to the store but never read back at job-submission time. The toggle is functionally a no-op without the `NewAnalysis.svelte` mode selector. | Build the `NewAnalysis` mode selector (Phase 2 UI, see §11.4). |
 | B25 | `NewAnalysis.svelte` mode selector does not exist. Without it, Investigator mode cannot be selected from the GUI even with the toggle enabled. | Phase 2 UI; required before any user-facing experimental release. |
+| B32 | `Budget.check_tool_call()` and `check_frames()` read counters outside `_lock` (check-then-act race). With `parallel_tool_calls=False` this is currently moot, but will become a real race if parallel tool calls are ever enabled. | Fix: acquire `_lock` inside `check_tool_call` and `check_frames`, or merge check + consume into a single locked operation. |
+| B33 | `_motion` and `_pose` tools do not validate window bounds before calling `toolbox.measure_window`. `_look` validates (`start < 0`, `end <= start`, max-window-seconds) but the other two pass raw floats from the model to the toolbox without any guard. | Fix: extract a shared `_validate_window(start, end)` helper used by all three tools. |
+| B34 | `save_report` in `InvestigationContext` is not thread-safe. Two concurrent calls (e.g. tool-loop race) can both see `self.saved == False`, proceed past the guard, and overwrite the same file. | Fix: move the `self.saved` flag check-and-set inside a lock (`threading.Lock`) around the whole `save_report_result` call. |
+| B35 | `_finalize` in `InvestigatorStrategy` re-derives the evidence list by calling `ctx.ledger.records()` directly rather than reading from `ctx.saved_report["evidence"]`. Any evidence collected after `save_report` was called (impossible today, but fragile) would be silently appended to the final report. | Fix: use `ctx.saved_report["evidence"]` when it exists, falling back to `ledger.records()` only when `saved_report` is absent. |
 
 ---
 

@@ -111,11 +111,22 @@ class Budget:
         if cancel_event is not None and cancel_event.is_set():
             raise Cancelled()
 
+    def check_seconds(self) -> None:
+        if self.elapsed() >= self.max_seconds:
+            raise BudgetExceeded(
+                f"wall-clock budget exhausted ({self.max_seconds:.0f}s)"
+            )
+
     def consume_tool(self, *, seconds: float, frames: int = 0) -> None:
         with self._lock:
             self.tool_calls += 1
             self.frames += max(0, int(frames))
             self.seconds += max(0.0, float(seconds))
+
+    def set_tokens(self, n: int) -> None:
+        """Thread-safe write of the token counter (set once from the rail finally block)."""
+        with self._lock:
+            self.tokens = max(0, int(n))
 
     def elapsed(self) -> float:
         return max(0.0, time.monotonic() - self._started)
@@ -213,6 +224,7 @@ class InvestigationContext:
         try:
             self.check_cancel()
             self.budget.check_tool_call()
+            self.budget.check_seconds()
             self.budget.check_frames(int(args.get("frames") or 0))
             self.emit("tool_started", tool=name, args=args)
             started = time.monotonic()

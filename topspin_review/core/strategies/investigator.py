@@ -107,7 +107,7 @@ class InvestigatorStrategy(Strategy):
         finally:
             # Sync token usage from the rail back into the budget.
             # Use finally so the count is preserved even when run_agent raises.
-            ctx.budget.tokens = token_rail.used
+            ctx.budget.set_tokens(token_rail.used)
         tick(progress, "investigator: saving report", 92)
         return result, {"investigation": ctx.snapshot()}
 
@@ -187,37 +187,53 @@ class InvestigatorStrategy(Strategy):
         }
 
     def _save_partial(self, ctx: InvestigationContext, reason: str) -> None:
-        records = ctx.ledger.records()
         # When zero evidence was collected (e.g. budget exhausted on the very
         # first call, or the run was cancelled immediately) still write a
         # minimal report rather than raising — a graceful degradation is always
         # better than a silent job failure.
-        limitations = [f"Analysis stopped early: {reason}."]
-        untested = ctx.untested()
-        if untested:
-            limitations.append("Not assessed: " + ", ".join(untested) + ".")
-        if not records:
-            limitations.append("No evidence was collected before the run stopped.")
-        report = {
-            "date": date.today().isoformat(),
-            "sport": ctx.profile.get("sport", "table tennis"),
-            "summary": f"Analysis stopped early: {reason}." + (
-                " Only the inspected evidence is reported." if records else " No evidence was collected."
-            ),
-            "strengths": [],
-            "issues": [],
-            "drills": [],
-            "focus": "",
-            "progress": "",
-            "limitations": limitations,
-            "mode": "investigator",
-            "evidence": [record.id for record in records],
-            "investigation": {
-                "coverage": ctx.coverage(),
-                "untested": untested,
-                "stop_reason": reason,
-            },
-        }
+        try:
+            records = ctx.ledger.records()
+            limitations = [f"Analysis stopped early: {reason}."]
+            untested = ctx.untested()
+            if untested:
+                limitations.append("Not assessed: " + ", ".join(untested) + ".")
+            if not records:
+                limitations.append("No evidence was collected before the run stopped.")
+            report = {
+                "date": date.today().isoformat(),
+                "sport": ctx.profile.get("sport", "table tennis"),
+                "summary": f"Analysis stopped early: {reason}." + (
+                    " Only the inspected evidence is reported." if records else " No evidence was collected."
+                ),
+                "strengths": [],
+                "issues": [],
+                "drills": [],
+                "focus": "",
+                "progress": "",
+                "limitations": limitations,
+                "mode": "investigator",
+                "evidence": [record.id for record in records],
+                "investigation": {
+                    "coverage": ctx.coverage(),
+                    "untested": untested,
+                    "stop_reason": reason,
+                },
+            }
+        except Exception:  # noqa: BLE001
+            report = {
+                "date": date.today().isoformat(),
+                "sport": "table tennis",
+                "summary": f"Analysis stopped early: {reason}. Report construction failed.",
+                "strengths": [],
+                "issues": [],
+                "drills": [],
+                "focus": "",
+                "progress": "",
+                "limitations": [f"Analysis stopped early: {reason}.", "Report construction failed."],
+                "mode": "investigator",
+                "evidence": [],
+                "investigation": {"stop_reason": reason},
+            }
         ctx.allow_partial = True
         saved = json.loads(ctx.save_report(json.dumps(report)))
         if not saved.get("ok"):
