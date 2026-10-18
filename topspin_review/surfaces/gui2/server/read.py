@@ -71,6 +71,7 @@ def _summary(report: dict) -> dict[str, Any]:
         "summary": report.get("summary", ""),
         "issue_count": len(report.get("issues") or []),
         "drill_count": len(report.get("drills") or []),
+        "is_demo": bool(report.get("demo")),
         "is_photo": Path(source).suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif"},
         "has_source": _exists(source),
         "has_frames": _exists((report.get("artifacts") or {}).get("frames")),
@@ -83,8 +84,17 @@ def _summary(report: dict) -> dict[str, Any]:
 
 
 def list_reports() -> list[dict[str, Any]]:
-    """All saved reports, newest first."""
+    """All saved reports, newest first.
+
+    The bundled demo session is always shown when it is the only report. Once
+    real sessions exist, the ``show_demo`` UI setting decides whether it is
+    included alongside them.
+    """
     reports = store.get_reports()
+    demo = [r for r in reports if r.get("demo")]
+    real = [r for r in reports if not r.get("demo")]
+    if real and not store.get_ui_settings().get("show_demo", True):
+        reports = real
     return [_summary(r) for r in reversed(reports)]
 
 

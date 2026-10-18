@@ -1,4 +1,10 @@
 export const zh = {
+  "Save failed": "保存失败",
+  "Saving...": "保存中...",
+  "When off, the demo is hidden as soon as you have at least one real session.": "关闭后，一旦你有至少一个真实会话，演示会话就会隐藏。",
+  "Show demo session with my sessions": "在我的会话中显示演示会话",
+  "The bundled demo session teaches the app on a fresh install. It always appears when you have no sessions of your own.": "内置演示会话用于首次体验。当你还没有自己的会话时，它始终显示。",
+  "Sessions list": "会话列表",
   "Back": "返回",
   "Cancel": "取消",
   "Save": "保存",

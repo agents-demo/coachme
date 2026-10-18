@@ -9,6 +9,13 @@ export async function api(path, opts) {
 }
 
 export const getReports = () => api("/reports");
+export const getSettings = () => api("/settings");
+export const saveSettings = (patch) =>
+  api("/settings", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(patch),
+  });
 export const getReport = (stem) => api(`/reports/${encodeURIComponent(stem)}`);
 export const deleteReport = (stem) => api(`/reports/${encodeURIComponent(stem)}`, { method: "DELETE" });
 export const ask = (stem, q) =>

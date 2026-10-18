@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -28,35 +29,65 @@ _DEMO_DIR = Path(__file__).parents[4] / "demo"
 
 
 def _seed_demo() -> None:
-    """Copy bundled demo reports (and their videos) into runtime/data on a fresh install.
+    """Copy bundled demo reports, videos and artifacts into runtime/data once.
 
-    Only runs when the data directory contains no reports yet, so real user
-    sessions are never overwritten.  For each report the corresponding video
-    (same stem, any extension) is also copied so playback works on any machine
-    without knowing the original file path.
+    Seeding happens even when real sessions exist, but the demo never overwrites
+    an existing report. A marker prevents a deleted demo from reappearing on the
+    next start. The demo is marked so the UI can hide it when real sessions
+    exist (see the ``show_demo`` setting).
     """
     data_dir = runtime.DATA_DIR
+    marker = data_dir / ".demo_seeded"
+    if marker.exists():
+        return
     data_dir.mkdir(parents=True, exist_ok=True)
-    if any(data_dir.glob("*_report.json")):
-        return  # real sessions already exist — leave them alone
+    artifacts_dir = data_dir / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
     for src in _DEMO_DIR.glob("*_report.json"):
-        dst = data_dir / src.name
-        if dst.exists():
-            continue
-        # Copy the report JSON, then patch the source path to the local copy.
         report = json.loads(src.read_text(encoding="utf-8"))
-        stem = src.stem.removesuffix("_report")
+        base_stem = src.stem.removesuffix("_report")
+        stem = base_stem
+        dst = data_dir / f"{stem}_report.json"
+        if dst.exists():
+            existing = json.loads(dst.read_text(encoding="utf-8"))
+            if existing.get("demo"):
+                continue  # already seeded
+            # A real session owns this stem; seed the demo under a distinct name.
+            stem = f"{base_stem}-Demo"
+            dst = data_dir / f"{stem}_report.json"
+            if dst.exists():
+                continue
         # Copy the companion video if present in demo/.
         video_dst: Path | None = None
         for ext in (".mp4", ".mov", ".avi", ".mkv", ".webm"):
-            video_src = _DEMO_DIR / f"{stem}{ext}"
+            video_src = _DEMO_DIR / f"{base_stem}{ext}"
             if video_src.exists():
-                video_dst = data_dir / video_src.name
-                shutil.copy2(video_src, video_dst)
+                video_dst = data_dir / f"{stem}{ext}"
+                if not video_dst.exists():
+                    shutil.copy2(video_src, video_dst)
                 break
         if video_dst:
             report["source"] = str(video_dst)
+        # Copy generated artifacts (contact sheet, pose, ball, maps).
+        artifacts: dict[str, str] = {}
+        for kind, name in (report.get("artifacts") or {}).items():
+            artifact_src = _DEMO_DIR / Path(str(name)).name
+            if not artifact_src.exists():
+                continue
+            artifact_dst = artifacts_dir / f"{stem}_{kind}{artifact_src.suffix}"
+            if not artifact_dst.exists():
+                shutil.copy2(artifact_src, artifact_dst)
+            artifacts[kind] = str(artifact_dst)
+        report["artifacts"] = artifacts
+        report["demo"] = True
+        report["name"] = report.get("name") or "Demo session"
         dst.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        # Keep the demo at the bottom of the mtime-ordered session list.
+        try:
+            os.utime(dst, (946684800, 946684800))  # 2000-01-01
+        except OSError:
+            pass
+    marker.write_text("ok", encoding="utf-8")
 
 
 @asynccontextmanager
@@ -112,6 +143,20 @@ def put_profile(payload: ProfilePayload) -> dict:
     profile.pop("hand", None)
     profile.update(payload.model_dump())
     return store.set_profile(profile)
+
+
+class UiSettingsPayload(BaseModel):
+    show_demo: bool | None = None
+
+
+@app.get("/settings")
+def get_ui_settings() -> dict:
+    return store.get_ui_settings()
+
+
+@app.patch("/settings")
+def patch_ui_settings(payload: UiSettingsPayload) -> dict:
+    return store.set_ui_settings(payload.model_dump(exclude_none=True))
 
 
 @app.get("/config")

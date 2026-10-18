@@ -15,7 +15,10 @@ from topspin_review.integrations.storage import json_store, runtime
 
 DATA_DIR = runtime.DATA_DIR
 PROFILE_PATH = DATA_DIR / "profile.json"
+UI_SETTINGS_PATH = DATA_DIR / "ui_settings.json"
 REPORT_SUFFIX = "_report.json"
+
+DEFAULT_UI_SETTINGS: dict[str, Any] = {"show_demo": True}
 
 _current_video: str | None = None
 
@@ -53,6 +56,25 @@ def get_profile() -> dict[str, Any]:
 def set_profile(profile: dict[str, Any]) -> dict[str, Any]:
     _write(PROFILE_PATH, profile)
     return profile
+
+
+def get_ui_settings() -> dict[str, Any]:
+    """Local UI preferences (not secrets), with defaults for missing keys."""
+    saved = _read(UI_SETTINGS_PATH, {})
+    settings = dict(DEFAULT_UI_SETTINGS)
+    if isinstance(saved, dict):
+        settings.update(saved)
+    settings["show_demo"] = bool(settings.get("show_demo", True))
+    return settings
+
+
+def set_ui_settings(patch: dict[str, Any]) -> dict[str, Any]:
+    """Merge and persist UI preferences, returning the full settings."""
+    settings = get_ui_settings()
+    if "show_demo" in patch:
+        settings["show_demo"] = bool(patch["show_demo"])
+    _write(UI_SETTINGS_PATH, settings)
+    return settings
 
 
 def get_reports() -> list[dict[str, Any]]:
