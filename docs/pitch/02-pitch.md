@@ -1,6 +1,6 @@
 # TopSpin Review — Pitch for Huawei Internal Stakeholders
 
-> **One-sentence pitch:** AI personal sports coach in your pocket — record a practice session, and the app watches it like a coach and tells you exactly what to fix.
+> **One-sentence pitch:** Film a practice session. The app watches it like a coach and tells you exactly what to fix — specific to your technique, at the exact moment it went wrong.
 
 ---
 
@@ -43,6 +43,11 @@ own investigation — choosing which tools and time windows to use, ignoring bal
 irrelevant, digging into wrist/racket mechanics when the evidence leads there. Every claim still
 requires a cited evidence ID. Whether it produces better outcomes than Standard is the hypothesis;
 the benchmark measures it.
+
+What this looks like: in one clip, without being told what to look for, the AI noticed the player's
+head tilted down 0.3 seconds before contact in 6 of 8 strokes — and connected it directly to flat
+trajectories. The coach had not spotted it. Nobody programmed "check head position." Four more
+moments like this: [03-the-moments.md](03-the-moments.md).
 
 ### 2. Multi-modal throughout
 
@@ -149,11 +154,11 @@ This is a real output. Not mocked beyond the data input.
 
 | Task | Why |
 |------|-----|
-| Table detection (OpenCV homography) | Unlocks 5+ new metrics: player position on court, shot placement, distance from table |
-| Stroke classifier (train on TTNet dataset) | Distinguish forehand topspin / backhand / serve / push automatically — enables per-stroke-type breakdown |
+| Table detection | Unlocks 5+ new metrics: player position on court, shot placement, distance from table |
+| Stroke classifier | Distinguish forehand topspin / backhand / serve / push automatically — enables per-stroke-type breakdown |
 | Voice coaching output | LLM narrates the report — user hears coaching feedback while watching their video. Third modality. |
 | Expand to tennis + badminton | Same engine, 3× market |
-| Ascend cloud/edge deployment | Run pose, ball and vision batches on Ascend with CANN; private or regional deployment - Huawei differentiator |
+| Ascend cloud/edge deployment | All inference and training on Huawei hardware; private or regional deployment with no change to the user experience |
 
 **Deliverable:** A platform, not just an app. Network effects from user data improve the models.
 
@@ -182,7 +187,7 @@ This is a real output. Not mocked beyond the data input.
 
 1. **A reference vertical app** - sports coaching is easy to understand, visually impressive, and real-world useful.
 2. **Recurring accelerator demand** - every analyzed session is inference; every improvement cycle is a training opportunity. Successful consumer usage is what turns apps into Ascend demand.
-3. **An agentic-platform proof point** - openJiuwen/Ascend integration turns that demand into an easy deployment path, not a user-facing dependency.
+3. **A deployable product with a clear Huawei path** - the app does not depend on Ascend to work; openJiuwen/Ascend integration means that when it earns real use, that use can be served on Huawei infrastructure with no change to the user experience.
 4. **A monetizable product** - not a research demo. An app people pay for, whose compute can run on Huawei infrastructure.
 
 ---

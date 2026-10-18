@@ -1,9 +1,6 @@
 # Four Moments
 
-These four moments show what changes when the AI investigates rather than just
-measures. Each is a specific scenario — not a promise, not a roadmap item. A
-demonstration of what becomes possible when the model is free to decide what to
-look at next.
+Four things this AI does that no coaching pipeline can.
 
 ---
 
@@ -63,6 +60,8 @@ to real-time tactical advisor:
 This is not coaching. This is the kind of real-time match intelligence a
 professional courtside advisor provides. The kind most players never have access
 to.
+
+Until now.
 
 ---
 

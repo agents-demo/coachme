@@ -508,6 +508,7 @@ no `mode`, `evidence`, `investigation`, `evidence_ids`, `trace_path` or file nam
       "B_use": "yes",
       "preferred": "B",
       "rationale": "B cited the contact point more precisely.",
+      "notes": "",
       "submitted": true,
       "submitted_at": "2026-10-18T15:00:00Z"
     }
@@ -848,8 +849,8 @@ before building steps 4–7.
 4. **Blind ratings:** packet generation/reader, rater sheet API, blind UI,
    submission lock, mapping guard.
 5. **Adjudication:** queue, mapping reveal, decision save, agreement display.
-6. **Run control:** new-run validation, subprocess launch, SSE, cancel, rescore,
-   import.
+6. **Run control:** new-run validation, subprocess launch, cancel, rescore,
+   import. (SSE is a future upgrade; v1 uses polling.)
 7. **Export and hardening:** archives, accessibility, error states, privacy
    checks, performance, pytest coverage and the Playwright smoke test.
 
