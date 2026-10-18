@@ -178,10 +178,10 @@ That adaptive investigation is the "adaptive" layer of **evidence-backed adaptiv
 There are real competitors. Know them, but do not bring them up unless asked.
 
 - **Homecourt** (basketball): AI video coaching, US-based, has venture funding. Proof the category works, but basketball-specific and no openJiuwen/Ascend angle.
-- **SwingVision** (tennis): Shot tracking and basic analysis. More data analytics than coaching. No LLM coaching layer.
+- **SwingVision** (tennis + pickleball): AI Coach feature with coaching prescriptions and drill recommendations — validates that players will pay for AI coaching. **Apple-only — no Android**, which excludes the entire China market and ~2B Android users globally. Not a direct competitor in China.
 - **Generic "LLM + video"**: Anyone can point GPT-4o at a sports video and ask for feedback. The output is generic because there is no CV pipeline feeding grounded measurements. This is the most common misconception about what we built.
 
-If asked: "We are aware of Homecourt and SwingVision. They validate the market. The difference is that our findings are grounded in computer vision measurements — the LLM cannot make a claim without citing a measured value. That verification step is what separates a coaching report from a chatbot response."
+If asked: "We are aware of Homecourt and SwingVision. They validate the market. SwingVision now has an AI Coach feature, but it is Apple-only — no Android, no China. The difference for us is that our findings are grounded in computer vision measurements — the LLM cannot make a claim without citing a measured value. That verification step is what separates a coaching report from a chatbot response."
 
 ---
 
@@ -197,9 +197,11 @@ Clear confidence levels make the high-confidence findings more credible.
 
 ## The Chinese market specifically
 
-Table tennis in China is not a sport — it is culture. China has dominated international table tennis for decades. There are an estimated 300 million table tennis players in China alone. Huawei managers will understand this market intuitively in a way that requires no explanation.
+Table tennis in China is not a sport — it is culture. China has dominated international table tennis for decades. Approximately **85 million people play at a club level daily** in China; around **10 million compete seriously**. Huawei managers will understand this market intuitively in a way that requires no explanation.
 
-This matters for the pitch because it means the first paying users are not an abstract number — they are a real, identifiable, culturally resonant community that already trains seriously and already spends money on equipment and coaching. The product fits into existing behaviour rather than trying to create new habits.
+Beyond participation, there is a structural demand driver: the **双减 (Double Reduction) policy of 2021** banned for-profit academic tutoring, redirecting enormous parental spending toward sport. China's children's sports industry is now ¥400B+ (~USD 55B) and growing at 15%+/year. For junior players, the buyer is the parent, not the child — and parents who were previously spending on maths tutors are now actively looking for trackable, evidenced progress in sport.
+
+This matters for the pitch because it means the first paying users are not an abstract number — they are a real, identifiable, culturally resonant community that already trains seriously, already spends money on equipment and coaching, and (for juniors) has parents motivated by measurable improvement. The product fits into existing behaviour rather than trying to create new habits.
 
 ---
 
@@ -339,7 +341,7 @@ The conversation you do not want: "Interesting technology but unclear who pays f
 
 **Earn respect:**
 - Knowing exactly what the app cannot do yet, stated confidently - signals maturity
-- Specific numbers (not "many players" — "300 million table-tennis players globally, ITTF estimate; 500 million+ across all racket sports; an estimated 300 million in China alone for table tennis")
+- Specific numbers (not "many players" — "300 million table-tennis players globally (ITTF estimate); 500 million+ across all racket sports; ~85 million daily club-level players in China with ~10 million competing seriously")
 - Clear communication about current quality versus roadmap
 - Having thought about what failure looks like and how you'd handle it
 - Having built the thing before asking for support
