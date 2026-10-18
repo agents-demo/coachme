@@ -48,11 +48,12 @@ Topspin Review is positioned at the intersection of measurement, coaching and pr
 product turns a practice video into a structured coaching report with timestamped evidence, drills,
 progress comparison, bilingual web and Android experiences, and local-first processing.
 
-The differentiator is **evidence-backed adaptive coaching**: every finding cites measured evidence
-and a timestamp, and the investigation adapts to what is found. Standard mode delivers the
-evidence-backed foundation today via a fixed pipeline — reliable, demo-ready. Investigator mode adds
-adaptive investigation (the model directs its own examination); it is not yet validated and the
-deterministic pipeline remains the default. Table-tennis depth,
+The differentiator is **evidence-backed adaptive coaching**, in two layers. **Standard mode**
+delivers the evidence-backed foundation today: a fixed pipeline where every finding cites measured
+evidence and a timestamp, and unsupported claims are dropped — reliable and demo-ready. **Investigator
+mode** adds the adaptive layer: the model directs its own examination rather than following a fixed
+script; the investigation adapts to what is found. Investigator mode is not yet validated; Standard
+mode remains the default. Table-tennis depth,
 local-first processing and bilingual web/Android support the thesis. Multi-sport coverage is a
 strategic direction, not yet an advantage.
 
@@ -440,7 +441,7 @@ The model itself is not a moat. Model quality is converging; workflow and trust 
 - Web app (FastAPI + SvelteKit) and Android app.
 - English and Chinese UI and reports.
 - Local-first storage, PDF/share exports, one-click delete.
-- Deterministic pipeline built on openJiuwen, with an opt-in Investigator mode for evidence-backed adaptive coaching.
+- Standard mode pipeline built on openJiuwen, with an opt-in Investigator mode that adds the adaptive layer of evidence-backed adaptive coaching.
 
 **What is not yet product-ready**
 
@@ -600,7 +601,7 @@ to pay for improvement. The technology is now good enough for useful products, b
 quality and workflow remain unsolved.
 
 Topspin Review has a credible position: table-tennis depth, evidence-grounded reports, drills,
-progress, bilingual web and Android, local-first processing, and an opt-in Investigator mode for evidence-backed adaptive coaching: the model can choose what to examine while citing evidence. Its weaknesses are equally clear: no iOS, no accounts or sync, no
+progress, bilingual web and Android, local-first processing, and evidence-backed adaptive coaching delivered across two modes: Standard (fixed pipeline, every finding cites evidence, demo-ready) and Investigator (adaptive layer, model chooses what to examine while still citing measured evidence, benchmark in progress). Its weaknesses are equally clear: no iOS, no accounts or sync, no
 coach workspace, limited multi-sport validation, and a product that still depends on good filming.
 
 The next phase should be disciplined. Win one consumer workflow. Make the evidence trustworthy.

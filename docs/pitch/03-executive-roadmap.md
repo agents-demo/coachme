@@ -11,9 +11,11 @@ Film a training session and get back what to fix and how to practice — a coach
 
 ## The core differentiator - evidence-backed adaptive coaching
 
-The reliable product runs a fixed pipeline: watch the video, measure movement and body mechanics, write the coaching findings, then verify. That is the baseline.
+**Evidence-backed adaptive coaching** is the differentiator. Every finding must cite measured evidence and a timestamp; the pipeline drops any claim it cannot support. This is what separates the product from generic AI chatbots — and it applies to both modes.
 
-**Evidence-backed adaptive coaching** means the coaching adapts to what the AI finds, and every finding must cite measured evidence. The **Investigator** mode is how it works: the model chooses which tools and time windows to inspect, may ignore ball tracking if irrelevant, and may dig into wrist or racket mechanics because the evidence led there.
+**Standard mode** (the reliable default, demo-ready today): a fixed pipeline — observe, measure, write, verify. Every claim cites a measured value and a timestamp. This is the evidence-backed foundation and what the demo shows. It already delivers the differentiator.
+
+**Investigator mode** (the adaptive layer, opt-in while the benchmark runs): the model chooses which tools and time windows to inspect, may ignore ball tracking if irrelevant, and may dig into wrist or racket mechanics because the evidence led there. Every claim still requires cited evidence. Whether it finds more real issues than Standard is the hypothesis; the benchmark measures it.
 
 The supporting advantage is **multimodal in and out**: it watches video, reads its own measurements, writes and speaks the coaching, and shows annotated video/images. Multimodal is how the coaching reaches the user; evidence-backed adaptive coaching is the differentiator.
 

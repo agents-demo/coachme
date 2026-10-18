@@ -10,7 +10,7 @@ A good table tennis coach charges $60–120 per hour.
 Most recreational players practice 4–5 times a week — largely alone, with zero expert feedback.
 They repeat the same mistakes for years without ever knowing it.
 
-This is not a niche problem. There are 300 million recreational racket sport players worldwide (table tennis, tennis, badminton, padel, squash) who train regularly but have no consistent access to coaching.
+This is not a niche problem. Table tennis alone has approximately 300 million recreational players (ITTF estimate); across table tennis, tennis, badminton, padel and squash, the combined participant base exceeds 500 million. Most train regularly with little or no expert feedback between sessions.
 
 ---
 
