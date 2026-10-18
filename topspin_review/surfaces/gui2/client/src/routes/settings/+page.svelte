@@ -51,7 +51,7 @@
   let configError = $state("");
   let statusError = $state("");
   let saveState = $state("");
-  let uiSettings = $state({ show_demo: true });
+  let uiSettings = $state({ show_demo: true, investigator_enabled: false });
   let uiSaveState = $state("");
   let profile = $state({
     sport: "table tennis",
@@ -99,6 +99,17 @@
     uiSaveState = "Saving...";
     try {
       await saveSettings({ show_demo: value });
+      uiSaveState = "Saved";
+    } catch {
+      uiSaveState = "Save failed";
+    }
+  }
+
+  async function setInvestigatorEnabled(value) {
+    uiSettings = { ...uiSettings, investigator_enabled: value };
+    uiSaveState = "Saving...";
+    try {
+      await saveSettings({ investigator_enabled: value });
       uiSaveState = "Saved";
     } catch {
       uiSaveState = "Save failed";
@@ -267,6 +278,54 @@
     {:else}
       <p class="mt-3 text-sm text-muted">{tr("Loading…")}</p>
     {/if}
+  </section>
+{/if}
+
+{#if tab === "analysis"}
+  <section class="card mt-4 p-5">
+    <div class="flex items-baseline justify-between gap-3">
+      <h2 class="font-display text-lg font-bold">{tr("Investigator mode")}</h2>
+      <span class="rounded-full border border-warn/50 bg-warn/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-warn">
+        {tr("Experimental")}
+      </span>
+    </div>
+    <p class="mt-1 text-xs text-muted">
+      {tr("The model chooses what to examine instead of following a fixed pipeline. Every issue it reports cites measured evidence — making findings more traceable but the run slower.")}
+    </p>
+    <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-muted">
+      <div class="rounded-xl border border-line bg-surface px-3 py-2.5">
+        <p class="font-semibold text-app">{tr("Standard")}</p>
+        <p class="mt-1">{tr("~30 – 60 s · lower cost")}</p>
+        <p class="mt-0.5">{tr("Fixed analysis path")}</p>
+      </div>
+      <div class="rounded-xl border border-line bg-surface px-3 py-2.5">
+        <p class="font-semibold text-app">{tr("Investigator")}</p>
+        <p class="mt-1">{tr("~60 – 120 s · higher cost")}</p>
+        <p class="mt-0.5">{tr("Cites evidence per finding")}</p>
+      </div>
+    </div>
+    {#if uiSaveState}
+      <span class="mt-2 block text-xs {uiSaveState === 'Save failed' ? 'text-bad' : 'text-muted'}">{tr(uiSaveState)}</span>
+    {/if}
+    <div class="mt-4 flex items-center justify-between gap-4 rounded-xl border-2 border-line px-4 py-3.5">
+      <div class="min-w-0">
+        <p class="text-sm font-semibold">{tr("Enable Investigator mode for new analyses")}</p>
+        <p class="mt-0.5 text-xs text-muted">
+          {tr("When on, analyses use the investigator strategy. Results may vary between runs on the same clip.")}
+        </p>
+      </div>
+      <div class="flex shrink-0 gap-1 rounded-full border-2 border-line p-1">
+        {#each [true, false] as value}
+          <button
+            onclick={() => setInvestigatorEnabled(value)}
+            aria-pressed={uiSettings.investigator_enabled === value}
+            class="rounded-full px-3.5 py-1.5 text-xs font-semibold transition {uiSettings.investigator_enabled === value
+              ? 'bg-accent text-white'
+              : 'text-muted hover:text-app'}"
+          >{tr(value ? "On" : "Off")}</button>
+        {/each}
+      </div>
+    </div>
   </section>
 {/if}
 

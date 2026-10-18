@@ -21,8 +21,13 @@ def build_agent(
     workspace: str | None = None,
     max_iterations: int = 4,
     system_prompt: str | None = None,
+    recorder: Any = None,
 ) -> Any:
-    """Build the vision DeepAgent (reads rendered images via ``read_file``)."""
+    """Build the vision DeepAgent (reads rendered images via ``read_file``).
+
+    Pass ``recorder`` to share the run's telemetry trace so that vision token
+    costs appear in the same usage summary as the orchestrator agent.
+    """
     setup()
     return build(
         VisionParams(
@@ -30,5 +35,6 @@ def build_agent(
             workspace=workspace or str(runtime.ARTIFACTS_DIR),
             media_dir=media_dir,
             max_iterations=max_iterations,
+            recorder=recorder,
         )
     )

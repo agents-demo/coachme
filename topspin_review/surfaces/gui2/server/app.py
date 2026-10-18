@@ -147,6 +147,7 @@ def put_profile(payload: ProfilePayload) -> dict:
 
 class UiSettingsPayload(BaseModel):
     show_demo: bool | None = None
+    investigator_enabled: bool | None = None
 
 
 @app.get("/settings")

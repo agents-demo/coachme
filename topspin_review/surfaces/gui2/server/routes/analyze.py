@@ -43,5 +43,6 @@ def analyze_async(request: AnalyzeRequest) -> dict:
         region_box=service.parse_region_box(request.region_box),
         agentic=request.agentic,
         language=request.language,
+        mode=request.mode,
     )
     return {"job_id": job_id, "status_url": f"/jobs/{job_id}"}

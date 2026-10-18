@@ -10,3 +10,6 @@ class AnalyzeRequest(BaseModel):
     region_box: list[float] | None = None
     agentic: bool = False
     language: str = "en"
+    mode: str | None = None
+    """Explicit strategy name: ``deterministic``, ``agentic``, or ``investigator``.
+    When set it takes precedence over the ``agentic`` flag."""

@@ -20,13 +20,18 @@ from topspin_review.core.video import imaging, metrics
 from topspin_review.integrations import pose
 
 
-def build_tools(ctx: InvestigationContext) -> list:
-    """Build the six MVP tools bound to one run context."""
+def build_tools(ctx: InvestigationContext, recorder: Any = None) -> list:
+    """Build the six MVP tools bound to one run context.
+
+    Pass ``recorder`` (the run's telemetry recorder) so that vision inspector
+    token costs are merged into the same usage trace as the orchestrator.
+    """
     inspector = build_agent(
         media_dir=str(ctx.media_dir),
         workspace=str(ctx.workspace_dir),
         max_iterations=3,
         system_prompt=INSPECT_SYSTEM,
+        recorder=recorder,
     ).agent
 
     async def get_overview() -> str:

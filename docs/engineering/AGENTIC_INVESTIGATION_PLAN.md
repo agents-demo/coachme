@@ -2296,5 +2296,72 @@ These are experiments, not unresolved design decisions.
 - It is not a guarantee that the agent will find more than the pipeline.
 - It is not a live streaming coach; that is a separate architecture.
 - It is not a license to invent metrics or to claim full coverage.
-- It is not “agentic” as a label; it is a measurable change in who chooses the
+- It is not "agentic" as a label; it is a measurable change in who chooses the
   investigation path.
+
+---
+
+## Appendix C — Blocking items before Phase 2
+
+These are implementation gaps that must be closed before any user-facing release.
+They were identified in the architectural critique of the prototype (2026-10-18).
+
+**Status as of 2026-10-18 — fixed in this commit:**
+
+| # | Item | File(s) changed | Status |
+|---|---|---|---|
+| B1 | Token budget rail (`TokenBudgetRail.used`) was never written back to `Budget.tokens`. Every run reported `tokens: 0`. | `investigator.py` | ✅ Fixed: `ctx.budget.tokens = token_rail.used` after `run_agent()`. |
+| B2 | Vision inspector had its own recorder; costs were not merged into the run's usage summary. | `observe/build_agent.py`, `investigate/tools.py`, `investigator.py` | ✅ Fixed: `recorder=` passed through to the vision builder. |
+| B3 | `InvestigationContext` accepted a `cancel_event` but the job manager never created or passed one. A hung run could not be stopped from the UI. | `params.py`, `jobs.py`, `investigator.py` | ✅ Fixed: `Job.cancel_event` is a `threading.Event`; `JobManager.cancel()` calls `.set()`; the event is threaded into `Params` and then into `InvestigationContext`. |
+| B4 | No CLI or API route recognised `--mode investigator`. The strategy was registered but inaccessible. | `cli/main.py`, `cli/commands/analyze.py`, `routes/analyze.py`, `models.py`, `jobs.py` | ✅ Fixed: `--mode {deterministic,agentic,investigator}` added to CLI; `mode` field added to `AnalyzeRequest` and `Job`; `JobManager._run()` calls `get_strategy(job.mode)` when set. |
+| B5 | No test proved two concurrent `InvestigationContext` instances share no state. | `tests/unit/test_concurrent_investigator.py` | ✅ Fixed: serial and concurrent isolation tests added. |
+| B6 | Strategy resolver had no regression test; deterministic path could silently break. | `tests/unit/test_strategy_resolver.py` | ✅ Fixed: tests for all three strategy names, unknown name, and default-not-investigator invariant. |
+
+**Still open (before experimental release to users):**
+
+| # | Item | Reason not yet done |
+|---|---|---|
+| B7 | Atomic rename / per-stem lock on final report write. Two simultaneous investigator jobs on the same video stem can clobber the final report. | Race is low-risk until concurrent UI submission exists; defer to hardening. |
+| B8 | Permission-level restriction on the vision inspector (currently prompt-only; `bash`/`list_files` not denied at the permission layer). | Requires openjiuwen permission API; deferred to Phase 3 hardening. |
+| B9 | `run_agent()` timeout / force-finish is not caught in `_run()`; on budget exhaustion the exception propagates to the base `Strategy.analyze()` fallback rather than triggering `_save_partial()`. | Requires wrapping `run_agent()` in a try/except that calls `_save_partial(reason="budget_exhausted")`. |
+| B10 | Budget defaults (24 calls, 360 s, 80 k tokens, 160 frames) are from a single prototype run. Need calibration on ≥5 real clips before experimental release. | Depends on evaluation fixtures (task 16 in backlog). |
+
+---
+
+## Appendix D — Graduation criteria
+
+Investigator mode is hidden behind `INVESTIGATOR_ENABLED=true` and the
+`investigator_enabled` UI toggle. It graduates from **experimental** to
+**general availability** when ALL of the following hold:
+
+| Gate | Threshold | Rationale |
+|---|---|---|
+| Issue precision | ≥ deterministic − 2 percentage points on the evaluation set | Users trust investigator because it cites evidence; it must not find fewer real problems |
+| p95 latency | ≤ 60 s on clips ≤ 30 s, measured on the production server | A 90-second run after the UI promises "slower" is an acceptable trade; beyond 60 s for short clips is not |
+| Evidence integrity | 100% of issues in investigator reports cite valid, non-overview evidence IDs | Already enforced by validation; must remain 100% |
+| Partial report rate | ≤ 10% of runs end in budget exhaustion (partial report) | If the budget is tuned correctly, most clips should reach `save_report` with full coverage |
+| Coach validation | ≥ 50 investigator reports reviewed and rated by at least 2 coaches | Precision/recall gates are necessary but not sufficient; coaches must confirm the findings are actionable |
+| No regression | All existing deterministic tests pass; `test_strategy_resolver.py` passes | Investigator additions must not touch the deterministic path |
+
+Until all gates are met, the mode remains behind the experimental flag and the
+UI warning stays visible. Do not remove the warning to make the mode look more
+finished.
+
+---
+
+## Appendix E — Explicitly deferred items
+
+The following were requested or discussed but deliberately moved out of scope.
+Each has a reason. Revisit only after the graduation criteria above are met.
+
+| Item | Deferred to | Reason |
+|---|---|---|
+| Investigation steering ("look more at footwork") | Phase 4 / live session | Requires mid-analysis interactive input; fundamentally different product architecture |
+| `compare_windows` tool (cross-session evidence) | Phase 2+ | Requires session store integration; significant scope |
+| Cost/latency estimate per run before it starts | Phase 2 UI | Backend token usage is not predictable before the run; show rough static ranges in UI settings only (done) |
+| Per-run cost shown in the report | Phase 2 | Token accounting now works (B1 fixed); surface it in the UI report view |
+| Confidence derived from evidence count (not model-assigned) | Phase 2 | Requires evidence weighting logic; current model-assigned confidence is acceptable for MVP |
+| Ball tracking tool | Phase 2 | Not ready; no reliable ball detector in the current toolbox |
+| Coach knowledge base as a tool | Phase 3 | Requires a validated KB; does not exist yet |
+| Permission-level inspector restriction | Phase 3 hardening | Requires openjiuwen permission API |
+| Automatic mode selection (AI chooses standard vs investigator) | Post-GA only | Must not happen before benchmark evidence proves investigator is better |

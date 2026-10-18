@@ -20,8 +20,10 @@ def _parse_box(text: str | None) -> tuple[float, float, float, float] | None:
     return (parts[0], parts[1], parts[2], parts[3])
 
 
-def run(path: str, box: str | None = None, agentic: bool = False) -> int:
-    strategy = resolve(agentic)
+def run(path: str, box: str | None = None, agentic: bool = False, mode: str | None = None) -> int:
+    from topspin_review.core import get_strategy
+
+    strategy = get_strategy(mode) if mode else resolve(agentic)
 
     try:
         outcome = run_async(strategy.analyze(Params(video_path=path, region_box=_parse_box(box))))

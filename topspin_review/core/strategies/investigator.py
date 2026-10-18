@@ -58,6 +58,7 @@ class InvestigatorStrategy(Strategy):
             profile=params.profile,
             language=params.language,
             progress=progress,
+            cancel_event=params.cancel_event,
             data_dir=runtime.DATA_DIR,
             artifacts_dir=runtime.ARTIFACTS_DIR,
         )
@@ -74,9 +75,10 @@ class InvestigatorStrategy(Strategy):
     async def _run(self, params: Params, progress: Progress | None) -> tuple[Any, dict]:
         ctx: InvestigationContext = params.investigation
         tick(progress, "investigator: building tools", 10)
-        tools = build_tools(ctx)
+        tools = build_tools(ctx, recorder=params.session.recorder)
         rails = [name for name in config.rails() if name != "token_budget"]
-        extra_rails = [TokenBudgetRail(config.investigator_max_tokens(), _count_tokens)]
+        token_rail = TokenBudgetRail(config.investigator_max_tokens(), _count_tokens)
+        extra_rails = [token_rail]
         built = build(
             TextParams(
                 system_prompt=INVESTIGATOR_SYSTEM,
@@ -101,6 +103,9 @@ class InvestigatorStrategy(Strategy):
                 language_instruction=language_instruction(params.language),
             ),
         )
+        # Sync token usage from the rail back into the budget so the snapshot
+        # and the per-run token limit are grounded in the actual count.
+        ctx.budget.tokens = token_rail.used
         tick(progress, "investigator: saving report", 92)
         return result, {"investigation": ctx.snapshot()}
 

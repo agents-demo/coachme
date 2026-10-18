@@ -291,12 +291,43 @@ class InvestigationContext:
     def untested(self) -> list[str]:
         return self.ledger.untested()
 
+    def timeline(self) -> list[dict[str, Any]]:
+        """Human-readable ordered list of tool calls in this investigation.
+
+        Each entry shows *what* the agent examined, *when* in the clip, and
+        *how confident* the evidence was — without exposing raw JSON payloads.
+        Included in the report ``investigation`` block so the UI can render a
+        plain-language trace rather than raw evidence IDs.
+        """
+        return [
+            {
+                "step": i + 1,
+                "tool": record.tool,
+                "window": list(record.window) if record.window else None,
+                "summary": record.summary,
+                "confidence": record.confidence,
+                "seconds": record.seconds,
+            }
+            for i, record in enumerate(self.ledger.records())
+        ]
+
+    def skip_reasons(self) -> dict[str, str]:
+        """For each untested dimension, a brief reason string.
+
+        Currently always ``"not examined"`` (the agent chose not to call the
+        tool). Future: distinguish ``"tool_error"`` once per-dimension error
+        tracking is added to the ledger.
+        """
+        return {name: "not examined" for name in self.untested()}
+
     def snapshot(self) -> dict[str, Any]:
         return {
             "run_id": self.run_id,
             "budget": self.budget.snapshot(),
             "coverage": self.coverage(),
             "untested": self.untested(),
+            "skip_reasons": self.skip_reasons(),
+            "timeline": self.timeline(),
             "evidence": len(self.ledger.records()),
         }
 

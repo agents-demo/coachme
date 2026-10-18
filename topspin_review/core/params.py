@@ -21,6 +21,8 @@ class Params:
     region_box: tuple[float, float, float, float] | None = None
     progress: Progress | None = None
     language: str = "en"
+    cancel_event: Any = None
+    """Threading event set by the caller to request cancellation mid-run."""
 
     # populated during the run
     profile: dict = field(default_factory=dict)

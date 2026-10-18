@@ -42,7 +42,13 @@ def main(argv: list[str] | None = None) -> int:
     p_analyze.add_argument(
         "--agentic",
         action="store_true",
-        help="let the model drive analysis by inspecting windows itself (slower)",
+        help="let the model drive analysis by inspecting windows itself (slower; alias for --mode agentic)",
+    )
+    p_analyze.add_argument(
+        "--mode",
+        default=None,
+        choices=["deterministic", "agentic", "investigator"],
+        help="analysis strategy; overrides --agentic when set (investigator is experimental)",
     )
     sub.add_parser("history", help="show recent reports")
     p_export = sub.add_parser("export", help="export the latest (or a specific) report")
@@ -57,7 +63,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "profile":
         return profile.run()
     if args.command == "analyze":
-        return analyze.run(args.path, getattr(args, "box", None), getattr(args, "agentic", False))
+        return analyze.run(
+            args.path,
+            getattr(args, "box", None),
+            getattr(args, "agentic", False),
+            getattr(args, "mode", None),
+        )
     if args.command == "history":
         return history.run()
     if args.command == "export":

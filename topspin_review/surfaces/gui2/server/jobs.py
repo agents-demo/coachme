@@ -27,10 +27,15 @@ class Job:
     region_box: tuple[float, float, float, float] | None
     agentic: bool
     language: str = "en"
+    mode: str | None = None
+    """Explicit strategy name (``deterministic``, ``agentic``, ``investigator``).
+    When set it takes precedence over the ``agentic`` flag."""
     status: str = "queued"  # queued | running | done | failed | cancelled
     error: str = ""
     stem: str = ""
     started: float = field(default_factory=time.time)
+    cancel_event: threading.Event = field(default_factory=threading.Event)
+    """Set this event to request cooperative cancellation of the running analysis."""
 
     def snapshot(self, progress: Progress) -> dict[str, Any]:
         return {
@@ -38,6 +43,7 @@ class Job:
             "status": self.status,
             "video_path": self.video_path,
             "stem": self.stem,
+            "mode": self.mode,
             "error": self.error,
             "progress": progress.snapshot(),
         }
@@ -49,7 +55,14 @@ class JobManager:
         self._jobs: dict[str, Job] = {}
         self._progress: dict[str, Progress] = {}
 
-    def submit(self, video_path: str, region_box=None, agentic: bool = False, language: str = "en") -> str:
+    def submit(
+        self,
+        video_path: str,
+        region_box=None,
+        agentic: bool = False,
+        language: str = "en",
+        mode: str | None = None,
+    ) -> str:
         job_id = uuid.uuid4().hex[:12]
         job = Job(
             id=job_id,
@@ -57,6 +70,7 @@ class JobManager:
             region_box=region_box,
             agentic=agentic,
             language=language,
+            mode=mode,
         )
         prog = Progress()
         with self._lock:
@@ -68,7 +82,12 @@ class JobManager:
     def _run(self, job: Job, prog: Progress) -> None:
         job.status = "running"
         try:
-            strategy = resolve(job.agentic)
+            from topspin_review.core import get_strategy
+
+            if job.mode:
+                strategy = get_strategy(job.mode)
+            else:
+                strategy = resolve(job.agentic)
             run_async(
                 strategy.analyze(
                     Params(
@@ -76,6 +95,7 @@ class JobManager:
                         region_box=job.region_box,
                         progress=prog,
                         language=job.language,
+                        cancel_event=job.cancel_event,
                     )
                 )
             )
@@ -100,11 +120,12 @@ class JobManager:
             return [job.snapshot(self._progress[job.id]) for job in self._jobs.values()]
 
     def cancel(self, job_id: str) -> bool:
-        """Best-effort cancel: the running thread finishes, but the job is marked cancelled."""
+        """Signal cooperative cancellation and mark the job cancelled."""
         with self._lock:
             job = self._jobs.get(job_id)
         if job is None or job.status not in ("queued", "running"):
             return False
+        job.cancel_event.set()
         job.status = "cancelled"
         return True
 
@@ -113,7 +134,7 @@ class JobManager:
             job = self._jobs.get(job_id)
         if job is None:
             return None
-        return self.submit(job.video_path, job.region_box, job.agentic, job.language)
+        return self.submit(job.video_path, job.region_box, job.agentic, job.language, job.mode)
 
 
 _MANAGER = JobManager()
