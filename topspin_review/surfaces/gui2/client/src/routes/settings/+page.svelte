@@ -8,7 +8,6 @@
     { value: "api", label: "API" },
     { value: "profile", label: "Profile" },
     { value: "analysis", label: "Analysis" },
-    { value: "sessions", label: "Sessions" },
     { value: "style", label: "Appearance" },
   ];
 
@@ -322,39 +321,6 @@
   </section>
 {/if}
 
-{#if tab === "sessions"}
-  <section class="card mt-4 p-5">
-    <div class="flex items-baseline justify-between gap-3">
-      <h2 class="font-display text-lg font-bold">{tr("Sessions list")}</h2>
-      {#if uiSaveState}
-        <span class="text-xs {uiSaveState === 'Save failed' ? 'text-bad' : 'text-muted'}">{tr(uiSaveState)}</span>
-      {/if}
-    </div>
-    <p class="mt-1 text-xs text-muted">
-      {tr("The bundled demo session teaches the app on a fresh install. It always appears when you have no sessions of your own.")}
-    </p>
-    <div class="mt-4 flex items-center justify-between gap-4 rounded-xl border-2 border-line px-4 py-3.5">
-      <div class="min-w-0">
-        <p class="text-sm font-semibold">{tr("Show demo session with my sessions")}</p>
-        <p class="mt-0.5 text-xs text-muted">
-          {tr("When off, the demo is hidden as soon as you have at least one real session.")}
-        </p>
-      </div>
-      <div class="flex shrink-0 gap-1 rounded-full border-2 border-line p-1">
-        {#each [true, false] as value}
-          <button
-            onclick={() => setShowDemo(value)}
-            aria-pressed={uiSettings.show_demo === value}
-            class="rounded-full px-3.5 py-1.5 text-xs font-semibold transition {uiSettings.show_demo === value
-              ? 'bg-accent text-white'
-              : 'text-muted hover:text-app'}"
-          >{tr(value ? "On" : "Off")}</button>
-        {/each}
-      </div>
-    </div>
-  </section>
-{/if}
-
 {#if tab === "style"}
   <section class="card mt-4 p-5">
     <div class="flex items-baseline justify-between gap-3">
@@ -422,5 +388,36 @@
       {/each}
     </div>
     <p class="mt-3 text-xs text-muted">{tr("Dynamic color (Material You) is available in the Android app only.")}</p>
+  </section>
+
+  <section class="card mt-4 p-5">
+    <div class="flex items-baseline justify-between gap-3">
+      <h2 class="font-display text-lg font-bold">{tr("Sessions list")}</h2>
+      {#if uiSaveState}
+        <span class="text-xs {uiSaveState === 'Save failed' ? 'text-bad' : 'text-muted'}">{tr(uiSaveState)}</span>
+      {/if}
+    </div>
+    <p class="mt-1 text-xs text-muted">
+      {tr("The bundled demo session teaches the app on a fresh install. It always appears when you have no sessions of your own.")}
+    </p>
+    <div class="mt-4 flex items-center justify-between gap-4 rounded-xl border-2 border-line px-4 py-3.5">
+      <div class="min-w-0">
+        <p class="text-sm font-semibold">{tr("Show demo session with my sessions")}</p>
+        <p class="mt-0.5 text-xs text-muted">
+          {tr("When off, the demo is hidden as soon as you have at least one real session.")}
+        </p>
+      </div>
+      <div class="flex shrink-0 gap-1 rounded-full border-2 border-line p-1">
+        {#each [true, false] as value}
+          <button
+            onclick={() => setShowDemo(value)}
+            aria-pressed={uiSettings.show_demo === value}
+            class="rounded-full px-3.5 py-1.5 text-xs font-semibold transition {uiSettings.show_demo === value
+              ? 'bg-accent text-white'
+              : 'text-muted hover:text-app'}"
+          >{tr(value ? "On" : "Off")}</button>
+        {/each}
+      </div>
+    </div>
   </section>
 {/if}
