@@ -8,15 +8,27 @@
 
 ## Goal
 
-Estimate spin type and rough amount if it can be done honestly from a single
-camera.
+Estimate spin type and rough amount from a single camera — only if it can be
+done honestly.
+
+## Where it lives
+
+`core/video/` — ball trajectory cues (curve, deceleration); possibly a small
+dedicated model trained on labelled spin data.
 
 ## Acceptance
 
-- Only shipped if reliable on a labelled test set.
-- If not reliable, this item is permanently descoped; the app notes it as a
-  stated limitation rather than shipping a guess.
+**This item ships only if reliable on a labelled test set.**
+
+If not reliable: permanently descoped. The app notes spin estimation as a
+stated limitation rather than shipping a guess. Single-camera spin is
+unreliable by physics — do not ship a guess.
+
+## Risks
+
+Single-camera spin estimation is fundamentally limited — the ball rotation is
+not directly visible at normal framerates. This is likely a non-goal. A
+feasibility assessment should be done before any implementation work.
 
 ---
-*Full spec to be written only if the feasibility assessment is positive.*
-*See [00_priorities.md](00_priorities.md) §7 item C9.*
+*See [00_priorities.md](00_priorities.md) §7 item C9 for sequencing context.*

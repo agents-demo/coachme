@@ -1,21 +1,33 @@
 # Multi-Player / Court-Role Attribution
 
-**Status:** not started — stub
+**Status:** not started
 **Phase:** C4 — Analysis depth
 **Effort:** L
-**Depends on:** person detection (I1)
+**Depends on:** person detection (I1 / 17_person-segmentation.md)
 **Competitor ref:** Hudl/Veo, SwingVision
 
 ## Goal
 
-Detect and separate multiple people (near/far player); attribute metrics per
-player; address the selected player in the report.
+Detect and separate multiple people in the frame (near player / far player);
+attribute metrics per player; address only the selected player in the coaching
+report.
+
+## Where it lives
+
+- `core/video/` — player tracking + role attribution (near/far, left/right).
+- Report gains `players[]` with per-player metrics.
+- UI: player selector before or after analysis.
 
 ## Acceptance
 
-- Two players tracked with metrics per player.
-- Report addresses only the selected player.
-- Handles occlusion and player crossing gracefully.
+- Two players tracked; metrics correctly attributed per player.
+- Report addresses the selected player only.
+- Occlusion and player crossings handled without crashing.
+
+## Risks
+
+- Occlusion: players crossing in front of each other is the hard case.
+- CPU cost of tracking two players simultaneously on device.
 
 ---
-*Full spec to be written. See [00_priorities.md](00_priorities.md) §7 item C4.*
+*See [00_priorities.md](00_priorities.md) §7 item C4 for sequencing context.*
