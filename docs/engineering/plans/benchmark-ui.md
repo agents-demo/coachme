@@ -95,7 +95,7 @@ run is always visible in the header.
 Content:
 
 - table of runs: `run_id`, created time, environment, modes, clip progress,
-  gate result, status, duration;
+  gate result, eligibility badge, status, duration;
 - filters: status, environment, pass/fail, date;
 - empty state with the benchmark data-root path and a "New run" action;
 - "New run" disabled with a reason when the manifest is missing or invalid.
@@ -135,15 +135,19 @@ If a run is already active, show the active run and refuse with a clear message.
 
 Content:
 
-- status banner: queued, running, scoring, complete, failed, cancelled;
+- status banner: queued, running, complete, failed, cancelled, plus a separate
+  score status (`missing`, `scoring`, `current`, `stale`, `failed`);
+- eligibility banner: “Pilot / incomplete” or “Release eligible” with the exact
+  `blocked_reasons`;
 - progress: clips complete / total, current clip and mode;
 - gate table from `score.json`, with the metric value, threshold and result;
+  blocked or missing gates render as `blocked`, not as zero or pass;
 - metric cards: precision, recall, evidence integrity, coverage honesty,
   hallucination flags, cost, latency, path diversity, partial and failure rates;
 - per-clip table: clip ID, source availability, Standard status, Investigator
   status, score status, failure reason;
 - links to clip review, labels, rating and adjudication;
-- export menu: `score.json`, `report.md`, `ratings.csv`, labels, run archive.
+- export menu: `score.json`, `report.md`, `rating_sheet.csv`, labels, run archive.
 
 Actions:
 
@@ -184,6 +188,10 @@ Layout: clip list on the left; video and label form on the right. The label
 endpoints return clip metadata and labels only; they never return report text or
 evidence. Report review is a separate route so a labeler does not accidentally
 see the candidate output.
+
+Labels are dataset-level and keyed by `clip_id`, shared across runs. The
+run-scoped route supplies context only. The label ETag is global for
+`labels.json`, not per run.
 
 Form fields per finding:
 
@@ -278,8 +286,11 @@ If a rater is missing, the clip is not adjudicable; show the missing rater.
 5. `POST /api/runs` returns `202` and a `run_id`.
 6. UI opens the dashboard and subscribes to `GET /api/runs/{run_id}/events`.
 7. Server spawns `topspin-benchmark run` with an argument list, no shell.
-8. On completion the server runs/invokes scoring and updates `score.json`.
-9. Dashboard switches to complete, failed or cancelled.
+8. On completion the server updates `run.json`; scoring is **not** automatic.
+9. Dashboard switches to complete, failed or cancelled and shows `score_status`
+   as `missing` until the operator clicks “Recompute score”.
+10. “Recompute score” calls `POST /api/runs/{run_id}/score`; the dashboard polls
+    `score_status` until it is `current` or `failed`.
 
 ### Label a clip
 
@@ -353,7 +364,7 @@ Rules:
 - `GET /adjudication` returns mapping only after all required ratings submit.
 - Media paths are resolved from the clip ID, never from a client path.
 - Downloads set `Content-Disposition` and do not expose absolute paths.
-- The export whitelist is `score.json`, `report.md`, `ratings.csv`, `labels.json`,
+- The export whitelist is `score.json`, `report.md`, `rating_sheet.csv`, `labels.json`,
   `runner.log` and `run.zip`; no arbitrary file names.
 - `POST /runs/import` and `DELETE /runs` are restricted to the benchmark data root
   and require an explicit confirmation value.
@@ -361,6 +372,10 @@ Rules:
   it contains no mapping and no mode names.
 - Reopening a submitted clip requires a reason, appends to
   `rating_events.jsonl`, and is rejected after adjudication is recorded.
+- `POST /runs/{run_id}/score` is accepted only when analysis status is
+  `complete`; runs with partial clip reports may be scored for diagnosis but
+  remain ineligible for release. `running`, `failed` and `cancelled` runs return
+  `409`.
 - Rating import accepts only the documented CSV columns and the run's clip IDs;
   unknown columns are rejected, not ignored.
 - SSE events are newline-delimited `event:`/`data:` frames; polling is the
@@ -383,8 +398,13 @@ Rules:
   "clips_total": 8,
   "clips_complete": 8,
   "clips_failed": 0,
-  "gates_pass": false,
+  "labels_complete": true,
+  "set_complete": true,
+  "score_status": "current",
   "score_updated_at": "2026-10-18T14:31:12Z",
+  "gates_pass": false,
+  "release_eligible": false,
+  "blocked_reasons": ["gate_failed:precision"],
   "warning": null
 }
 ```
@@ -394,11 +414,14 @@ Rules:
 ```json
 {
   "run_id": "20261018-142501-a1b2",
-  "label": "pilot-3-clips",
+  "label": "release-2026-10",
   "status": "complete",
-  "environment": "local",
+  "score_status": "current",
+  "environment": "production",
   "modes": ["standard", "investigator"],
+  "required_clips": 8,
   "required_raters": 2,
+  "raters_submitted": 2,
   "config_hash": "...",
   "created_at": "2026-10-18T14:25:01Z",
   "data_root": "benchmark",
@@ -406,15 +429,21 @@ Rules:
   "clips_total": 8,
   "clips_complete": 8,
   "clips_failed": 0,
+  "labels_complete": true,
+  "set_complete": true,
   "score_available": true,
+  "release_eligible": false,
+  "blocked_reasons": ["gate_failed:precision"],
   "log_url": "/api/runs/20261018-142501-a1b2/export/runner.log",
   "warning": null
 }
 ```
 
-`required_raters` defaults to 2 and is stored in `run.json`; adjudication and
-mapping reveal use it. `run_dir` is display-only and is never accepted as an API
-path.
+`required_clips` defaults to 8 and `required_raters` to 2; both are stored in
+`run.json`. `score_status` is `missing`, `scoring`, `current`, `stale` or `failed`.
+`release_eligible` is true only when the set, labels, ratings and score are
+complete and every gate passes. Adjudication and mapping reveal use
+`required_raters`. `run_dir` is display-only and is never accepted as an API path.
 
 ### ClipSummary
 
@@ -480,6 +509,27 @@ no `mode`, `evidence`, `investigation`, `evidence_ids`, `trace_path` or file nam
 }
 ```
 
+### Rating CSV import
+
+The rater packet template and `ratings/import` use exactly this header:
+
+```text
+clip_id,rater,A_specific,A_supported,A_complete,A_honest,A_use,B_specific,B_supported,B_complete,B_honest,B_use,preferred,rationale,notes
+```
+
+Rules:
+
+- one row per clip; duplicate or unknown `clip_id` rejects the import;
+- `rater` must match the `rater` form field;
+- all scores are integers `1-5`; `A_use` and `B_use` are `yes` or `no`;
+- `preferred` is `A`, `B` or `tie`;
+- `rationale` is required when `preferred` is not `tie`;
+- unknown or missing columns reject the whole import;
+- `adjudicated_preference` is export-only and is not accepted on rater import.
+
+The exported combined `rating_sheet.csv` adds `adjudicated_preference` after
+`preferred`.
+
 ### Label and scoring schemas
 
 Labels follow the benchmark plan §13. Scoring, matching, gates and zero-denominator
@@ -507,6 +557,28 @@ topspin_review/benchmark/
     client/
       package.json
       src/
+        routes/
+          +layout.svelte
+          +page.svelte                  # runs
+          runs/[run_id]/+page.svelte       # dashboard
+          runs/[run_id]/clips/[clip_id]/+page.svelte
+          runs/[run_id]/labels/[clip_id]/+page.svelte
+          runs/[run_id]/rate/[clip_id]/+page.svelte
+          runs/[run_id]/adjudicate/[clip_id]/+page.svelte
+        lib/
+          api.ts
+          types.ts
+          stores.ts
+          components/
+            RunTable.svelte
+            EligibilityBanner.svelte
+            GateTable.svelte
+            ClipPlayer.svelte
+            ReportPanel.svelte
+            LabelForm.svelte
+            RatingForm.svelte
+            AdjudicationPanel.svelte
+      e2e/benchmark.spec.ts
       build/             # bundled static assets for the package
 ```
 
@@ -514,11 +586,14 @@ Data:
 
 ```text
 benchmark/               # default TOPSPIN_BENCHMARK_DATA
-  README.md
-  manifest.json
-  labels.json
-  clips/
-  runs/
+  README.md              # tracked
+  manifest.example.json  # tracked, schema only
+  labels.example.json    # tracked, schema only
+  .gitignore             # ignores real data
+  manifest.json          # local, ignored
+  labels.json            # local, ignored
+  clips/                 # local, ignored
+  runs/                  # local, ignored
     <run_id>/
       run.json
       runner.log
@@ -532,6 +607,18 @@ benchmark/               # default TOPSPIN_BENCHMARK_DATA
       report.md
       ui_job.json
 ```
+
+Inner `.gitignore`:
+
+```gitignore
+manifest.json
+labels.json
+clips/
+runs/
+```
+
+Real manifests, labels, clips, ratings and runs must never be committed. Use
+`TOPSPIN_BENCHMARK_DATA` for a data root outside the repository.
 
 Commands:
 
@@ -549,6 +636,7 @@ Packaging:
 - reuse the `api` extra (`fastapi`, `uvicorn`); do not add a second web framework;
 - bundle the built SvelteKit client as package data, using the same pattern as
   `surfaces/gui2`;
+- add `@playwright/test` as a client dev dependency and `npm run test:e2e`;
 - do not add new Python dependencies for the GUI;
 - the UI server binds to loopback by default and refuses non-loopback unless an
   explicit future `--allow-remote` implementation with auth exists.
@@ -562,21 +650,29 @@ fallback.
 Run statuses:
 
 ```text
-queued -> running -> scoring -> complete
+queued -> running -> complete
                     \-> failed
 queued/running -> cancelled
 ```
 
+Scoring has its own status: `missing -> scoring -> current`, with `stale` when
+reports, labels or ratings change, and `failed` when the scorer exits nonzero.
+`run` never sets `score_status` to `current` by itself.
+
 Rules:
 
 - the server creates `runs/<run_id>/` before spawning;
-- `run.json` is the source of truth for status;
+- `run.json` is the source of truth for analysis status and `score_status`;
 - the child process writes logs to `runner.log` and status to `run.json`;
 - the server polls `run.json` every 1 second and emits SSE progress;
 - a missing or stale `run.json` for more than 60 seconds marks the job as failed
   with a diagnostic, not as complete;
 - scoring runs only after all requested modes finish; partial runs are not scored
   as releases;
+- the scorer writes `score.json.tmp`, validates it, then atomically replaces
+  `score.json`; readers never see a partial score;
+- a failed rescore leaves the previous score in place and marks `score_status`
+  `stale` or `failed` with the error, never silently deletes it;
 - cancellation is idempotent;
 - resume uses the runner's `config_hash`, not a UI flag.
 
@@ -676,8 +772,19 @@ UI acceptance:
 6. rate a blind packet, refresh, verify draft/submitted state resumes;
 7. confirm A/B panels contain no mode names or evidence IDs in the DOM;
 8. after two raters, adjudicate and export;
-9. export `score.json`, `report.md`, `ratings.csv` and verify filenames/content;
+9. export `score.json`, `report.md`, `rating_sheet.csv` and verify filenames/content;
 10. keyboard-only pass through run, label and rating screens.
+
+Automated browser smoke test:
+
+- `ui/client/e2e/benchmark.spec.ts`, run with `npm run test:e2e` using
+  `@playwright/test`;
+- start the UI against a temp data root seeded with one fixture run, two clips,
+  labels, one submitted rater sheet and one empty rater sheet;
+- no model calls and no network access outside loopback;
+- cover: open run → eligibility banner → open clip → label save → rate blind
+  packet → verify no mode/evidence text in the DOM → adjudicate → export;
+- assert a second browser reload resumes the same state.
 
 ## 17. Implementation sequence
 
@@ -693,7 +800,7 @@ UI acceptance:
 6. **Run control:** new-run validation, subprocess launch, SSE, cancel, rescore,
    import.
 7. **Export and hardening:** archives, accessibility, error states, privacy
-   checks, performance and tests.
+   checks, performance, pytest coverage and the Playwright smoke test.
 
 Each step must leave the CLI usable and the data files valid by themselves.
 
@@ -705,8 +812,11 @@ Each step must leave the CLI usable and the data files valid by themselves.
 - a coach can label all clips without touching JSON;
 - two raters can submit blind ratings without seeing the mapping;
 - an adjudicator can resolve disagreements;
-- gates and failures are visible, including missing and failed runs;
+- gates and failures are visible, including missing, blocked and failed runs;
+- eligibility and `blocked_reasons` are visible on every run;
 - all writes are atomic and conflict-safe;
 - no clip, label, rating or mapping is written outside the benchmark data root;
-- CLI and UI produce the same `score.json` and `report.md`;
+- real data is ignored by git and examples contain no PII;
+- CLI and UI produce the same `score.json`, `report.md` and `rating_sheet.csv`;
+- the Playwright smoke test passes without model calls;
 - the privacy and blindness warnings are visible and accurate.

@@ -144,7 +144,19 @@ only rater.
 
 ## 7. Release gates
 
-Investigator stays opt-in until all gates pass:
+Investigator stays opt-in until all gates pass.
+
+A gate can pass only when the evidence set is complete:
+
+- the released set has all 8 clips;
+- every clip has a valid coach label, including an explicit zero-finding reason
+  where applicable;
+- the required number of raters has submitted every rating;
+- `score.json` exists and matches the current run configuration.
+
+A pilot or incomplete run may report metrics, but its gates are `null` (blocked),
+`pass` is `false`, and `release_eligible` is `false`. Do not present a partial run
+as a release decision.
 
 | Gate | Threshold |
 |---|---|
@@ -160,8 +172,9 @@ Investigator stays opt-in until all gates pass:
 | Partial report rate | <= 10% of Investigator runs |
 | Failure rate | 0 crashes on the benchmark |
 
-If a gate fails, keep the mode opt-in, narrow it, or stop. Do not tune the
-benchmark to make the mode look finished.
+Gate values are `true`, `false` or `null`. `null` means blocked or not measurable;
+it is never treated as a pass. If a gate fails, keep the mode opt-in, narrow it,
+or stop. Do not tune the benchmark to make the mode look finished.
 
 ## 8. Reproducibility
 
@@ -199,7 +212,7 @@ Label acquisition is a 1–2 week dependency, not an Investigator coding task.
 | `topspin-benchmark` | `run`, `score`, `ui` and `import` commands |
 | `manifest.json` | Clips, metadata, consent, checksums |
 | `labels.json` | Coach ground truth |
-| `rating_sheet.csv` | Blind coach ratings |
+| `rating_sheet.csv` | Combined blind ratings export; each rater gets only a blank per-rater template |
 | `runs/<run_id>/` | Reports, traces, ratings, score, summary |
 | Benchmark UI | Local review, labelling, blind rating and adjudication surface |
 
@@ -227,11 +240,13 @@ topspin_review/benchmark/
     client/
 
 benchmark/                  # default TOPSPIN_BENCHMARK_DATA
-  README.md
-  manifest.json
-  labels.json
-  clips/                    # external fixture paths are allowed
-  runs/
+  README.md                 # tracked
+  manifest.example.json     # tracked, no real people or paths
+  labels.example.json       # tracked, schema only
+  manifest.json            # local, ignored
+  labels.json              # local, ignored
+  clips/                    # local, ignored; external fixture paths allowed
+  runs/                     # local, ignored
     <run_id>/
       run.json
       runner.log
@@ -242,9 +257,26 @@ benchmark/                  # default TOPSPIN_BENCHMARK_DATA
       traces/<mode>/<clip_id>.json
       score.json
       report.md
+  .gitignore
 
 tests/benchmark/            # unit and API tests only
 ```
+
+`TOPSPIN_BENCHMARK_DATA` overrides the default data root. Set it to a path
+outside the repository for real clips. Commit only `README.md`, example schemas
+and the inner `.gitignore`.
+
+The inner `.gitignore` must cover:
+
+```gitignore
+manifest.json
+labels.json
+clips/
+runs/
+```
+
+Never commit real manifests, labels, clips, ratings or run artifacts. The example
+files exist only to document the schema.
 
 ## 12. Manifest schema v1
 
@@ -388,11 +420,23 @@ Behavior:
 - write raw reports under `raw/<mode>/<clip_id>.json`;
 - write `traces/<mode>/<clip_id>.json` with evidence records, tool sequence, budget
   and timings; Standard trace may be report-only;
-- write `run.json` with versions, models, budgets, environment, `config_hash` and status;
+- write `run.json` with versions, models, budgets, environment, `config_hash`,
+  `required_clips`, `required_raters` and status;
 - fail the clip, not the whole run, on analysis errors; record `status: failed`;
 - `--fail-fast` is optional;
 - `--resume` skips clips with a valid JSON output and a matching `config_hash`
   covering manifest, labels, prompts, models, budgets and code revision.
+
+**Scoring is a separate step.** `run` performs analysis only; it does not compute
+gates. After runs, labels and ratings exist, compute the score explicitly:
+
+```text
+topspin-benchmark score --run benchmark/runs/<run_id>
+```
+
+The UI exposes this as `POST /api/runs/{run_id}/score` and shows “Score not
+generated” with a “Recompute score” action. A completed run does not imply a
+score, and a stale `score.json` is never treated as current.
 
 Trace schema (`traces/<mode>/<clip_id>.json`):
 
@@ -427,14 +471,18 @@ Exit codes:
 - Shuffle A/B per clip with a recorded seed; randomize presentation order and
   counterbalance across raters.
 - Store blind packets in a separate directory from `mapping.json` and raw reports.
-- Raters see only the blind packet and `rating_sheet.csv`; label and mapping access
-  is separate.
+- Raters see only the blind packet and their own blank rating-sheet template;
+  never the combined sheet, labels or mapping.
 
 Rating CSV columns:
 
 ```text
 clip_id,rater,A_specific,A_supported,A_complete,A_honest,A_use,B_specific,B_supported,B_complete,B_honest,B_use,preferred,adjudicated_preference,rationale,notes
 ```
+
+This is the combined export. A rater packet uses the same header without
+`adjudicated_preference`; adjudication is added only after both rater sheets are
+submitted.
 
 - `A_use` / `B_use`: `yes` or `no`.
 - `preferred`: `A`, `B` or `tie`.
@@ -502,9 +550,16 @@ Pooled values drive the gates.
 {
   "version": 1,
   "run_id": "...",
+  "required_clips": 8,
   "clips": 8,
-  "environment": "local",
+  "required_raters": 2,
+  "raters_submitted": 2,
+  "labels_complete": true,
+  "set_complete": true,
+  "environment": "production",
   "config_hash": "...",
+  "release_eligible": false,
+  "blocked_reasons": ["gate_failed:precision"],
   "standard": {"precision": 0.0, "recall": 0.0, "cost_median": 0, "latency_p95": 0, "hallucination_rate": 0.0},
   "investigator": {
     "precision": 0.0,
@@ -523,7 +578,7 @@ Pooled values drive the gates.
   "gates": {
     "evidence_integrity": true,
     "coverage_honesty": true,
-    "precision": true,
+    "precision": false,
     "recall": true,
     "cost": true,
     "latency": true,
@@ -537,7 +592,21 @@ Pooled values drive the gates.
 }
 ```
 
-`report.md` is the human summary: gates, per-clip results and failures.
+Field rules:
+
+- `set_complete` is true only when all `required_clips` (default 8) are present.
+- `labels_complete` is true only when every clip in the required set has a valid
+  label, including an explicit zero-finding reason where needed.
+- `release_eligible` is true only when the set, labels and ratings are complete,
+  a current `score.json` exists, and every release gate is `true`.
+- `blocked_reasons` uses stable IDs: `clips_incomplete`, `labels_incomplete`,
+  `ratings_incomplete`, `score_missing`, `latency_environment_not_production`,
+  and `gate_failed:<gate>`.
+- A gate value is `true`, `false` or `null`; `null` is blocked, never a pass.
+- `pass` has the same value as `release_eligible`; it is kept for compatibility.
+
+`report.md` is the human summary: gates, eligibility, blocked reasons, per-clip
+results and failures.
 
 Guided is diagnostic only and may be omitted from `score.json`. A local or staging
 run records `environment` and may compute latency, but the latency gate can pass
@@ -572,7 +641,7 @@ only for a production run.
 | 6 | Blind packet + mapping | mode/evidence IDs removed; mapping hidden |
 | 7 | Rating import | two raters; ties; per-clip votes |
 | 8 | Scoring | precision/recall/evidence/cost/latency/path/partial |
-| 9 | Gate report | complete `score.json` + `report.md` |
+| 9 | Gate report | complete `score.json` + `report.md` with eligibility and blocked reasons |
 | 10 | Tests | matching, ties, missing evidence, empty labels, failures |
 | 11 | Benchmark UI | run list/dashboard, clip review, labels, blind rating, adjudication and export; see [Benchmark Review UI](benchmark-ui.md) |
 
@@ -583,6 +652,7 @@ only for a production run.
 - the local UI can launch/cancel runs, review clips, label findings, collect
   blind ratings, adjudicate and export results;
 - two coaches rate blind packets;
-- scoring produces all gates and a human report;
-- UI and CLI produce the same score and report files;
+- scoring produces all gates, eligibility, blocked reasons and a human report;
+- UI and CLI produce the same score, report and rating-sheet files;
+- real data is ignored by git and no PII enters tracked examples;
 - results are reproducible from manifest, labels and run metadata.
