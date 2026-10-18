@@ -46,6 +46,7 @@ adjudicate disagreements and export reproducible results.
 | Writes | Atomic replace plus ETag/If-Match | Prevents silent overwrites |
 | Blind enforcement | Server omits mapping; separate rater packets for true isolation | UI hiding alone is not a security boundary |
 | Code location | `topspin_review/benchmark/ui/` | Benchmark is a real subsystem, not a test fixture |
+| Frame step | `video.currentTime += ±(1/fps)` via JS | HTML5 has no native frame-step; seek by one frame duration is the practical equivalent |
 | Data location | `benchmark/` or `TOPSPIN_BENCHMARK_DATA` | Large clips and runs stay out of the package |
 
 ## 4. Users and roles
@@ -166,7 +167,8 @@ Three regions:
 
 1. Clip list with status dots for Standard, Investigator and labels.
 2. Video player and timeline:
-   - play/pause, frame step, 0.25x/0.5x/1x speed;
+   - play/pause, frame step (±1 frame via `videoEl.currentTime += ±(1 / fps)` where `fps`
+     is taken from the manifest; default to 30fps if absent), 0.25x/0.5x/1x speed;
    - current timecode and duration;
    - evidence markers on the timeline;
    - `[` and `]` set the current time as an evidence timestamp in the label form;
@@ -284,7 +286,7 @@ If a rater is missing, the clip is not adjudicable; show the missing rater.
 3. Server validates manifest, clips, consent, labels and output root.
 4. Operator confirms modes and environment.
 5. `POST /api/runs` returns `202` and a `run_id`.
-6. UI opens the dashboard and subscribes to `GET /api/runs/{run_id}/events`.
+6. UI opens the dashboard and begins polling `GET /api/runs/{run_id}/progress` every 5 seconds.
 7. Server spawns `topspin-benchmark run` with an argument list, no shell.
 8. On completion the server updates `run.json`; scoring is **not** automatic.
 9. Dashboard switches to complete, failed or cancelled and shows `score_status`
@@ -336,7 +338,7 @@ All endpoints are under `/api`. JSON errors use:
 | DELETE | `/runs/{run_id}` | `confirm=run_id` | `{deleted}` |
 | POST | `/runs/{run_id}/cancel` | - | `{status}` |
 | POST | `/runs/{run_id}/score` | - | `202 {status}` |
-| GET | `/runs/{run_id}/events` | - | SSE progress events |
+| GET | `/runs/{run_id}/progress` | - | `{run_id, status, clips_complete, clips_total, current_clip, current_mode, updated_at}` |
 | GET | `/runs/{run_id}/clips` | - | `{clips: [ClipSummary]}` |
 | GET | `/runs/{run_id}/clips/{clip_id}` | - | `ClipDetail` |
 | GET | `/runs/{run_id}/blind/{clip_id}` | `rater` | `BlindPacket` |
@@ -378,11 +380,15 @@ Rules:
   `409`.
 - Rating import accepts only the documented CSV columns and the run's clip IDs;
   unknown columns are rejected, not ignored.
-- SSE events are newline-delimited `event:`/`data:` frames; polling is the
-  fallback.
-- Run creation uses a filesystem lock at `runs/.active.json` with PID, host and
-  heartbeat. The UI and CLI both respect it; a stale lock is recoverable after
-  10 minutes. A second live run returns `409`.
+- Run progress is polled by the client: `GET /api/runs/{run_id}/progress` every 5 seconds
+  while status is `running` or `queued`. The server reads `run.json` on each poll; it does not
+  maintain a streaming connection. SSE is a future upgrade path, not a v1 requirement.
+- Run creation uses a filesystem lock at `runs/.active.json` containing only the PID and
+  `run_id`. On run creation the server writes the file; on completion/cancel it deletes it.
+  A second live run returns `409`. A stale lock (PID no longer running) is detected by
+  checking whether the recorded PID is alive (`os.kill(pid, 0)` on POSIX); if the process
+  is gone, the lock is automatically cleared and a new run may start. No heartbeat or
+  host tracking is needed for a single-machine local tool.
 
 ## 9. Data contracts
 
@@ -527,6 +533,17 @@ Rules:
 - unknown or missing columns reject the whole import;
 - `adjudicated_preference` is export-only and is not accepted on rater import.
 
+**Import error handling:**
+- encoding: accept UTF-8 and UTF-8-BOM (Excel default); reject other encodings with a clear
+  error message naming the detected encoding;
+- a partial row (missing required columns) rejects the **entire import** — not just that row —
+  to prevent silent partial imports;
+- Excel-style `\r\n` line endings are normalised before parsing;
+- an import that would overwrite a submitted rating requires an explicit `force=true` parameter
+  and is rejected otherwise with a `409` and a message naming the affected clips;
+- the server returns a field-level validation summary for every invalid row before rejecting,
+  so the rater can fix the CSV without uploading blind.
+
 The exported combined `rating_sheet.csv` adds `adjudicated_preference` after
 `preferred`.
 
@@ -535,6 +552,13 @@ The exported combined `rating_sheet.csv` adds `adjudicated_preference` after
 Labels follow the benchmark plan §13. Scoring, matching, gates and zero-denominator
 rules follow benchmark plan §17-18. The UI does not implement its own scoring
 logic; it calls the CLI scorer.
+
+**`domain.progress.classify` coupling:** the report normalizer (benchmark plan §14) calls
+`domain.progress.classify()` to derive themes. The benchmark UI does not call this function
+directly; it displays the already-normalised themes stored in the run's `raw/` JSON files.
+Theme derivation happens in the runner/scorer process, not in the UI server. The UI must not
+import from `domain.progress`; it must treat `themes` as an opaque array of strings supplied
+by the scorer.
 
 ## 10. Runtime and packaging
 
@@ -659,12 +683,19 @@ Scoring has its own status: `missing -> scoring -> current`, with `stale` when
 reports, labels or ratings change, and `failed` when the scorer exits nonzero.
 `run` never sets `score_status` to `current` by itself.
 
+**Stale detection:** on each request to the run dashboard (and on each progress poll), the
+server compares the mtime of `score.json` against the mtime of every file that could
+invalidate it: `run.json`, `labels.json`, and all files under `ratings/`. If any of those
+files is newer than `score.json`, the server sets `score_status` to `stale` regardless of
+what `run.json` records. No filesystem watcher is used; the check is on-demand per request.
+
 Rules:
 
 - the server creates `runs/<run_id>/` before spawning;
 - `run.json` is the source of truth for analysis status and `score_status`;
 - the child process writes logs to `runner.log` and status to `run.json`;
-- the server polls `run.json` every 1 second and emits SSE progress;
+- the client polls `GET /api/runs/{run_id}/progress` every 5 seconds; the server reads
+  `run.json` on demand and returns the current status without maintaining a connection;
 - a missing or stale `run.json` for more than 60 seconds marks the job as failed
   with a diagnostic, not as complete;
 - scoring runs only after all requested modes finish; partial runs are not scored
@@ -675,6 +706,14 @@ Rules:
   `stale` or `failed` with the error, never silently deletes it;
 - cancellation is idempotent;
 - resume uses the runner's `config_hash`, not a UI flag.
+
+`.active.json` (at `runs/.active.json`) stores only:
+
+```json
+{"run_id": "...", "pid": 12345}
+```
+
+This is the concurrency lock. It is created before spawning and deleted on completion, cancellation or process exit. A stale lock (dead PID) is cleared automatically on the next run-creation attempt.
 
 `ui_job.json` stores:
 
@@ -727,7 +766,9 @@ logs.
 - All controls reachable by keyboard; visible focus rings.
 - Video controls have text labels and shortcuts; no drag-only interaction.
 - Status is not conveyed by colour alone; use text plus icon.
-- Contrast meets WCAG AA for text and controls.
+- Contrast meets WCAG AA for text and interactive controls in the primary workflows
+  (run list, clip review, label form, rating form). Background decorative elements and
+  non-interactive metadata labels are best-effort for v1.
 - Respect `prefers-reduced-motion`; no auto-playing video.
 - Desktop target 1280px; tablet 768px; below 768px show a read-only warning for
   labelling and rating.
@@ -787,6 +828,16 @@ Automated browser smoke test:
 - assert a second browser reload resumes the same state.
 
 ## 17. Implementation sequence
+
+### MVP (ship in under 2 weeks)
+
+Steps 1–3 constitute the MVP. After step 3, the benchmark can be run from the CLI, clips
+can be reviewed with video seeking, and labels can be entered without editing JSON. Steps
+4–7 add blind rating, adjudication and export — required for a release decision, but not
+for the first working benchmark run. Implement steps 1–3 first and validate the workflow
+before building steps 4–7.
+
+### Full spec (steps 1–7)
 
 1. **Foundation:** package skeleton, CLI entry point, data-root resolution,
    manifest validation, run reader, atomic JSON utility, API health/runs.

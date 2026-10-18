@@ -16,8 +16,10 @@ Start here. These files are ordered by how to use them, not alphabetically.
 ## The short version
 
 - **User value first:** a phone video becomes a coaching report with timestamped evidence, drills and progress.
-- **Differentiator:** evidence-backed adaptive coaching. The AI chooses what to examine, ignores irrelevant signals, and ties every finding to measured video evidence.
-- **Reliable default:** the deterministic Standard pipeline.
+- **Differentiator:** evidence-backed adaptive coaching — the pipeline measures before it writes, ties every finding to measured video evidence, and adapts the investigation to what is found.
+  - **Standard mode** (demo-ready): fixed pipeline; delivers the evidence-backed foundation today.
+  - **Investigator mode** (opt-in, benchmark in progress): adds adaptive investigation; the model directs its own examination rather than following a fixed script.
+  - Both modes require evidence. Standard is the credible baseline. Investigator is the adaptive layer under validation.
 - **Huawei win-win:** a useful app creates recurring inference/training demand; Ascend and openJiuwen/Ascend integration are the scale path. The app is backend-agnostic.
 
 ## Removed

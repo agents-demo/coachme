@@ -48,10 +48,11 @@ Topspin Review is positioned at the intersection of measurement, coaching and pr
 product turns a practice video into a structured coaching report with timestamped evidence, drills,
 progress comparison, bilingual web and Android experiences, and local-first processing.
 
-The intended differentiator is **evidence-backed adaptive coaching**: the coaching adapts to what
-the AI finds, and every finding cites measured evidence. The Investigator mode is how it works: the
-model chooses tools and windows, ignores irrelevant signals and digs into a specific mechanic. The
-reliable deterministic pipeline remains the default; Investigator is not yet proven. Table-tennis depth,
+The differentiator is **evidence-backed adaptive coaching**: every finding cites measured evidence
+and a timestamp, and the investigation adapts to what is found. Standard mode delivers the
+evidence-backed foundation today via a fixed pipeline — reliable, demo-ready. Investigator mode adds
+adaptive investigation (the model directs its own examination); it is not yet validated and the
+deterministic pipeline remains the default. Table-tennis depth,
 local-first processing and bilingual web/Android support the thesis. Multi-sport coverage is a
 strategic direction, not yet an advantage.
 

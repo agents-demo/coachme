@@ -126,7 +126,7 @@ Two points. First, the pipeline has a verification stage that drops any finding 
 
 **"Why table tennis? It seems niche."**
 
-Table tennis has 875 million registered players globally. It is the world's most-participated sport by player count after swimming. In China specifically it is a national sport with deep cultural significance — this is not a coincidence for a Huawei product. And the engine is sport-agnostic: the same pipeline with different coaching rubrics covers tennis, badminton, padel, squash. Table tennis is the starting point because the stroke mechanics are clearest to measure with a standard side camera. The market is not table tennis — the market is AI coaching for physical skills.
+Table tennis has approximately 300 million recreational players globally (ITTF estimate) — the largest single-sport recreational base in racket sports. In China specifically it is a national sport with deep cultural significance — this is not a coincidence for a Huawei product. Across all racket sports (tennis, badminton, padel, squash, pickleball) the combined participant base exceeds 500 million. And the engine is sport-agnostic: the same pipeline with different coaching rubrics covers tennis, badminton, padel, squash. Table tennis is the starting point because the stroke mechanics are clearest to measure with a standard side camera. The market is not table tennis — the market is AI coaching for physical skills.
 
 **"How is this defensible? A larger player could copy this in three months."**
 
@@ -166,7 +166,7 @@ Many people in the room may not know what agentic AI means. Do not assume they d
 
 > "A regular AI app takes your input and gives you one output. In Investigator mode, the model makes a chain of decisions itself: it chooses what to measure, what to look at next, what evidence is sufficient, and when to stop. The reliable Standard mode does not do that - it follows a fixed pipeline. Investigator is the mode where the model is actually in control."
 
-That is **evidence-backed adaptive coaching**. Do not describe the fixed pipeline as agentic. Do not go deeper unless they ask.
+That adaptive investigation is the "adaptive" layer of **evidence-backed adaptive coaching** — the product differentiator. Standard mode provides the evidence-backed foundation (fixed pipeline, measured findings). Investigator mode adds the adaptive investigation layer. Do not describe the fixed pipeline as agentic, and do not go deeper unless they ask.
 ---
 
 ## The competitive landscape — be ready but do not volunteer it
@@ -233,7 +233,9 @@ State this clearly and move on.
 
 The Investigator mode is where the model owns the investigation; it remains opt-in while the benchmark is completed. If a manager asks to see openJiuwen in action, the answer is:
 
-> "The app runs on openJiuwen today. Standard mode is the reliable fixed pipeline. Investigator is the next step: the model chooses tools and windows, while every finding must cite measured evidence. It stays opt-in until the benchmark confirms better outcomes."
+> "The pipeline is built on the openJiuwen agent SDK today — that is the orchestration and tool-calling layer. Standard mode is the reliable fixed pipeline running on that foundation. Investigator is the next step: the model chooses tools and windows, while every finding must cite measured evidence. It stays opt-in until the benchmark confirms better outcomes."
+
+> **Note on openJiuwen vs Ascend:** "Runs on openJiuwen" refers to the openJiuwen agent SDK used for orchestration and inference routing. **CANN and Ascend hardware** (310/310P inference, 910-class training) is Phase 3 — the deployment path for scale. Do not conflate the two: the SDK integration is today; the hardware acceleration is the Phase 3 ask.
 
 The sequencing is deliberate: working product first, platform scale second.
 ---
@@ -333,7 +335,7 @@ The conversation you do not want: "Interesting technology but unclear who pays f
 
 **Earn respect:**
 - Knowing exactly what the app cannot do yet, stated confidently - signals maturity
-- Specific numbers (not "many players" — "875 million globally, 300 million in China")
+- Specific numbers (not "many players" — "300 million table-tennis players globally, ITTF estimate; 500 million+ across all racket sports; an estimated 300 million in China alone for table tennis")
 - Clear communication about current quality versus roadmap
 - Having thought about what failure looks like and how you'd handle it
 - Having built the thing before asking for support
@@ -367,11 +369,13 @@ A public-cloud call can take 1-3 seconds. Between points, the total window is 10
 Say it as: "Ascend is the right platform for batch session analysis and model training. For live coaching, the inference has to move to the edge or the device. The same vision stack can be deployed across that continuum."
 ---
 
-## The coach is the customer, not the player
+## The coach is the growth multiplier — the player is the primary customer
 
-A player might use the app three times. A coach with 20 students needs it every week and has institutional budget — club, academy, or school — to pay for tools that systematically improve student outcomes.
+The product is B2C-first: the primary paying customer is the serious amateur player (and the parent of a junior player). That is the beachhead — direct subscriptions, direct retention, direct feedback loop.
 
-This is not a nuance. It is the primary revenue model. Individual player subscriptions are the long tail. The coach is the concentrated, reachable, motivated customer.
+The coach is the **growth multiplier**, not the primary revenue model. A player might use the app independently. A coach with 20 students creates a cluster of 20 active users, institutional budget, and systematic motivation for renewal. The coach tier ($40–80/month) has better unit economics than 20 individual Pro subscriptions, but it only becomes available after consumers are willing to pay on their own.
+
+Do not pitch coaches as "the customer" and players as "the long tail" to a Huawei audience — that framing will raise questions about consumer demand that you do not yet have data to answer. Pitch consumers first, coaches as the scale layer.
 
 Coaches have three things players do not:
 1. **Budget** — they already spend on software, video tools, and analysis aids

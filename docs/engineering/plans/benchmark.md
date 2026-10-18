@@ -74,9 +74,16 @@ it. It is not a benchmark clip and cannot support a release gate.
 | 7 | Stroke-type switch mid-clip | Adaptive investigation |
 | 8 | Still photo | Static posture path |
 
-At least one clip must be an **adversarial / zero-finding** case (for example a
-still with no correctable issue, or a clip where the honest answer is "nothing
-supported"). This protects against a mode that always invents findings.
+At least **two** clips must be **adversarial / zero-finding** cases (for example a
+still with no correctable issue, a clip where the honest answer is "nothing
+supported", or a clip with clearly poor quality where findings cannot be supported).
+One zero-finding clip is not enough to detect a mode that invents findings; two
+gives a small false-positive rate to track. Assign zero-finding slots to clips 7
+and 8, or make one of the existing slots a zero-finding case.
+
+A **false-positive rate on zero-finding clips** is reported separately: FP_zero = Investigator
+issues reported on zero-finding clips / total zero-finding clips. This is not a hard gate in v1
+but must be reported alongside precision and recall.
 
 Rules:
 
@@ -104,7 +111,10 @@ Rules:
 - mark which evidence type is required to support the finding;
 - write what a good report may legitimately leave unassessed;
 - do not read AI reports before labeling;
-- record the labeler and adjudication.
+- record the labeler and adjudication;
+- for slots 5 and 6 (tennis or badminton clips), the labeler must have coaching or playing
+  experience in the relevant sport. A table-tennis coach is not qualified to label tennis
+  mechanics; use a separate domain expert for those clips.
 
 The exact schema is §13.
 
@@ -125,22 +135,42 @@ A coach rates each report:
 | Which report is better? | A / B / tie |
 
 Two coaches per clip is the minimum. The builder of the system must not be the
-only rater.
+only rater. For transfer clips (slots 5, 6: tennis or badminton), at least one rater
+must have domain-specific expertise in that sport. A table-tennis coach rating
+tennis reports cannot assess mechanics accurately. Before computing the preference gate, verify that inter-rater agreement
+on preference (A vs B vs tie) is at least 60% across non-tie clips, or that Cohen's κ > 0.4.
+If agreement is below this threshold, add an adjudicator to resolve disagreements before
+the gate is computed.
 
 ## 6. Metrics
 
-- **Evidence integrity (Investigator only):** issues with a valid evidence ID,
-  cited non-overview window and timestamp / all Investigator issues.
+- **Evidence integrity (Investigator only):** issues with (a) a valid evidence ID,
+  (b) a cited non-overview window, (c) a timestamp, **and (d) a window that semantically
+  encompasses the described finding** — verified by manual spot-check of at least 20% of
+  matched Investigator findings. Purely structural validity (ID present, window non-empty)
+  is necessary but not sufficient; a finding that cites a valid window for the wrong moment
+  fails integrity.
 - **Finding precision / recall:** matched against coach labels using §17. For still clips, theme matching is used and the timestamp rule is waived.
 - **Coverage honesty:** false coverage flags and missing “not assessed” statements.
-- **Hallucination flags:** scan with `domain/evaluate.py`, then review. Do not count a
-  limitation or a correctly labelled measured value as a hallucination. Compare
-  Standard and Investigator on the same reviewed definition.
+- **Hallucination flags:** a **hallucination** is a specific factual claim (angle, timestamp,
+  observation about a body part, ball trajectory, or player behaviour) that is not supported
+  by any cited evidence record or by coach-labelled ground truth. Limitations, confidence
+  caveats, and correctly labelled measured values are **not** hallucinations. Scan with
+  `domain/evaluate.py`, then manually review every flagged item against the clip and evidence
+  records. Compare Standard and Investigator on the same reviewed definition and the same
+  reviewer.
 - **Cost:** median and p95 tokens, tool seconds and frame decodes.
 - **Latency:** median and p95 per clip, recorded with the environment name.
-- **Path diversity:** unique normalized Investigator tool sequences.
+- **Path diversity:** unique normalized Investigator tool sequences. Path diversity is a
+  proxy, not a quality gate by itself — three diverse but inappropriate sequences are not
+  better than one appropriate one. Pair path diversity with a 20% spot-check of
+  tool-appropriateness: did the tools called match what the cited evidence required?
 - **Partial report rate:** partial reports / Investigator runs.
 - **Failure rate:** crashed or invalid runs / all runs; an invalid run has no parsable report.
+- **FP rate on zero-finding clips:** Investigator issues reported on zero-finding clips /
+  total zero-finding clips (also computed for Standard). Not a hard gate in v1; reported
+  for diagnostic purposes. A mode that invents findings on zero-finding clips warrants
+  immediate investigation regardless of overall precision.
 
 ## 7. Release gates
 
@@ -164,17 +194,48 @@ as a release decision.
 | Precision | >= Standard - 5 percentage points |
 | Recall | >= Standard on labelled findings |
 | Median cost | <= 2.5x Standard |
-| p95 latency | <= 2x Standard in the same environment; release requires production |
+| p95 latency | <= 2x Standard in the same environment; release requires production (see note) |
 | Coverage honesty | >= 90% of Investigator reports |
 | Hallucination flags | No increase over Standard |
 | Coach preference | >= 60% of non-tie clip votes prefer Investigator |
+| Inter-rater agreement | >= 60% preference agreement, or Cohen's κ > 0.4, before preference gate runs |
 | Path diversity | >= 3 distinct tool sequences |
 | Partial report rate | <= 10% of Investigator runs |
 | Failure rate | 0 crashes on the benchmark |
 
+> **Statistical limits — coach preference gate:** With 8 clips and 2 raters there are at most
+> 16 preference votes. The 60% threshold requires only 10 votes. This is an early-stage
+> indicator, not a statistically powered study. Treat it as a directional signal: a clear
+> preference (≥ 75%) is meaningful; a marginal pass (60–65%) is not a strong endorsement.
+> If the benchmark is expanded to 16+ clips, re-evaluate the threshold.
+
+> **Gate rationale — precision vs recall:** Investigator is designed to surface issues Standard misses, so its recall must not drop below Standard's (no grace). The 5 percentage-point grace on precision accommodates the extra false positives that may come from a deeper investigation. If precision falls more than 5pp below Standard, the extra findings are noise, not signal.
+
+> **Latency gate — production definition:** "Production" means: (1) the same model provider,
+> model version and configuration used in the consumer-facing app; (2) run on a dedicated
+> machine or cloud instance, not a developer laptop or shared CI runner; (3) no debug logging
+> or profiling overhead active. A staging run may report latency for diagnosis, but the
+> latency gate can only pass for a run whose `run.json` records `environment: "production"`.
+> If production access is not yet available, the latency gate must remain `null` (blocked),
+> not estimated from staging.
+
 Gate values are `true`, `false` or `null`. `null` means blocked or not measurable;
 it is never treated as a pass. If a gate fails, keep the mode opt-in, narrow it,
 or stop. Do not tune the benchmark to make the mode look finished.
+
+## 7.1 Benchmark validity check (negative control)
+
+Before treating any benchmark result as a release decision, verify that the benchmark can
+detect a bad system. Run the benchmark once against a **known-bad baseline** — for example,
+Standard with its coaching prompt stripped (returning only a header and no findings, or only
+generic advice with no timestamps). A valid benchmark must fail at least three release gates
+on the known-bad run. If the known-bad run passes more than two gates, the benchmark has a
+validity problem (the gates are too loose or the clips are too easy) and cannot be trusted
+as a release signal.
+
+Record the known-bad baseline run in `run.json` with `label: "negative-control"`. It does
+not count toward release eligibility and is not included in preference scoring. It exists
+solely to verify benchmark sensitivity.
 
 ## 8. Reproducibility
 
@@ -188,6 +249,15 @@ For every run, store:
 - per-clip reports and traces;
 - blind mapping and ratings;
 - score output.
+
+### Stability check
+
+For a production release gate, run the same clip set twice within 48 hours under identical
+conditions (same model, budget settings and environment). Precision, recall and evidence
+integrity must not differ by more than ±5 percentage points between the two runs. If the
+variance exceeds this, the gate result is not reproducible and `release_eligible` must remain
+`false`. Alternatively, fix temperature = 0 in the model configuration to reduce run-to-run
+variance, and document this in `run.json`.
 
 ## 9. Ownership and sequence
 
@@ -324,6 +394,9 @@ Validation:
 - `media_type` is `video` or `still`; `split` is `benchmark` or `holdout`;
 - `duration_s > 0` for video; stills use `0`;
 - `sha256` is required for benchmark clips;
+- `consent.expires` is checked at run time; a run must not start if any clip's consent has
+  expired. The runner must validate expiry dates before creating the run, not only at manifest
+  import. Expired consent produces a hard validation error, not a warning;
 - adding clips does not require a schema change.
 
 ## 13. Labels schema v1
@@ -422,6 +495,8 @@ Behavior:
   and timings; Standard trace may be report-only;
 - write `run.json` with versions, models, budgets, environment, `config_hash`,
   `required_clips`, `required_raters` and status;
+- validate consent expiry for every clip before starting the run; a clip with expired consent
+  must be skipped with `status: consent_expired` and a clear log message, not silently analysed;
 - fail the clip, not the whole run, on analysis errors; record `status: failed`;
 - `--fail-fast` is optional;
 - `--resume` skips clips with a valid JSON output and a matching `config_hash`
@@ -571,7 +646,8 @@ Pooled values drive the gates.
     "latency_p95": 0,
     "path_diversity": 0,
     "partial_rate": 0.0,
-    "failure_rate": 0.0
+    "failure_rate": 0.0,
+    "fp_zero_clip_rate": 0.0
   },
   "coach": {"investigator": 0, "standard": 0, "ties": 0, "agreement": 0.0},
   "hallucination_rate": 0.0,

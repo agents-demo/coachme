@@ -26,20 +26,23 @@ The app is deliberately **backend-agnostic**. Its value is the coaching loop, no
 
 ## Why This Matters for Huawei / openJiuwen
 
-### 1. The real differentiator: evidence-backed adaptive coaching
+### 1. The differentiator: evidence-backed adaptive coaching
 
-The reliable product today runs a fixed baseline: observe, measure, focused vision, then write a
-coaching report with timestamped evidence. That pipeline is not the differentiator. It is the
-**reliable default**.
+The differentiator is **evidence-backed adaptive coaching**: the pipeline measures before it writes,
+ties every finding to measured evidence and a timestamp, and adapts the investigation to what is
+found. It is one differentiator, with two layers of implementation.
 
-The **Investigator** mode is how it works. The model directs the investigation: it chooses which tools and time windows to use, may ignore ball tracking if it is not
-relevant, may dig into wrist/racket mechanics because the evidence led there, and must cite evidence
-IDs returned by tools. It can stop when the evidence is sufficient.
+**Standard mode** (the reliable default, demo-ready): a fixed pipeline — observe, measure, focused
+vision, write, verify. Every finding cites a timestamp and a measured value; the pipeline drops any
+claim it cannot support. This is what the demo shows and what users can verify by checking the
+timestamps. It already separates the product from generic AI chatbots, which produce advice without
+measurements.
 
-This is evidence-backed adaptive coaching: the coaching adapts to what the AI finds, and every claim
-stays tied to measured video evidence. It is qualitatively different from a fixed pipeline and from
-a generic chatbot.
-It is opt-in today, with Standard remaining the default during the rollout.
+**Investigator mode** (the adaptive layer, opt-in while being benchmarked): the model directs its
+own investigation — choosing which tools and time windows to use, ignoring ball tracking if
+irrelevant, digging into wrist/racket mechanics when the evidence leads there. Every claim still
+requires a cited evidence ID. Whether it produces better outcomes than Standard is the hypothesis;
+the benchmark measures it.
 
 ### 2. Multi-modal throughout
 
@@ -81,6 +84,14 @@ The app does not need Ascend to be useful. The win-win is that a useful app, ado
 - Report has: summary, specific observations with timestamps, recommended drills, detected metrics (knee angle, elbow angle, footwork range, rotation values)
 - Web app (SvelteKit) + Android app both functional
 - Session history and progress tracking
+
+### Honest current state
+
+- **Zero paying users today.** The product is a working prototype, not a commercial launch.
+- **Benchmark not yet run.** Investigator mode is opt-in while the evaluation set is built; its quality advantage over Standard is the hypothesis, not yet a measured result.
+- **One sport validated.** Table tennis mechanics are the only proven domain; tennis and badminton are on the roadmap but untested.
+- **No accounts or cloud sync.** Session history is device-local.
+- These are not reasons to reject the concept. They are reasons the Phase 1 ask is modest and the timeline is short: validation is the goal of Phase 1, not scaling.
 
 ### Next product milestones
 - **Video robustness:** filming guidance and quality checks are in place; wider angle/lighting support is on the roadmap
@@ -161,9 +172,9 @@ This is a real output. Not mocked beyond the data input.
 - Data advantage: every session improves coaching quality over time
 
 **TAM signal:**
-- Table tennis alone: 875 million players globally (ITF estimate), ~40M serious recreational players in the tier who would pay
-- Racket sports combined (tennis, badminton, padel, squash): 500M+ recreational participants
-- At $10/month × 0.1% of addressable serious players: $5M ARR from table tennis alone
+- Table tennis: ~300 million recreational players globally (ITTF estimate), ~40M serious recreational players in the tier who would pay
+- Racket sports combined (table tennis, tennis, badminton, padel, squash, pickleball): 500M+ participants — not additive; many players play more than one sport
+- At $10/month × 0.1% of addressable serious table-tennis players: $5M ARR from table tennis alone
 
 ---
 

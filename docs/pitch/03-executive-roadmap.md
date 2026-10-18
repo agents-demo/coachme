@@ -120,13 +120,28 @@ Today: Standard mode is the reliable default. Investigator is opt-in while the b
   hosted privacy policy still to do)*
 - **Overclaiming** -> every claim ties to measured video evidence; unsupported claims are removed.
 
-## Rough timing
+## Milestones and go/no-go gates
 
-- **Demo:** essentially ready.
-- **Product:** a few months.
-- **Market areas:** ongoing.
+Progress is gate-driven, not calendar-driven. Each gate must pass before the next phase starts.
+
+| Gate | Signals | What happens if it fails |
+|---|---|---|
+| **Demo gate** (now) | Every stakeholder who sees the demo asks "how do I get this?" Standard report is specific, timestamped, never generic | Fix prompt pipeline before proceeding |
+| **Investigator gate** (benchmark) | Benchmark passes all release gates: evidence integrity 100%, recall ≥ Standard, coach preference ≥ 60% | Keep opt-in; do not promote as differentiator |
+| **Product gate** (early users) | 50 real users, 30%+ still active in week 4, at least one paying | Narrow scope or pivot to coach-only tool |
+| **Scale gate** (paying product) | 300 paying users, unit economics proven, distribution loop working | Do not spend on broad acquisition or new sports |
+
+**Workstream timing:**
+
+- **Workstream 1 (Product):** the constraint. Accounts, hosted deployment, cost caps and session feedback are required before real users. This is where the work is.
+- **Workstream 2–6 (Market areas):** staged after the product gate. Each market area starts only when the previous gate is passed and retention is proven in the existing surface.
+
+Do not start market area work (live coaching, multi-sport, match play) before the product gate. Adding features to a product users are not yet returning to does not fix retention.
 
 ## The one thing to remember
 
-The pipeline works and every finding is traceable to evidence. Our primary edge is **evidence-backed adaptive coaching**; multimodal input/output is the supporting delivery layer. The remaining work is
-packaging, validation, audio input and scale.
+The differentiator is **evidence-backed adaptive coaching**: every claim has a timestamp, a measurement, and a clip reference — and the investigation adapts to what is found.
+
+Standard mode delivers the evidence-backed foundation today with a fixed pipeline. That is what the demo shows, and it is the credible starting point. Investigator mode adds the adaptive investigation layer; the benchmark measures whether it finds more real issues. Lead with Standard. Introduce Investigator as the evolution that the benchmark will validate.
+
+Multimodal input/output is the delivery layer. The remaining work is packaging, validation, audio input and scale.
