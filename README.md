@@ -4,6 +4,8 @@ Record a session — table tennis, tennis, badminton, squash, padel — and get 
 
 **No third-party integrations.** A local video file goes in; a local report comes out. Two models are used: a **vision** model (`deepseek-v4-flash-vision-exp`) to read sampled frames, and a text model to write the coaching report.
 
+Two analysis modes are being built. **Standard** is the deterministic, reliable default. **Investigator** is experimental: the model chooses which tools and windows to examine, may ignore irrelevant signals, and must cite tool evidence for every finding. The differentiator is model-directed, evidence-grounded investigation, not the 'agentic' label.
+
 ## Quick start
 
 New here? See **[QUICKSTART.md](QUICKSTART.md)** for copy-paste commands to install and run the
@@ -31,6 +33,10 @@ The rest of this file covers what it does, the architecture, and the knobs.
 4. A text agent turns that into a **coaching report** saved as JSON: strengths, issues (with
    evidence + confidence), drills, a focus, a **progress** line vs the previous report, and
    limitations. History is kept per video.
+5. **Investigator (experimental)** goes further: instead of running the fixed measurement stage
+   first, the model gets a toolbox and decides what to inspect. It can skip ball tracking, dig into
+   wrist/racket mechanics, or stop early - but every issue must cite evidence IDs returned by a tool.
+   Standard mode remains the default.
 
 It is honest about limits: it reasons from sampled frames plus measured motion, so it does **not**
 claim to measure spin or exact ball speed, and it says so in the report's `limitations`.

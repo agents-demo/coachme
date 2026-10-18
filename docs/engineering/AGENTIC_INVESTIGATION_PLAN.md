@@ -35,7 +35,7 @@ The mode proposed here is different:
 > decides, step by step, what to examine. Measurement is a tool, not a stage.**
 
 This is the “free investigation” behaviour described in
-[WHY_AGENTIC_PLATFORM.md](../pitch/WHY_AGENTIC_PLATFORM.md): the agent may ignore
+[Why agentic](../pitch/05-why-agentic.md): the agent may ignore
 ball placement entirely, or may spend most of its budget on racket angle and wrist
 mechanics because that is where its hypothesis leads.
 
@@ -626,7 +626,7 @@ This is not only observability; it is how the user learns to trust the report.
 
 Show a short warning: slower, higher cost, variable path, cites evidence.
 
-**Global availability** in `Settings ? Analysis`:
+**Global availability** in `Settings -> Analysis`:
 
 - ?Enable experimental Investigator mode? (off by default)
 - backed by `ui_settings.investigator_enabled`, not by hiding a default mode
@@ -735,7 +735,7 @@ If these fail, keep Investigator as an experimental demo mode.
 - UI selector and investigation feed;
 - evaluation runner (labels in parallel).
 
-### Phase 3 ? product hardening (2?4 weeks)
+### Phase 3 - product hardening (2-4 weeks)
 
 - context compression/recall;
 - streaming model output (optional);

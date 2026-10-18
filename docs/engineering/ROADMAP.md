@@ -4,15 +4,20 @@
 open items, grouped by phase so we can cherry-pick.*
 
 Scope: close the remaining gap to commercial "film your sport → get coaching" apps, then extend past
-them with our agentic, evidence-grounded, self-hosted angle.
+them with our model-directed, evidence-grounded, self-hosted angle.
 
-> **North star — multimodal in and out.** The product *watches* the clip (a vision model reads the
-> frames), *reads* the numbers it measured itself, and *listens* to audio; then it *writes* the
-> coaching in plain language, *speaks* it, and *shows* it as video/images (highlight clips, overlays,
-> share cards) — fusing **pictures + numbers + words** into one coach, every claim tied to a moment.
-> Most tools do one sense (pure computer vision, or pure text); doing all of them is the core
-> advantage. Keep it central in every feature and every demo.
-
+> **North star - model-directed, evidence-grounded investigation.** The product
+> *watches* the clip, *reads* the numbers it measured itself, and eventually
+> *listens* to audio. The differentiator is that the model can **direct the
+> investigation**: choose tools and time windows, ignore irrelevant signals, dig
+> into a specific mechanic, and stop when the evidence is sufficient - while every
+> claim stays tied to measured evidence. The reliable fixed pipeline remains the
+> default; the Investigator mode is experimental until the benchmark proves it.
+>
+> **Supporting layer - multimodal in and out.** Video/images, numbers, text,
+> speech and annotated output are how the coaching reaches the user. Multimodal is
+> a supporting advantage, not the primary differentiator. Keep it aligned with the
+> investigation story in every feature and demo.
 ---
 
 ## 0. Conventions used below
@@ -36,6 +41,10 @@ What the app does today is documented in [architecture.md](architecture.md) and
 **Shipped since the last revision:** Android app, English/Chinese UI and reports, ask-by-voice,
 3D body view, automatic rally segments, footage-quality guidance, progress/compare, share card and
 vertical/GIF/reel exports, and one-click session delete.
+
+**In progress:** a model-directed Investigator mode with an evidence ledger, tool budgets and
+run-scoped storage. It is experimental and remains behind a feature flag until the benchmark gates
+pass. The deterministic pipeline is still the default.
 
 Table-tennis-specific ideas (service detection, racket-angle proxy, table heatmap, annotated clips,
 multi-session trends) are merged into C11–C13 and D12–D13 below.
@@ -271,8 +280,8 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 - **Risks:** single-camera spin is unreliable — do **not** ship a guess; the app stays honest.
 
 ### C10. Audio understanding (a new sense)
-- **Ref:** — *(multimodal core).*
-- **Goal:** add **audio** to the multimodal core — e.g. a coach's spoken notes, or racket/impact
+- **Ref:** — *(multimodal layer).*
+- **Goal:** add **audio** to the multimodal layer — e.g. a coach's spoken notes, or racket/impact
   sounds as extra evidence. The pipeline already *watches + reads numbers + writes + speaks*; this
   adds *listening*.
 - **Where:** `integrations/` (audio → text via a speech model) + `core/stages/observe/` (feed the
@@ -477,7 +486,7 @@ All land in the existing layering (steps in `core/stages/measure/*`, engines in 
 | D13 | Annotated coaching clips | CE/OF | M | Medium | |
 
 **Multimodal** marks work that extends the core senses: **watch** (vision), **read** its own numbers,
-**write**, **listen** (C10), **speak** (D7). The foundation of every item is the multimodal core.
+**write**, **listen** (C10), **speak** (D7). The foundation is evidence-grounded coaching; multimodal is the delivery layer.
 
 **Build order:** 0.2 → 0.1 → 0.3 → **M3** → M5/M6 → I1 → I2 → B4 → B5 → **C1 (shot type)** → **C2** →
 C8 → C10 → C6 → C3 → D3 → D1/D2 → D4/D5/D6/D7/D8/D9/D10/D11 → D12/D13. C11–C13 run with the analysis depth work. (0.4–0.8 and B6 run alongside.)
@@ -522,7 +531,7 @@ timestamp), **private/local by default**, and it writes a **plan you can questio
 Ask) — not just metrics.
 
 **Moat vs table stakes**
-- Moat: the **multimodal core** — takes in *watch* (vision) + *read* (its own numbers) + *listen*
+- Moat: **model-directed investigation + evidence discipline**, delivered through the multimodal layer — takes in *watch* (vision) + *read* (its own numbers) + *listen*
   (audio), and puts out *write* (language) + *speak* (voice) + *show* (video/images) — fused and
   evidence-grounded — plus the agentic **plan + memory** (D3) over session history, the
   **local/open pipeline**, the evidence discipline, and the run diagnostics.

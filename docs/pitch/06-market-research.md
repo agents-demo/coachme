@@ -46,10 +46,14 @@ These are planning ranges, not forecasts.
 
 Topspin Review is positioned at the intersection of measurement, coaching and progress. Its current
 product turns a practice video into a structured coaching report with timestamped evidence, drills,
-progress comparison, bilingual web and Android experiences, and local-first processing. Its current
-differentiators are table-tennis depth, evidence-grounded coaching, local-first processing, and an
-agentic architecture built on openJiuwen. Multi-sport coverage is a strategic direction, not yet a
-proven advantage.
+progress comparison, bilingual web and Android experiences, and local-first processing.
+
+The intended differentiator is **model-directed, evidence-grounded investigation**: the
+experimental Investigator mode lets the model choose tools and windows, ignore irrelevant signals
+and dig into a specific mechanic, while every finding must cite tool evidence. The reliable
+deterministic pipeline remains the default; Investigator is not yet proven. Table-tennis depth,
+local-first processing and bilingual web/Android support the thesis. Multi-sport coverage is a
+strategic direction, not yet an advantage.
 
 **Verdict: conditional yes, B2C-first.** This can become a real business, but probably not by
 selling a generic app to millions of casual players at USD 10/month. The primary business should be
@@ -435,7 +439,7 @@ The model itself is not a moat. Model quality is converging; workflow and trust 
 - Web app (FastAPI + SvelteKit) and Android app.
 - English and Chinese UI and reports.
 - Local-first storage, PDF/share exports, one-click delete.
-- Agentic pipeline built on openJiuwen.
+- Deterministic pipeline built on openJiuwen, with an experimental model-directed Investigator mode.
 
 **What is not yet product-ready**
 
@@ -484,10 +488,10 @@ bad video. Capture is a moat because it controls input quality.
 The winning systems will combine sport-specific tools, coaching knowledge and evaluation, rather
 than prompting a general model with a video.
 
-**5. On-device and NPU acceleration.**
-Pose and ball inference on the phone or a local device reduces cost, improves privacy and enables
-offline use. Hardware partnerships — including Huawei/Kirin — are a credible route.
-
+**5. Ascend and edge acceleration.**
+Pose and ball batches can run on Huawei Ascend 310/310P inference hardware in a private or
+regional cloud, with CANN and MindSpore for training. On-device NPU inference is a separate, later
+option for offline or live use. Hardware and cloud partnerships are a credible route.
 **6. Coach-in-the-loop and B2B2C as a complement.**
 Coaches and academies are a high-retention complementary channel. A product that saves coaches time
 and makes their feedback consistent can reinforce consumer retention, but it does not replace the
@@ -595,8 +599,8 @@ to pay for improvement. The technology is now good enough for useful products, b
 quality and workflow remain unsolved.
 
 Topspin Review has a credible position: table-tennis depth, evidence-grounded reports, drills,
-progress, bilingual web and Android, local-first processing, and an agentic architecture that can
-handle messy real-world video. Its weaknesses are equally clear: no iOS, no accounts or sync, no
+progress, bilingual web and Android, local-first processing, and an experimental model-directed
+Investigator mode that can choose what to examine while citing evidence. Its weaknesses are equally clear: no iOS, no accounts or sync, no
 coach workspace, limited multi-sport validation, and a product that still depends on good filming.
 
 The next phase should be disciplined. Win one consumer workflow. Make the evidence trustworthy.

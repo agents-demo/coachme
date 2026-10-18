@@ -9,21 +9,15 @@ removed.*
 
 Film a training session and get back what to fix and how to practice — a coach you can replay.
 
-## The core idea — it is multimodal (in and out)
+## The core differentiator - model-directed investigation
 
-It doesn't just *read* video and *write* text — it works across senses in **both directions**:
+The reliable product runs a fixed pipeline: watch the video, measure movement and body mechanics, write the coaching findings, then verify. That is the baseline.
 
-**Takes in**
-- **Watch** — reads **video/photos** (a vision model reads the frames). **Done**
-- **Read** — reads **its own numbers** (movement, body, ball). **Done**
-- **Listen** — hears **audio**, e.g. a coach's spoken notes. **Remaining**
+The **Investigator** mode changes who owns the investigation. The model chooses which tools and time windows to inspect, may ignore ball tracking if irrelevant, and may dig into wrist or racket mechanics because the evidence led there. Every finding must cite measured evidence.
 
-**Puts out**
-- **Write** — writes **text**: the coaching in plain words. **Done**
-- **Speak** — speaks **audio**: it reads the report aloud. **Done**
-- **Show** — shows **video & images**: highlight clips, overlays, share cards. **Done**
+The supporting advantage is **multimodal in and out**: it watches video, reads its own measurements, writes and speaks the coaching, and shows annotated video/images. Multimodal is how the coaching reaches the user; model-directed investigation is the differentiator.
 
-The remaining multimodal gap is **audio in** (coach notes, racket sound).
+Today: Standard mode is the reliable default. Investigator is opt-in while the benchmark confirms better outcomes at acceptable cost and latency.
 
 ## Where we are today
 
@@ -31,7 +25,8 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 - English and Chinese UI and reports; Ask-by-voice; on-device pose/ball analysis.
 - Pairwise progress comparison, 3D body mechanics, automatic rally splits, footage-quality checks,
   filming guidance, saved-result fallback and one-click delete are in place.
-- The report is honest — every point points to a moment in the video.
+- The report is traceable - every point points to a moment in the video.
+- **Investigator mode:** the model chooses what to examine and must cite evidence; it is opt-in while the benchmark runs, with Standard as the default.
 
 ---
 
@@ -41,7 +36,7 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 
 | # | Workstream | In one line | Type | Items |
 |---|-----------|-------------|------|:---:|
-| 1 | Product | Make it usable by strangers. | Build stage | 6 |
+| 1 | Product | Make it usable by strangers. | Build stage | 7 |
 | 2 | Sharper analysis | Read the play more deeply. | Market area | 6 |
 | 3 | Match play | Score and call a real game. | Market area | 3 |
 | 4 | Live & mobile | Use it in the moment. | Market area | 2 |
@@ -56,6 +51,7 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 | Item | Senses |
 |------|--------|
 | Accounts + log-in | — |
+| Investigator mode: benchmark, permissions, budgets and per-run UI | - |
 | Hosted — nothing to install | — |
 | Session feedback (like / dislike) | — |
 | Track and limit cost per session | — |
@@ -73,7 +69,7 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 | Table landing heatmap (needs 4-corner calibration) | Watch · Show |
 | **Understand audio too — voice notes, racket sound** | Listen |
 
-*Shot speed and spin are stretch/non-goals — ship only if honest.*
+*Shot speed and spin are stretch goals; ship them only when the measurement quality supports the claim.*
 
 ### Workstream 3 — Match play *(market area)*
 
@@ -122,7 +118,7 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 - **Costs grow with usage** → measure and cap the cost per session.
 - **Video is personal data** → keep it local by default; clear consent; easy delete. *(delete done;
   hosted privacy policy still to do)*
-- **Promising too much** → stay honest; every claim ties to the video.
+- **Overclaiming** -> every claim ties to measured video evidence; unsupported claims are removed.
 
 ## Rough timing
 
@@ -132,6 +128,6 @@ The remaining multimodal gap is **audio in** (coach notes, racket sound).
 
 ## The one thing to remember
 
-The pipeline works and is honest. Our edge is that it is **multimodal in and out** — it watches,
-reads, writes, speaks, and shows — and the remaining work is mostly **audio input, packaging, and
-scale**.
+The pipeline works and every finding is traceable to evidence. Our primary edge is **model-directed, evidence-grounded
+investigation**; multimodal input/output is the supporting delivery layer. The remaining work is
+packaging, validation, audio input and scale.

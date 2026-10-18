@@ -20,23 +20,26 @@ A mobile + web app that accepts a practice video and returns a structured coachi
 
 **Not** a chatbot. Not "describe your swing and I'll give tips." The AI *watches* the video, detects body mechanics and ball behavior, and writes findings that are grounded in what it actually measured.
 
+The app is deliberately **backend-agnostic**. Its value is the coaching loop, not the engine underneath it. Different model providers and compute backends can run it. Ascend and the openJiuwen/Ascend integration are the Huawei scale path: if the app earns repeated consumer use, that use creates recurring inference and training demand that can be served on Ascend.
+
 ---
 
 ## Why This Matters for Huawei / openJiuwen
 
-### 1. This is agentic AI in a real vertical
+### 1. The real differentiator: model-directed investigation
 
-The analysis pipeline is a textbook multi-step agent:
+The reliable product today runs a fixed baseline: observe, measure, focused vision, then write a
+coaching report with timestamped evidence. That pipeline is not the differentiator. It is the
+**reliable default**.
 
-```
-Video input
-    → Stage 1: Observe (frame sampling, motion mask)
-    → Stage 2: Measure (pose landmarks, ball trajectory, stroke detection)
-    → Stage 3: Coach (LLM reasons over measurements, writes structured report)
-    → Output: coaching report with citations to timestamps
-```
+The **Investigator** mode changes who owns the investigation. The model becomes the
+orchestrator: it chooses which tools and time windows to use, may ignore ball tracking if it is not
+relevant, may dig into wrist/racket mechanics because the evidence led there, and must cite evidence
+IDs returned by tools. It can stop when the evidence is sufficient.
 
-This is exactly what openJiuwen is built to do: orchestrate a pipeline of specialized AI steps into a coherent result. The app is a concrete, non-trivial showcase of that pattern in the real world.
+This is qualitatively different from a fixed pipeline and from a generic chatbot. It is the
+next step, with Standard remaining the default until the benchmark proves it across more clips.
+It is opt-in today, with Standard remaining the default during the rollout.
 
 ### 2. Multi-modal throughout
 
@@ -51,19 +54,27 @@ This is exactly what openJiuwen is built to do: orchestrate a pipeline of specia
 
 Three modalities today. The roadmap adds two more. Every modality is a real GPU/NPU workload.
 
-### 3. Heavy GPU/NPU usage per session
+### 3. A recurring workload for Huawei Ascend
 
 Every time a user analyzes a video:
-- MediaPipe pose runs on NPU (30fps × clip length landmark inference)
-- Ball detection model runs per-frame
-- LLM processes structured metrics + frames
-- **Kirin NPU opportunity:** on-device pose inference would make offline analysis possible and fast, while demonstrating Kirin's AI capability concretely
+- pose inference runs across the clip;
+- ball detection runs per frame;
+- the vision model reads sampled frames;
+- the LLM reasons over structured metrics and frames.
 
-This is not a user who sends one text message. This is a user who burns meaningful compute every time they practice — potentially 5 times a week.
+**Ascend opportunity:** this is a batch video-inference workload, not a one-off chat request.
+Pose, ball and vision batches can run on **Ascend 310/310P inference** hardware, and models can be
+trained on **Ascend 910-class** systems through **CANN** and **MindSpore**. Private or regional cloud
+deployment is a natural fit; on-device inference is a separate optimization, not the Ascend story.
+
+This is not a user who sends one text message. This is a user who burns meaningful compute every time
+they practice ? potentially five times a week.
+
+The app does not need Ascend to be useful. The win-win is that a useful app, adopted repeatedly, creates the kind of recurring inference and training demand that Ascend is built to serve.
 
 ---
 
-## Current Demo Status — Honest Assessment
+## Current Demo
 
 ### What works today
 - Upload any video → get a real, structured coaching report
@@ -71,11 +82,12 @@ This is not a user who sends one text message. This is a user who burns meaningf
 - Web app (SvelteKit) + Android app both functional
 - Session history and progress tracking
 
-### What is not yet product-ready
-- **Output quality depends heavily on video conditions** — bad angle, dark gym, player too small in frame all degrade the result significantly
-- **No user accounts** — everything is local per-device, no cloud sync
-- **Analysis takes 30–90 seconds** depending on clip length — acceptable for demo, borderline for daily use
-- **One sport only** — table tennis works; other sports are technically supported but not validated
+### Next product milestones
+- **Video robustness:** filming guidance and quality checks are in place; wider angle/lighting support is on the roadmap
+- **Accounts and sync:** the next product milestone for cross-device history
+- **Analysis time:** 30-90 seconds today; the Phase 1 target is under 60 seconds
+- **Sports coverage:** table tennis is validated; tennis, badminton and padel are the expansion path
+- **Investigator rollout:** opt-in while the benchmark is completed; Standard remains the reliable default
 
 ### The demo we can show right now
 A real 10-second training clip (Michael Osher, club session, professional table) analyzed to produce:
@@ -113,7 +125,7 @@ This is a real output. Not mocked beyond the data input.
 | Cloud accounts + sync | Users need their session history on any device |
 | Subscription payment (basic) | Even $5/month from 100 users is a signal |
 | Video robustness improvements | Handle more lighting conditions, camera distances, angles |
-| openJiuwen integration for agentic pipeline | Replace the current linear pipeline with openJiuwen-orchestrated agents — each stage becomes a named tool call, observable and improvable |
+| Harden Investigator mode | Finish budgets, permissions, cancellation and evaluation; make the model-directed path observable and reliable |
 | Android polish — share report, export PDF | Users want to send their report to their coach |
 
 **Deliverable:** Working, paying product. Not large, but real.
@@ -130,7 +142,7 @@ This is a real output. Not mocked beyond the data input.
 | Stroke classifier (train on TTNet dataset) | Distinguish forehand topspin / backhand / serve / push automatically — enables per-stroke-type breakdown |
 | Voice coaching output | LLM narrates the report — user hears coaching feedback while watching their video. Third modality. |
 | Expand to tennis + badminton | Same engine, 3× market |
-| Kirin NPU on-device mode | Pose inference fully offline, no cloud needed for basic analysis — Huawei differentiator |
+| Ascend cloud/edge deployment | Run pose, ball and vision batches on Ascend with CANN; private or regional deployment - Huawei differentiator |
 
 **Deliverable:** A platform, not just an app. Network effects from user data improve the models.
 
@@ -155,18 +167,18 @@ This is a real output. Not mocked beyond the data input.
 
 ---
 
-## What openJiuwen Gains From This
+## What Huawei gains from this
 
-1. **A reference vertical agent** — sports coaching is easy to understand, visually impressive, and real-world useful. Perfect for showing what the platform can do.
-2. **Multi-modal showcase** — video in, text + metrics out, voice next. Not a synthetic demo.
-3. **Kirin NPU proof point** — on-device pose inference is a concrete demonstration of Kirin AI capabilities in daily life.
-4. **A monetizable product** — not a research demo. An app people pay for, built on openJiuwen.
+1. **A reference vertical app** - sports coaching is easy to understand, visually impressive, and real-world useful.
+2. **Recurring accelerator demand** - every analyzed session is inference; every improvement cycle is a training opportunity. Successful consumer usage is what turns apps into Ascend demand.
+3. **An agentic-platform proof point** - openJiuwen/Ascend integration turns that demand into an easy deployment path, not a user-facing dependency.
+4. **A monetizable product** - not a research demo. An app people pay for, whose compute can run on Huawei infrastructure.
 
 ---
 
 ## What We Need to Proceed
 
 1. **Green light on Phase 1** — 4–6 weeks of focused engineering to make the demo bulletproof
-2. **Access to openJiuwen API** for Phase 2 integration
-3. **Kirin NPU SDK / MediaPipe optimization guidance** for Phase 3 on-device mode
+2. **Evaluation clips and coach labels** ? the benchmark set that decides whether Investigator is ready
+3. **Ascend/CANN access and deployment guidance** for Phase 3 cloud/edge inference and training
 4. **Design support** — one UX/UI pass to make the app look like a Huawei product, not a prototype

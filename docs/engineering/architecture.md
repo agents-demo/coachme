@@ -10,9 +10,9 @@ surfaces  ──▶  core  ──▶  integrations  ──▶  domain
 
 | Layer | Package | Responsibility | May depend on |
 |---|---|---|---|
-| Domain | `domain/` | Pure rules: report schema, game reading (CV→table-tennis translation), progress, comparison, scoring, drills, annotations, text rendering. No I/O, no third-party libs. | stdlib only |
+| Domain | `domain/` | Pure rules: report and evidence schemas, game reading (CV→table-tennis translation), progress, comparison, scoring, drills, annotations, text rendering. No I/O, no third-party libs. | stdlib only |
 | Integrations | `integrations/` | Outbound adapters: the openjiuwen agentic machinery (`agents/`: settings, models, agent builder, rails, tools, runner, logs, telemetry), `storage/`, `reporting`, `media`. | stdlib, openjiuwen |
-| Core | `core/` | The pipeline: stages (`measure`, `observe`, `coach`), the strategies that run them, the shared video primitives (`video/`), the run machinery, jobs, config and the service facade. | integrations, domain |
+| Core | `core/` | The pipeline: stages (`measure`, `observe`, `coach`, `investigate`), the strategies that run them, the shared video primitives (`video/`), the run machinery, jobs, config and the service facade. | integrations, domain |
 | Surfaces | `surfaces/` | Inbound adapters: CLI, Streamlit UI, web app (gui2), HTTP API, MCP, readiness checks. | anything |
 
 The rules are enforced by `tests/unit/test_architecture.py` (import direction,
@@ -24,7 +24,7 @@ constant matching the stage packages), so a violation fails CI.
 ```
 topspin_review/
 ├── __init__.py            # version only (no side effects)
-├── domain/                # report, game_reading, progress, compare, evaluate, drills, annotations, render
+├── domain/                # report, evidence, game_reading, progress, compare, evaluate, drills, annotations, render
 ├── integrations/          # outbound adapters
 │   ├── agents/            # provider access (see below)
 │   ├── storage/           # runtime, cache, json_store, store
@@ -41,8 +41,9 @@ topspin_review/
 │   ├── run_session.py     # run machinery: Runner, recorder, vision agent
 │   ├── service.py         # embedding surface (analyze_video, ask, describe)
 │   ├── jobs/worker.py     # standalone out-of-process analysis worker
-│   ├── stages/            # measure → observe → coach
-│   ├── strategies/        # deterministic / agentic
+│   ├── stages/            # measure -> observe -> coach, plus investigate (experimental)
+│   ├── investigate/   #   investigator tools, context, evidence ledger
+│   ├── strategies/        # deterministic / agentic / investigator
 │   └── video/             # shared video primitives: metrics, imaging, cvutil
 └── surfaces/              # inbound adapters
     ├── cli/               # command-line interface

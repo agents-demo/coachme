@@ -134,7 +134,8 @@ started from the header's **＋ New analysis**. The server also exposes the JSON
 & $PY -m topspin_review.surfaces.cli profile                                  # set your profile
 & $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4          # analyze (default path)
 & $PY -m topspin_review.surfaces.cli analyze clip.mp4 --box 0.2,0.1,0.8,0.9   # restrict to a region
-& $PY -m topspin_review.surfaces.cli analyze clip.mp4 --agentic               # let the model drive
+& $PY -m topspin_review.surfaces.cli analyze clip.mp4 --agentic               # guided window selection
+& $PY -m topspin_review.surfaces.cli analyze clip.mp4 --mode investigator     # experimental investigator
 & $PY -m topspin_review.surfaces.cli history                                  # recent reports
 & $PY -m topspin_review.surfaces.cli export clip.mp4                          # Markdown/HTML/PDF
 & $PY -m topspin_review.surfaces.cli compare a.mp4 b.mp4                      # diff two sessions

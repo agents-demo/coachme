@@ -4,8 +4,9 @@ This page shows how to run Topspin Review and get a result. It uses a real model
 (a **text** model for the report and a **vision** model to read the frames) on a
 short racket-sport clip.
 
-You can run it from the **Web UI** or the **command line**. Pick one; the pipeline
-is the same.
+You can run it from the **Web UI** or the **command line**. Pick one; the Standard
+pipeline is the same. Investigator is an experimental alternative that chooses its
+own investigation path.
 
 ---
 
@@ -65,7 +66,8 @@ http://localhost:8501
 
 On the **Analyze** page: choose a video (or a single photo), or tick **use the built-in
 sample clip**. Under **Advanced** you can set how many frames to study, cap the first
-N seconds, turn on agentic mode, and restrict analysis to just you (a region box).
+N seconds, choose agentic or (when enabled) Investigator mode, and restrict analysis to just you
+(a region box).
 
 Click **Analyze**. A progress bar shows each stage (`preparing`, `vision: overview`,
 `vision: detail`, `agent writing report`, …). You can **Stop** a run.
@@ -160,7 +162,8 @@ Topspin Review runs three stages (plus verification, retrieval and clip-cutting)
 | observe | two vision passes — an overview that picks the windows worth a closer look, then a zoom into those windows → structured findings with evidence timestamps |
 | coach | a text agent writes the coaching report (strengths, issues with evidence + confidence, drills, focus, progress vs last time) |
 
-Add `--agentic` (or the **Advanced** switch) to let the model choose what to review itself.
+Add `--agentic` (or the **Advanced** switch) for guided window selection, or
+`--mode investigator` for the experimental model-directed mode.
 
 ---
 

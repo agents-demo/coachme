@@ -14,6 +14,12 @@ Huawei internal stakeholders. Their three filters for any project:
 
 Every answer you give should map back to one of these three. If you are talking about a feature and it does not connect to one of these three, skip it.
 
+## The Huawei win-win - app first, Ascend second
+
+Managers do not buy one app; they want many apps that create recurring accelerator demand. The app must stand on user value first: if players do not use it, there is no compute. If it works, every session is inference and every improvement cycle is a training opportunity that can run on Ascend.
+
+openJiuwen/Ascend integration makes that deployment path easy. The app is deliberately backend-agnostic: that is a strength: Huawei can choose the compute layer without changing the user experience.
+
 ---
 
 ## The one sentence to open with
@@ -39,19 +45,18 @@ A player practices 4–5 times a week. Every session is a reason to use the app.
 
 ## The openJiuwen angle — say it simply
 
-Do not say "multi-step agentic pipeline with tool calls." Say:
+Do not call the fixed pipeline "agentic" and leave it there. Say:
 
-> "The app runs four AI stages in sequence — it observes the video, measures the body mechanics, writes the coaching findings, then checks its own work. openJiuwen orchestrates all four. The LLM cannot invent findings — it is forced to cite timestamps and measured values from the computer vision stage."
+> "The app is backend-agnostic: the user sees the coaching, not the engine. The reliable product runs a fixed pipeline today. Investigator mode goes further: the model chooses which tools and windows to inspect, may ignore ball tracking if irrelevant, and must cite evidence returned by a tool. openJiuwen is our Huawei deployment path; when paired with Ascend, repeated usage becomes recurring inference and training demand."
 
-The last sentence is important. It answers the obvious objection ("couldn't ChatGPT just do this?") before it is asked.
-
+The last sentence answers the obvious objection ("couldn't ChatGPT just do this?") before it is asked. Be clear that the fixed pipeline is the baseline and Investigator remains opt-in while the benchmark runs.
 ---
 
-## The Kirin NPU point — make it concrete
+## The Ascend point - make it concrete
 
 Do not say "heavy AI workload." Say:
 
-> "Pose estimation runs at 30 frames per second for the full clip. That is up to 1,800 NPU inference calls per session. A committed player does this five times a week. Moving that inference on-device — onto Kirin — means no cloud, no latency, and a performance advantage that only works on Huawei hardware."
+> "Pose estimation runs at 30 frames per second for the full clip. That is up to 1,800 inference calls per session, and a committed player does this five times a week. Those batches can run on Ascend 310/310P inference hardware through CANN; models can be trained on Ascend 910-class systems. That is a real, recurring Ascend workload, not a benchmark."
 
 Concrete numbers. A specific advantage that is hardware-exclusive. That is what they want to hear.
 
@@ -73,9 +78,9 @@ The wrong framing: "here are all the features we will build."
 The right framing: "here is the specific gap between what works today and what a paying customer needs, and here is how we close it in three steps."
 
 The three steps:
-- **Phase 1** (4–6 weeks): make the demo output reliable every time, integrate openJiuwen pipeline, add session comparison
+- **Phase 1** (4-6 weeks): make Standard reliable every time, harden Investigator, add session comparison
 - **Phase 2** (6–10 weeks): cloud accounts, payment, first paying users
-- **Phase 3** (3–5 months): Kirin on-device, voice coaching, expand to other sports
+- **Phase 3** (3-5 months): Ascend cloud/edge deployment, voice coaching, expand to other sports
 
 Emphasise Phase 1 is short. They can see results fast.
 
@@ -95,7 +100,7 @@ Emphasise Phase 1 is short. They can see results fast.
 
 > "Why can't someone just use ChatGPT with video?"
 
-Answer: "They can generate generic advice. They cannot tell you that your elbow dropped below your wrist at second 1.5 in your video, because that requires computer vision running before the LLM ever sees anything. The LLM in our pipeline is forced to cite measured evidence — it physically cannot produce a finding without a timestamp. That is the pipeline doing its job."
+Answer: "They can generate generic advice. They cannot tell you that your elbow dropped below your wrist at second 1.5 in your video, because that requires computer vision running before the LLM sees anything. In the reliable Standard mode the model is forced to cite measured evidence. In Investigator mode it also chooses what to examine - but it still cannot produce a finding without a tool evidence ID. That is the difference between a pipeline and a chatbot."
 
 ---
 
@@ -103,7 +108,7 @@ Answer: "They can generate generic advice. They cannot tell you that your elbow 
 
 They ask: "How do we proceed?" or "What do you need from us?"
 
-That means they are sold on the concept. The ask is four things: Phase 1 approval, openJiuwen API access, Kirin NPU SDK, and one UX/UI design pass. Have these ready as a clear list — do not improvise it.
+That means they are sold on the concept. The ask is four things: Phase 1 approval, evaluation clips and coach labels, Ascend/CANN access, and one UX/UI design pass. Have these ready as a clear list — do not improvise it.
 
 If they say yes, have the immediate next step ready: "Week 1 we set up the openJiuwen API integration. Week 2 we have the first end-to-end run through the platform. Week 4 we have something you can show to the next level up." Specificity about the near term is more credible than a Gantt chart.
 
@@ -148,30 +153,27 @@ A year before we built this, the pipeline would have been too slow, too inaccura
 ---
 
 ## Data privacy — the Huawei-specific angle
+For Huawei markets, deployment control matters as much as the model.
 
-On-device inference is not just a performance feature. For Huawei's markets it is a compliance and trust feature.
+A cloud-only competitor requires uploading personal video - of people, their movements, their training sessions - to servers operated by third parties, potentially in foreign jurisdictions. Topspin can offer two modes: a **local-first** mode where the clip stays on the device, and a **hosted** mode running on **Ascend in a private or regional cloud**, under the operator's control. These are different deployment choices, not the same privacy claim.
 
-A cloud-based competitor requires uploading personal video — of people, their movements, their training sessions — to servers operated by third parties, potentially in foreign jurisdictions. With Kirin NPU on-device mode, the user's video never leaves their device. The coaching happens locally. This is a strong alignment with data sovereignty expectations in key markets and with Huawei's own positioning around secure, private AI.
-
-Frame it as: "Our users' training videos stay on their phone. We do not see them, store them, or send them anywhere. That is only possible because Kirin is powerful enough to run the AI locally."
-
+Frame it as: "Clubs can keep video local. Hosted deployments can run on Ascend in-region, under your control. We do not require a foreign cloud to make this work."
 ---
 
 ## What "agentic" means — explain it in ten seconds
 
 Many people in the room may not know what agentic AI means. Do not assume they do. The explanation that works:
 
-> "A regular AI app takes your input and gives you one output. An agentic app is one where the AI makes a chain of decisions itself — it decides what to do next at each step without you telling it. In our case: the AI decides what frames to sample from the video, what measurements to take, what findings are actually supported by those measurements, and which drills are relevant to the findings. The user just provides the video. Everything else is the agent working."
+> "A regular AI app takes your input and gives you one output. In Investigator mode, the model makes a chain of decisions itself: it chooses what to measure, what to look at next, what evidence is sufficient, and when to stop. The reliable Standard mode does not do that - it follows a fixed pipeline. Investigator is the mode where the model is actually in control."
 
-That is it. Do not go deeper unless they ask.
-
+That is the differentiator. Do not describe the fixed pipeline as agentic. Do not go deeper unless they ask.
 ---
 
 ## The competitive landscape — be ready but do not volunteer it
 
 There are real competitors. Know them, but do not bring them up unless asked.
 
-- **Homecourt** (basketball): AI video coaching, US-based, has venture funding. Proof the category works, but basketball-specific and no openJiuwen/Kirin angle.
+- **Homecourt** (basketball): AI video coaching, US-based, has venture funding. Proof the category works, but basketball-specific and no openJiuwen/Ascend angle.
 - **SwingVision** (tennis): Shot tracking and basic analysis. More data analytics than coaching. No LLM coaching layer.
 - **Generic "LLM + video"**: Anyone can point GPT-4o at a sports video and ask for feedback. The output is generic because there is no CV pipeline feeding grounded measurements. This is the most common misconception about what we built.
 
@@ -179,13 +181,13 @@ If asked: "We are aware of Homecourt and SwingVision. They validate the market. 
 
 ---
 
-## The honest thing to say about current quality
+## Talking about quality
 
 At some point someone will ask "how accurate is it really?" The wrong answer is to oversell. The right answer builds more trust:
 
 > "High-confidence findings — where the CV has clear measurements — are accurate. Medium-confidence findings depend on camera conditions and we mark them clearly. We are conservative by design: the verification stage would rather drop a finding than include an unsupported one. The goal is that every finding in the report is something you could verify yourself by watching the video. If you disagree with a finding, the timestamps are right there."
 
-Honesty about the confidence model makes the high-confidence findings more credible, not less.
+Clear confidence levels make the high-confidence findings more credible.
 
 ---
 
@@ -203,9 +205,9 @@ Have a fallback prepared. If the app has a technical issue during the demo:
 
 1. The report JSON is pre-loaded and committed to the repo — you can show it directly as formatted text if the UI fails
 2. The key finding (elbow drops on backswing, timestamp 1.5s/3.1s/7.0s, 88° measured elbow angle) can be stated from memory
-3. "The demo is a working prototype, not a production app — rough edges are expected and Phase 1 addresses them" is an honest and reasonable thing to say
+3. "The demo is a working product prototype; Phase 1 closes the remaining rough edges" is a clear and reasonable thing to say
 
-Do not apologise excessively for a technical glitch. Move past it quickly and keep the conversation on the ideas.
+If a technical glitch happens, keep composure and return quickly to the ideas.
 
 ---
 
@@ -221,20 +223,19 @@ This is different from a Western startup pitch. Several specific things to know:
 
 **Never put anyone in a position where they must admit they do not know something.** Explain technical concepts as information-sharing, not as tests. "You may already know this, but..." is better than a question that requires an answer.
 
-**Measured confidence, not American-style enthusiasm.** Huawei internal culture values precision and understatement over excitement. Claim what you can prove. Acknowledge what you do not yet know. This builds more credibility than projecting certainty everywhere.
+**Measured confidence, not American-style enthusiasm.** Huawei internal culture values precision and understatement over excitement. Claim what you can prove. Acknowledge what remains to validate. This builds more credibility than projecting certainty everywhere.
 
 ---
 
-## The critical honesty point — openJiuwen is not integrated yet
+## The openJiuwen deployment point
 
-This needs to be addressed proactively, not defensively.
+State this clearly and move on.
 
-The current app does not yet run on openJiuwen. It runs on its own pipeline. Phase 1 is specifically the openJiuwen integration. If a manager asks to see openJiuwen in action, the honest answer is:
+The Investigator mode is where the model owns the investigation; it remains opt-in while the benchmark is completed. If a manager asks to see openJiuwen in action, the answer is:
 
-> "What you are seeing today is our own pipeline proving the concept works. Phase 1 is specifically about replacing the orchestration layer with openJiuwen — making each stage a named, observable tool call on the platform. We deliberately built and validated the product first, before integration. That means you are seeing a working result, not a proposal."
+> "The app runs on openJiuwen today. Standard mode is the reliable fixed pipeline. Investigator is the next step: the model chooses tools and windows, while every finding must cite measured evidence. It stays opt-in until the benchmark confirms better outcomes."
 
-This is actually a strength, not a weakness. The product exists and produces real output independently. openJiuwen is the production platform layer, not the thing that makes it work. Do not apologise for the sequencing — explain why it was the right order.
-
+The sequencing is deliberate: working product first, platform scale second.
 ---
 
 ## The openJiuwen platform play — what this means beyond one app
@@ -283,7 +284,7 @@ Internal managers are always unconsciously asking: "instead of this, what else c
 
 **"Wait and see if the market develops."** The data moat builds daily. Whoever accumulates user sessions first builds a compounding quality advantage. Waiting means buying into a more expensive and more competitive market in 12–18 months.
 
-**"Partner with an existing player (Homecourt, etc.)."** Existing players are Western-built, running on competing AI infrastructure, and have no alignment with openJiuwen or Kirin. Partnership serves none of the platform goals.
+**"Partner with an existing player (Homecourt, etc.)."** Existing players are Western-built, running on competing AI infrastructure, and have no alignment with openJiuwen or Ascend. Partnership serves none of the platform goals.
 
 The implicit reframe: you are not asking for funding to build a concept. The concept is built and working. You are asking for platform access to the thing that already exists.
 
@@ -293,11 +294,11 @@ The implicit reframe: you are not asking for funding to build a concept. The con
 
 The four asks are not equally urgent. If you sense hesitation, do not withdraw the whole ask — narrow it.
 
-The critical path is exactly two things: Phase 1 approval and openJiuwen API access. These two unblock everything. The Kirin NPU SDK is months away (Phase 3). The UX design pass is useful but not blocking.
+The critical path is exactly two things: Phase 1 approval and the evaluation/coach-label set. These two unblock everything. Ascend/CANN deployment is months away (Phase 3). The UX design pass is useful but not blocking.
 
 If the room feels uncertain, offer the minimum viable green light:
 
-> "The only thing we need to start is Phase 1 approval and API access. We can show you working openJiuwen integration in four weeks. Everything else — NPU SDK, design resources — we can discuss after you've seen that."
+> "The only thing we need to start is Phase 1 approval and the first evaluation set. We can show you a working Investigator mode with measured evidence in four weeks. Everything else - NPU SDK, design resources - we can discuss after you've seen that."
 
 Lower the activation energy. Let them say yes to the small thing. A small yes leads to a larger yes after Phase 1 delivers.
 
@@ -331,9 +332,9 @@ The conversation you do not want: "Interesting technology but unclear who pays f
 ## Things that earn respect vs things that lose it
 
 **Earn respect:**
-- Knowing exactly what the app cannot do yet, stated confidently — signals maturity, not weakness
+- Knowing exactly what the app cannot do yet, stated confidently - signals maturity
 - Specific numbers (not "many players" — "875 million globally, 300 million in China")
-- Measured, honest communication about current quality vs roadmap
+- Clear communication about current quality versus roadmap
 - Having thought about what failure looks like and how you'd handle it
 - Having built the thing before asking for support
 
@@ -356,16 +357,14 @@ When asked about defensibility, the strongest answer is not "our algorithm is go
 
 ---
 
-## The Kirin NPU latency argument — stronger than privacy
+## The Ascend latency argument - edge first
+The on-device latency argument is usually framed as privacy. That is true but it is the weaker version.
 
-The on-device inference argument is usually framed as privacy. That is true but it is the weaker version of the argument.
+The stronger version: **cloud round-trips can make real-time coaching impossible. Inference has to sit close to the player.**
 
-The stronger version: **cloud round-trips make real-time coaching architecturally impossible. On-device inference is what makes it feasible.**
+A public-cloud call can take 1-3 seconds. Between points, the total window is 10-15 seconds. A round-trip plus processing can consume that window before coaching reaches the player. **Ascend 310 inference at the edge or in a private venue cloud** removes the internet round-trip. True on-device inference is a separate, later optimization.
 
-A cloud call for inference takes 1–3 seconds. Between points in a match, the total window is 10–15 seconds. 3 seconds out, 3 seconds back, plus processing — the window is gone before any coaching reaches the player. Local Kirin NPU inference at ~100ms is invisible. It is the difference between live coaching being theoretically possible and actually working.
-
-Say it as: "On-device inference is not a cost or privacy feature — it is the enabler for the live coaching product. Without Kirin, the roadmap stops at session review. With Kirin, it becomes coaching between every point."
-
+Say it as: "Ascend is the right platform for batch session analysis and model training. For live coaching, the inference has to move to the edge or the device. The same vision stack can be deployed across that continuum."
 ---
 
 ## The coach is the customer, not the player
@@ -393,15 +392,15 @@ Every piece of product language directed at coaches should be: "Your AI assistan
 
 ---
 
-## Your demo limitations are your product roadmap
+## Turn current gaps into milestones
 
-Every honest limitation of the demo maps directly to a concrete product milestone:
+Every current gap maps directly to a concrete product milestone:
 
-- "Only works on clean video, single player" → Phase 1: agent handles real-world video variability
-- "Fixed stroke type assumed" → Phase 1: agent detects and adapts to stroke switches
-- "No session-to-session comparison" → Phase 2: longitudinal tracking and progress trends
-- "No live coaching" → Phase 3: continuous agent on Kirin NPU
+- "Video robustness" -> Phase 1: handle more lighting, angles and multi-player clips
+- "Stroke coverage" -> Phase 1: detect and adapt to stroke switches
+- "Session comparison" -> Phase 2: longitudinal tracking and progress trends
+- "Live coaching" -> Phase 3: edge/on-device inference; Ascend for cloud/edge batches
 
-Do not hide limitations. State each one and immediately follow with the specific milestone that closes it. This tells a credibility story: you know exactly what is missing, you have a concrete plan for each gap, and the Phase 1 ask is short enough to demonstrate progress fast.
+State each gap once, then give the milestone that closes it. This shows you know exactly what is missing, have a concrete plan for each gap, and the Phase 1 ask is short enough to show progress fast.
 
-The implicit message: the demo is not the product. The demo proves the concept. The roadmap is the path from concept to product — and it is specific, not aspirational.
+The demo proves the concept; the roadmap turns it into a product. The path is specific, not aspirational.

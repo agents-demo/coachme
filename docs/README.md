@@ -20,12 +20,11 @@ How to run and use the app.
 
 ## Pitch
 
-Materials for managers and external stakeholders.
+Materials for managers and external stakeholders. Start with the [pitch index](pitch/README.md), which gives the reading order.
 
-- [Executive roadmap](pitch/EXECUTIVE_ROADMAP.md) — plain-English plan from demo to product.
-- [Market research](pitch/TOPSPIN_MARKET_RESEARCH.md) — market size, trends, competition and forecasts to 2030.
-- [Demo evaluation table](pitch/TOPSPIN_DEMO_EVALUATION.md) ? problem, users, market, competitors and roadmap in the innovation-lab format.
-- [Huawei pitch](pitch/HUAWEI_PITCH.md) — problem, product and platform story.
-- [Pitch talking points](pitch/PITCH_TALKING_POINTS.md) — what to say, in what order, and what to avoid.
-- [Why an agentic platform](pitch/WHY_AGENTIC_PLATFORM.md) — honest architectural argument for openJiuwen.
-- [Huawei pitch deck](pitch/TopSpin_Huawei_Pitch.pptx).
+- [One-pager](pitch/01-one-pager.md) ? problem, users, market, competitors and roadmap.
+- [Huawei pitch](pitch/02-huawei-pitch.md) ? narrative, differentiator and Ascend story.
+- [Executive roadmap](pitch/03-executive-roadmap.md) ? plain-English plan from demo to product.
+- [Talking points](pitch/04-talking-points.md) ? delivery guide and Q&A.
+- [Why agentic](pitch/05-why-agentic.md) ? technical argument for model-as-orchestrator.
+- [Market research](pitch/06-market-research.md) ? market size, trends and forecasts.
