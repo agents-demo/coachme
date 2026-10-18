@@ -26,7 +26,7 @@
 
 **Start with the internal demo:** add the mode selector and Investigation panel. Do not start production hardening first.
 
-**Required validation:** [Benchmark plan](benchmark.md). Investigator is not ready until its gates pass.
+**Required validation:** [Benchmark plan](01_benchmark.md). Investigator is not ready until its gates pass.
 
 
 *Revision 1.1 incorporates an independent architecture review: run-scoped storage,
@@ -1486,7 +1486,7 @@ after publish.
 ## 24. Evaluation and release gates
 
 The benchmark is a shared workstream, not part of the Investigator module. It is
-owned by [Benchmark plan](benchmark.md), which defines the clips, coach
+owned by [Benchmark plan](01_benchmark.md), which defines the clips, coach
 labels, blind A/B protocol, metrics and scoring harness.
 
 Investigator cannot become a user-facing default until the shared gates pass:

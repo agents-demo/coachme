@@ -8,10 +8,10 @@ Docs are grouped by audience.
 
 How the system is built and what we plan to change. Start with the [engineering index](engineering/README.md).
 
-- [Investigator plan](engineering/plans/investigator.md) - implementation spec.
-- [Benchmark plan](engineering/plans/benchmark.md) - Standard vs Investigator evaluation and gates.
-- [Benchmark UI plan](engineering/plans/benchmark-ui.md) - local review, labelling and blind-rating UI.
-- [Priorities](engineering/plans/priorities.md) - what to build next across the product.
+- [Investigator plan](engineering/plans/03_investigator.md) - implementation spec.
+- [Benchmark plan](engineering/plans/01_benchmark.md) - Standard vs Investigator evaluation and gates.
+- [Benchmark UI plan](engineering/plans/02_benchmark-ui.md) - local review, labelling and blind-rating UI.
+- [Priorities](engineering/plans/00_priorities.md) - what to build next across the product.
 - [Architecture](engineering/reference/architecture.md) - layers and dependency rules.
 - [Analysis ideas](engineering/research/analysis-ideas.md) - research backlog, not committed work.
 

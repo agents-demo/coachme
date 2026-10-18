@@ -290,7 +290,7 @@ This is a real benchmark subsystem, not a test fixture. Unit tests live under
 `tests/benchmark/`; benchmark data and generated runs live outside the package.
 
 The GUI is required for normal operation and is specified in
-[Benchmark Review UI](benchmark-ui.md). It is a local-only FastAPI + SvelteKit
+[Benchmark Review UI](02_benchmark-ui.md). It is a local-only FastAPI + SvelteKit
 application. There is no production multi-tenant service, database or auth in
 v1; do not confuse the benchmark UI with `surfaces/gui2`.
 
@@ -719,7 +719,7 @@ only for a production run.
 | 8 | Scoring | precision/recall/evidence/cost/latency/path/partial |
 | 9 | Gate report | complete `score.json` + `report.md` with eligibility and blocked reasons |
 | 10 | Tests | matching, ties, missing evidence, empty labels, failures |
-| 11 | Benchmark UI | run list/dashboard, clip review, labels, blind rating, adjudication and export; see [Benchmark Review UI](benchmark-ui.md) |
+| 11 | Benchmark UI | run list/dashboard, clip review, labels, blind rating, adjudication and export; see [Benchmark Review UI](02_benchmark-ui.md) |
 
 ## 21. Definition of done
 

@@ -2,7 +2,7 @@
 
 **Status:** implementation spec. The CLI harness is Phase 1; this UI is Phase 2
 and is required for normal benchmark operation.
-**Related:** [Benchmark plan](benchmark.md), [Investigator plan](investigator.md).
+**Related:** [Benchmark plan](01_benchmark.md), [Investigator plan](03_investigator.md).
 **Owner:** engineering; benchmark labels and ratings remain coach-owned.
 
 This is not a dashboard added after the fact. It is the operating surface for the
