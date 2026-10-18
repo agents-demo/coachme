@@ -4,9 +4,9 @@
 
 **Status:** MVP spec; implementation in progress (revision 1.2)
 **Scope:** a new opt-in analysis mode for Topspin Review
-**Implementer entry point:** [START_HERE.md](START_HERE.md).
+**Implementer entry point:** [START_HERE](../START_HERE.md).
 
-**Terms:** **Evidence-backed adaptive coaching** is the marketing differentiator. **Investigator** is the product mode. **Model-as-orchestrator** is the architecture. **Model-directed, evidence-grounded investigation** is the mechanism/behaviour. "Free investigation" is internal shorthand only. See [Glossary](../GLOSSARY.md).
+**Terms:** **Evidence-backed adaptive coaching** is the marketing differentiator. **Investigator** is the product mode. **Model-as-orchestrator** is the architecture. **Model-directed, evidence-grounded investigation** is the mechanism/behaviour. "Free investigation" is internal shorthand only. See [Glossary](../../GLOSSARY.md).
 
 **Goal:** make the model own the investigation, not just write the report
 
@@ -41,7 +41,7 @@ The mode proposed here is different:
 > decides, step by step, what to examine. Measurement is a tool, not a stage.**
 
 This is the model-directed investigation behaviour described in
-[Why agentic](../pitch/05-why-agentic.md): the agent may ignore
+[Why agentic](../../pitch/05-why-agentic.md): the agent may ignore
 ball placement entirely, or may spend most of its budget on racket angle and wrist
 mechanics because that is where its hypothesis leads.
 
@@ -1467,7 +1467,7 @@ after publish.
 ## 24. Evaluation and release gates
 
 The benchmark is a shared workstream, not part of the Investigator module. It is
-owned by [EVALUATION_PLAN.md](EVALUATION_PLAN.md), which defines the clips, coach
+owned by [Benchmark plan](benchmark.md), which defines the clips, coach
 labels, blind A/B protocol, metrics and scoring harness.
 
 Investigator cannot become a user-facing default until the shared gates pass:

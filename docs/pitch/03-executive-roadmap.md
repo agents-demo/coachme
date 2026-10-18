@@ -108,7 +108,7 @@ Today: Standard mode is the reliable default. Investigator is opt-in while the b
 | Sync across phone and computer | — |
 | Connect to watches and health apps | Read (sensor) |
 
-*Details, effort sizes and ordering are in the full plan: [ROADMAP.md](../engineering/ROADMAP.md).*
+*Details, effort sizes and ordering are in the full plan: [Priorities](../engineering/plans/priorities.md).*
 
 ---
 

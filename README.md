@@ -13,8 +13,8 @@ Web UI / CLI.
 
 - **Run a demo step by step:** [docs/guides/RUN_DEMO.md](docs/guides/RUN_DEMO.md).
 - **Full guide:** [docs/guides/USAGE.md](docs/guides/USAGE.md) — setup, surfaces, workflow, API, scripts, settings, troubleshooting.
-- **Design:** [docs/engineering/architecture.md](docs/engineering/architecture.md).
-- **Roadmap:** [docs/engineering/ROADMAP.md](docs/engineering/ROADMAP.md) — competitor feature plan for later implementation.
+- **Design:** [docs/engineering/reference/architecture.md](docs/engineering/reference/architecture.md).
+- **Roadmap:** [docs/engineering/plans/priorities.md](docs/engineering/plans/priorities.md) — competitor feature plan for later implementation.
 - **Management pitch:** [docs/pitch/](docs/pitch/) — executive roadmap, Huawei pitch and talking points.
 
 The rest of this file covers what it does, the architecture, and the knobs.

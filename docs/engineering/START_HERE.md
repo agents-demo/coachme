@@ -5,8 +5,8 @@ This is the one-screen entry point. Do not start by reading the whole plan.
 ## Read these, in order
 
 1. **This page** — current status and next action.
-2. **[Investigator plan](AGENTIC_INVESTIGATION_PLAN.md)** — how it is designed. Use the table of contents; do not read end to end first.
-3. **[Benchmark plan](EVALUATION_PLAN.md)** — what “done” means.
+2. **[Investigator plan](plans/investigator.md)** — how it is designed. Use the table of contents; do not read end to end first.
+3. **[Benchmark plan](plans/benchmark.md)** — what “done” means.
 
 ## Current status
 
@@ -54,18 +54,18 @@ Not every item is needed for every milestone.
 
 | Step | Plan to read |
 |---|---|
-| 1. Mode selector | `AGENTIC_INVESTIGATION_PLAN.md` |
-| 2. Settings toggle | `AGENTIC_INVESTIGATION_PLAN.md` |
-| 3. Investigation panel | `AGENTIC_INVESTIGATION_PLAN.md` |
+| 1. Mode selector | `plans/investigator.md` |
+| 2. Settings toggle | `plans/investigator.md` |
+| 3. Investigation panel | `plans/investigator.md` |
 | 4. Run 3?5 clips | `START_HERE.md` |
-| 5. Coach comparison | `EVALUATION_PLAN.md` |
-| 6. Demo decision | `START_HERE.md` and `EVALUATION_PLAN.md` |
-| 7. Inspector restriction | `AGENTIC_INVESTIGATION_PLAN.md` |
-| 8. Atomic write/lock | `AGENTIC_INVESTIGATION_PLAN.md` |
-| 9. Cancellation/queue/SSE | `AGENTIC_INVESTIGATION_PLAN.md` |
-| 10. Benchmark | `EVALUATION_PLAN.md` |
-| 11. Budgets | `AGENTIC_INVESTIGATION_PLAN.md` and `EVALUATION_PLAN.md` |
-| 12. Pilot/hardening | `AGENTIC_INVESTIGATION_PLAN.md` and `ROADMAP.md` |
+| 5. Coach comparison | `plans/benchmark.md` |
+| 6. Demo decision | `START_HERE.md` and `plans/benchmark.md` |
+| 7. Inspector restriction | `plans/investigator.md` |
+| 8. Atomic write/lock | `plans/investigator.md` |
+| 9. Cancellation/queue/SSE | `plans/investigator.md` |
+| 10. Benchmark | `plans/benchmark.md` |
+| 11. Budgets | `plans/investigator.md` and `plans/benchmark.md` |
+| 12. Pilot/hardening | `plans/investigator.md` and `plans/priorities.md` |
 
 ## Where each thing lives
 
@@ -79,7 +79,7 @@ Not every item is needed for every milestone.
 | Inspector restriction | `core/stages/observe/build_agent.py`; `integrations/agents/agent/builder/vision.py`; `integrations/agents/agent/rails.py`; `core/stages/investigate/tools.py` |
 | Atomic report write / per-video lock | `integrations/storage/store.py`; `core/strategies/investigator.py` |
 | Cancellation / live job feed | `surfaces/gui2/server/jobs.py`; `server/routes/jobs.py`; `core/progress.py`; `client/src/lib/components/LiveJob.svelte` |
-| Benchmark labels and gates | `docs/engineering/EVALUATION_PLAN.md`; `tests/eval/investigation/` |
+| Benchmark labels and gates | `docs/engineering/plans/benchmark.md`; `tests/eval/investigation/` |
 | Budgets | `core/config.py`; `core/stages/investigate/context.py`; plan ?22 |
 
 ## What each doc contains
@@ -87,11 +87,11 @@ Not every item is needed for every milestone.
 | Doc | What it contains | When to use it |
 |---|---|---|
 | `START_HERE.md` | Current status, milestone choice, next action, file map | First stop for implementation |
-| `AGENTIC_INVESTIGATION_PLAN.md` | Full Investigator design, tools, schema, budgets, tests, rollout | Detailed implementation spec |
-| `EVALUATION_PLAN.md` | Benchmark clips, coach labels, blind A/B, metrics, release gates | Before claiming Investigator is ready |
-| `ROADMAP.md` | Product priorities and feature plan | Deciding what to build next |
-| `architecture.md` | Layer rules, package map, dependency direction | Before changing structure |
-| `analysis_pipeline_improvements.md` | Research backlog of measurement/CV ideas | Looking for analysis improvements; not an execution plan |
+| `plans/investigator.md` | Full Investigator design, tools, schema, budgets, tests, rollout | Detailed implementation spec |
+| `plans/benchmark.md` | Benchmark clips, coach labels, blind A/B, metrics, release gates | Before claiming Investigator is ready |
+| `plans/priorities.md` | Product priorities and feature plan | Deciding what to build next |
+| `reference/architecture.md` | Layer rules, package map, dependency direction | Before changing structure |
+| `research/analysis-ideas.md` | Research backlog of measurement/CV ideas | Looking for analysis improvements; not an execution plan |
 
 ## Next engineering action (experimental release path)
 
