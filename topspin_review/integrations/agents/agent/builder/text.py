@@ -25,10 +25,11 @@ class TextBuilder(AgentBuilder):
             model=model,
             system_prompt=self.params.system_prompt,
             tools=backend_tools.make_tools(self.params.tools),
-            rails=backend_rails.resolve(self.params.rails),
-            enable_task_loop=False,
+            rails=[*backend_rails.resolve(self.params.rails), *self.params.extra_rails],
+            enable_task_loop=self.params.enable_task_loop,
             max_iterations=self.params.max_iterations,
             workspace=self.params.workspace,
+            parallel_tool_calls=self.params.parallel_tool_calls,
         )
 
     @staticmethod

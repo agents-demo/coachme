@@ -30,6 +30,7 @@ class Strategy:
 
     name: str = ""
     description: str = ""
+    allow_demo_fallback: bool = True
 
     async def analyze(self, params: Params) -> dict[str, Any]:
         try:
@@ -37,7 +38,11 @@ class Strategy:
             result, extras = await self._run(params, params.progress)
             return await self._finalize(params, result, extras, params.progress)
         except Exception:
-            fallback = demo_cache.load(Path(params.video_path).stem) if config.demo_fallback() else None
+            fallback = (
+                demo_cache.load(Path(params.video_path).stem)
+                if self.allow_demo_fallback and config.demo_fallback()
+                else None
+            )
             if fallback is None:
                 raise
             # Demo fallback: a recorded report for this clip (labelled so the UI can say so).

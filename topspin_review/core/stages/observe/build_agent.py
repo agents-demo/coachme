@@ -15,13 +15,20 @@ from topspin_review.integrations.agents import VisionParams, build
 from topspin_review.integrations.storage import runtime
 
 
-def build_agent(*, media_dir: str, workspace: str | None = None) -> Any:
+def build_agent(
+    *,
+    media_dir: str,
+    workspace: str | None = None,
+    max_iterations: int = 4,
+    system_prompt: str | None = None,
+) -> Any:
     """Build the vision DeepAgent (reads rendered images via ``read_file``)."""
     setup()
     return build(
         VisionParams(
-            system_prompt=prompts.VISION_AGENT_SYSTEM,
+            system_prompt=system_prompt or prompts.VISION_AGENT_SYSTEM,
             workspace=workspace or str(runtime.ARTIFACTS_DIR),
             media_dir=media_dir,
+            max_iterations=max_iterations,
         )
     )

@@ -15,6 +15,7 @@ from topspin_review.core.strategies.deterministic import DeterministicStrategy
 
 DETERMINISTIC = "deterministic"
 AGENTIC = "agentic"
+INVESTIGATOR = "investigator"
 
 STRATEGIES: dict[str, Strategy] = {
     DETERMINISTIC: DeterministicStrategy(),
@@ -30,10 +31,16 @@ def default_name() -> str:
 def get_strategy(name: str | None = None) -> Strategy:
     """Look up a strategy by name, or the configured default when ``name`` is ``None``."""
     resolved = name or default_name()
+    if resolved == INVESTIGATOR:
+        # Lazy import: investigator pulls in the agent stack and must not slow
+        # startup or the deterministic/agentic paths.
+        from topspin_review.core.strategies.investigator import InvestigatorStrategy
+
+        return InvestigatorStrategy()
     try:
         return STRATEGIES[resolved]
     except KeyError:
-        known = ", ".join(sorted(STRATEGIES))
+        known = ", ".join(sorted({*STRATEGIES, INVESTIGATOR}))
         raise ValueError(f"unknown analysis strategy {resolved!r}; known: {known}") from None
 
 

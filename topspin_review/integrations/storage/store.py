@@ -106,6 +106,23 @@ def add_report(report: dict[str, Any]) -> dict[str, Any]:
     return report
 
 
+def add_report_at(path: str | Path, report: dict[str, Any]) -> dict[str, Any]:
+    """Save a report at an explicit path (investigator working copy)."""
+    _write(Path(path), report)
+    return report
+
+
+def patch_report_at(path: str | Path, patch: dict[str, Any]) -> dict[str, Any] | None:
+    """Merge ``patch`` into an explicit report path, creating it if needed."""
+    resolved = Path(path)
+    report = _read(resolved, {})
+    if not isinstance(report, dict):
+        report = {}
+    report.update(patch)
+    _write(resolved, report)
+    return report
+
+
 def recent_reports(n: int = 5) -> list[dict[str, Any]]:
     return get_reports()[-n:]
 

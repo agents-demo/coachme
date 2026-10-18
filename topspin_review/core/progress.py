@@ -24,6 +24,8 @@ class Progress:
         self._start = time.monotonic()
         self._last = self._start
         self._timings: list[dict] = []
+        self._events: list[dict] = []
+        self._event_seq = 0
 
     def update(self, stage: str, pct: float, detail: str = "") -> None:
         with self._lock:
@@ -33,6 +35,20 @@ class Progress:
             self._stage = stage
             self._pct = float(pct)
             self._detail = detail
+
+    def event(self, kind: str, **payload: object) -> None:
+        """Append a bounded investigator event (tool call, warning, stop)."""
+        with self._lock:
+            self._event_seq += 1
+            event = {
+                "seq": self._event_seq,
+                "t": round(time.monotonic() - self._start, 2),
+                "kind": str(kind),
+                **payload,
+            }
+            self._events.append(event)
+            if len(self._events) > 200:
+                del self._events[:-200]
 
     def finish(self, stem: str | None = None) -> None:
         with self._lock:
@@ -57,6 +73,7 @@ class Progress:
                 "stem": self._stem,
                 "elapsed": round(time.monotonic() - self._start, 2),
                 "timings": list(self._timings),
+                "events": list(self._events),
             }
 
     def stage(self) -> str:

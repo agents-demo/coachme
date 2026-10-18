@@ -96,6 +96,31 @@ def retrieval_enabled() -> bool:
     return _bool("RETRIEVAL", "true")
 
 
+# --- investigator budgets -------------------------------------------------- #
+def investigator_max_tool_calls() -> int:
+    return int(os.getenv("INVESTIGATOR_MAX_TOOL_CALLS", "24"))
+
+
+def investigator_max_seconds() -> float:
+    return float(os.getenv("INVESTIGATOR_MAX_SECONDS", "360"))
+
+
+def investigator_max_tokens() -> int:
+    return int(os.getenv("INVESTIGATOR_MAX_TOKENS", "80000"))
+
+
+def investigator_max_frames() -> int:
+    return int(os.getenv("INVESTIGATOR_MAX_FRAMES", "160"))
+
+
+def investigator_max_window_seconds() -> float:
+    return float(os.getenv("INVESTIGATOR_MAX_WINDOW_SECONDS", "10"))
+
+
+def investigator_max_window_frames() -> int:
+    return int(os.getenv("INVESTIGATOR_MAX_WINDOW_FRAMES", "12"))
+
+
 def rails() -> list[str]:
     """Names of the backend rails to enable on report agents (``RAILS`` env).
 

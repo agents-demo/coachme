@@ -4,8 +4,8 @@
 checks it matches the packages in this folder.
 """
 
-from topspin_review.core.stages import coach, measure, observe
+from topspin_review.core.stages import coach, investigate, measure, observe
 
-STAGES = ("measure", "observe", "coach")
+STAGES = ("measure", "observe", "coach", "investigate")
 
-__all__ = ["STAGES", "coach", "measure", "observe"]
+__all__ = ["STAGES", "coach", "investigate", "measure", "observe"]

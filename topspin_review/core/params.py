@@ -31,4 +31,5 @@ class Params:
     is_still: bool = False
     session: Any = None
     artifact_paths: dict = field(default_factory=dict)
+    investigation: Any = None
     state: dict = field(default_factory=dict)

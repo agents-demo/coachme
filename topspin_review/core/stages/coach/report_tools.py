@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 from topspin_review.domain import report as report_schema
@@ -41,6 +42,65 @@ def recent_reports(n: int = 5) -> str:
     return json.dumps(store.recent_reports(int(n or 5)), ensure_ascii=False)
 
 
+def save_report_result(
+    report_json: str,
+    *,
+    target: str | Path | None = None,
+    evidence_records: list | None = None,
+    allow_partial: bool = False,
+) -> dict[str, Any]:
+    """Parse, validate and save a report; return a structured result.
+
+    This is the single save path for both strategies. ``target`` is the
+    investigator working report; when omitted, the deterministic current-video
+    path is used.
+    """
+    try:
+        raw = _parse(report_json)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "ok": False,
+            "error": {
+                "code": "INVALID_JSON",
+                "message": f"could not parse report JSON: {exc}",
+                "retryable": True,
+            },
+        }
+    if not isinstance(raw, dict):
+        return {
+            "ok": False,
+            "error": {
+                "code": "INVALID_REPORT",
+                "message": "report must be a JSON object",
+                "retryable": True,
+            },
+        }
+    raw.setdefault("date", date.today().isoformat())
+    report = report_schema.normalize(raw)
+    problems = report_schema.validate(
+        report,
+        evidence_records=evidence_records,
+        allow_partial=allow_partial,
+    )
+    if problems and report.get("mode") == "investigator":
+        return {
+            "ok": False,
+            "error": {
+                "code": "INVALID_REPORT",
+                "message": problems[0],
+                "problems": problems,
+                "retryable": True,
+            },
+        }
+    if target is not None:
+        store.add_report_at(target, report)
+        path = str(target)
+    else:
+        store.add_report(report)
+        path = ""
+    return {"ok": True, "report_path": path, "report": report, "warnings": problems}
+
+
 def save_report(report_json: str) -> str:
     """Save the coaching report.
 
@@ -49,14 +109,11 @@ def save_report(report_json: str) -> str:
             issues (array of {issue, evidence_times, confidence}), drills, focus,
             progress, limitations.
     """
-    raw = _parse(report_json)
-    if not isinstance(raw, dict):
-        return "report must be a JSON object"
-    raw.setdefault("date", date.today().isoformat())
-    saved = report_schema.normalize(raw)
-    store.add_report(saved)
-    problems = report_schema.validate(saved)
-    return "report saved" + (f" (warnings: {'; '.join(problems)})" if problems else "")
+    result = save_report_result(report_json)
+    if not result.get("ok"):
+        return f"report rejected: {result.get('error', {}).get('message', 'invalid report')}"
+    warnings = result.get("warnings") or []
+    return "report saved" + (f" (warnings: {'; '.join(warnings)})" if warnings else "")
 
 
 ALL_TOOLS = [get_profile, recent_reports, save_report]

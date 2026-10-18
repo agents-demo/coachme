@@ -11,9 +11,8 @@ from dataclasses import dataclass
 
 from topspin_review.core import config
 from topspin_review.core.progress import Progress, tick
-from topspin_review.core.stages.measure import ball, sampling, strokes
+from topspin_review.core.stages.measure import ball, sampling, toolbox
 from topspin_review.core.video import metrics
-from topspin_review.integrations import pose
 
 
 @dataclass
@@ -61,16 +60,15 @@ def measure(
             ball_info = ball.detect(ball_frames, ball_times, metrics.activity(ball_frames, ball_times))
         else:
             ball_info = ball.detect(frames, timestamps, steps)
-    measured = metrics.analyze(frames, timestamps, ball=ball_info, region_box=region_box, with_pose=False)
-
     # Pose is its own step: it's the slowest part (mediapipe) and can be skipped.
     tick(progress, "estimating pose", 32)
-    pose_seq = pose.estimate(frames)
-    measured["pose"] = pose_seq
-    measured["pose_summary"] = pose.summarize(pose_seq)
-    measured["pose3d_summary"] = pose.summarize3d(pose_seq)
-    measured["footwork"] = metrics.footwork(pose_seq)
-    measured["strokes"] = strokes.segment(pose_seq, timestamps)
+    measured = toolbox.measure_frames(
+        frames,
+        timestamps,
+        ball=ball_info,
+        region_box=region_box,
+        with_pose=True,
+    )
 
     return Measurement(
         meta=meta,

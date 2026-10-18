@@ -9,6 +9,7 @@ How the system is built and what we plan to change.
 - [Architecture](engineering/architecture.md) — layers, dependency rules, runtime layout.
 - [Analysis pipeline improvements](engineering/analysis_pipeline_improvements.md) — coach-driven measurement research and proposals.
 - [Roadmap](engineering/ROADMAP.md) — remaining product/engineering work and competitor feature plan.
+- [Model-as-orchestrator plan](engineering/AGENTIC_INVESTIGATION_PLAN.md) — free investigation mode: tools, evidence ledger, budgets, openjiuwen integration and rollout.
 
 ## Guides
 

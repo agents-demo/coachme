@@ -38,7 +38,10 @@ class TextParams(Params):
 
     tools: list[Callable] = field(default_factory=list)
     rails: list[str] = field(default_factory=list)
+    extra_rails: list[Any] = field(default_factory=list)
     max_iterations: int = 15
+    parallel_tool_calls: bool = True
+    enable_task_loop: bool = False
 
 
 @dataclass
