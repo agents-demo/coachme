@@ -26,9 +26,9 @@ How to run and use the app.
 
 Materials for managers and external stakeholders. Start with the [pitch index](pitch/README.md), which gives the reading order.
 
-- [One-pager](pitch/01-one-pager.md) ? problem, users, market, competitors and roadmap.
-- [Huawei pitch](pitch/02-huawei-pitch.md) ? narrative, differentiator and Ascend story.
-- [Executive roadmap](pitch/03-executive-roadmap.md) ? plain-English plan from demo to product.
-- [Talking points](pitch/04-talking-points.md) ? delivery guide and Q&A.
-- [Why agentic](pitch/05-why-agentic.md) ? technical argument for model-as-orchestrator.
-- [Market research](pitch/06-market-research.md) ? market size, trends and forecasts.
+- [One-pager](pitch/01-one-pager.md) — problem, users, market, competitors and roadmap.
+- [Huawei pitch](pitch/02-huawei-pitch.md) — narrative, differentiator and Ascend story.
+- [Executive roadmap](pitch/03-executive-roadmap.md) — plain-English plan from demo to product.
+- [Meeting guide](pitch/04-meeting-guide.md) — how to run the room: delivery, objections, Q&A.
+- [What this AI can see](pitch/05-the-ai-advantage.md) — four scenarios showing the real advantage.
+- [Market research](pitch/06-market-research.md) — market size, trends and forecasts.
