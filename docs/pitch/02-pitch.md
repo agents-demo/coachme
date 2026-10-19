@@ -50,7 +50,7 @@ The coach had not spotted it. Not after weeks of sessions with this player.
 
 Nobody programmed "check head position." The model found the pattern itself, in the first clip, because the investigation led it there.
 
-Four more like this in [03-the-moments.md](03-the-moments.md) — including one where the model decided the right output was not a coaching report at all.
+Four more moments like this: [03-the-moments.md](03-the-moments.md).
 
 ---
 
