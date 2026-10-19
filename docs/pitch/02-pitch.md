@@ -50,7 +50,7 @@ The coach had not spotted it. Not after weeks of sessions with this player.
 
 Nobody programmed "check head position." The model found the pattern itself, in the first clip, because the investigation led it there.
 
-Four more moments like this: [03-the-moments.md](03-the-moments.md).
+The other four are in [03-the-moments.md](03-the-moments.md): a root-cause chain the model traced through four separate symptoms to one physical cause; real-time tactical intelligence of the kind a professional courtside advisor provides; and a session where the model examined the data and decided the right output was not a coaching report at all. Nobody programmed any of them.
 
 ---
 
