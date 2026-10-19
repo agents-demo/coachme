@@ -28,29 +28,19 @@ The app is deliberately **backend-agnostic** — the coaching logic does not dep
 
 ## Why This Is Different — And Why It Matters
 
-**What exists today**
+A good coach doesn't run a checklist. They watch, notice something unexpected, and follow the thread. Most players get sixty minutes of that a week. Everything in the other four sessions goes unseen.
 
-A good coach watches a player and investigates. They notice something unexpected — a head tilt, a grip change, a timing shift — and they follow that thread. They form a hypothesis, look for evidence, connect cause to effect. The insight comes from the investigation, not from a list. The problem: most players have that coach for sixty minutes a week, if they are lucky. Everything that happens in the other four sessions goes unseen.
+Every app built to close this gap runs a fixed pipeline — the same sequence of checks, every player, every session. Useful. And fundamentally limited: a fixed pipeline finds only what it was programmed to find.
 
-Every app that has tried to close this gap runs a fixed pipeline. Measure elbow angle. Check knee bend. Track footwork range. The same checklist, every session, for every player. Measurements come out. This is useful — and fundamentally limited. A fixed pipeline finds only what it was programmed to look for. It cannot notice something unexpected. It cannot change what it examines based on what it sees. It cannot investigate.
+This app's analysis is not directed by a script. It is directed by a model — one that decides what to examine, follows what it finds, and anchors every finding to measured evidence. That is **evidence-backed adaptive coaching.**
 
-**What this app does instead**
-
-The analysis in this app is not directed by a fixed pipeline. It is directed by a model.
-
-The model watches the clip and decides what to examine — choosing which moments matter, which signals to follow, which to ignore. If it notices something unexpected, it investigates. The investigation is not predetermined. It responds to the video in front of it. Every finding it produces is anchored to measured evidence — a tracked position, a counted occurrence, a measured angle, an exact timestamp. The player can rewind to the moment and verify it themselves. But what led the model there was an investigation, not a script.
-
-That is the differentiator: **evidence-backed adaptive coaching.** Evidence-backed, because every claim is grounded in measurement. Adaptive, because the investigation itself is directed by what the model finds — not by a predetermined sequence of checks.
-
-**What that looks like**
-
-In one clip — no instructions, no checklist — the model noticed that in 6 of 8 strokes, the player's head tilted down 0.3 seconds before contact. It cross-referenced this against ball quality: all 6 strokes with the head dip produced flat trajectories; the 2 without it produced measurably more topspin. It traced the pattern to the moment of brush contact — the player was losing sight of the ball at the critical instant.
+In one clip — no instructions — the model noticed that in 6 of 8 strokes, the player's head tilted down 0.3 seconds before contact. Every stroke with the dip produced a flat trajectory; the two without it produced measurably more topspin. It traced the cause: the player was losing sight of the ball at the moment of contact.
 
 The coach had not spotted it. Not after weeks of sessions with this player.
 
-Nobody programmed "check head position." The model found the pattern itself, in the first clip, because the investigation led it there.
+Nobody programmed "check head position."
 
-The other four are in [03-the-moments.md](03-the-moments.md): a root-cause chain the model traced through four separate symptoms to one physical cause; real-time tactical intelligence of the kind a professional courtside advisor provides; and a session where the model examined the data and decided the right output was not a coaching report at all. Nobody programmed any of them.
+The other four are in [03-the-moments.md](03-the-moments.md): a root-cause chain traced through four symptoms to one physical cause; real-time tactical intelligence of the kind a professional courtside advisor provides; and a session where the model decided the right output was not a coaching report at all. Nobody programmed any of them.
 
 ---
 
