@@ -28,25 +28,27 @@ The app is deliberately **backend-agnostic** — the coaching logic does not dep
 
 ## Why This Is Different — And Why It Matters
 
-The obvious answer to the coaching gap is AI. Ask a model about your technique; get advice back. The problem: language-based advice comes from knowledge of technique, not from watching. It tells you what good looks like. It cannot tell you what you did — because it was not there.
+**What exists today**
 
-That distinction is not a technical footnote. It is the reason players hear "keep your elbow up" a hundred times and still drop their elbow on the backswing.
+A good coach watches a player and investigates. They notice something unexpected — a head tilt, a grip change, a timing shift — and they follow that thread. They form a hypothesis, look for evidence, connect cause to effect. The insight comes from the investigation, not from a list. The problem: most players have that coach for sixty minutes a week, if they are lucky. Everything that happens in the other four sessions goes unseen.
 
-This app watches before it writes. Computer vision runs across the entire clip — measuring movement, tracking the ball, detecting body mechanics. Only then does the coaching layer produce findings. And it operates under a rule with no exceptions: **if a finding cannot be supported by a specific measurement — an angle, a position, a count, a timestamp — it does not appear in the report.** The pipeline drops the claim. What remains is advice a player can verify by rewinding to the exact moment.
+Every app that has tried to close this gap runs a fixed pipeline. Measure elbow angle. Check knee bend. Track footwork range. The same checklist, every session, for every player. Measurements come out. This is useful — and fundamentally limited. A fixed pipeline finds only what it was programmed to look for. It cannot notice something unexpected. It cannot change what it examines based on what it sees. It cannot investigate.
 
-That principle has a name: **evidence-backed adaptive coaching.** Two layers:
+**What this app does instead**
 
-**Standard mode** — the reliable default: a fixed pipeline that measures, observes, writes and verifies. Every claim is grounded in evidence or dropped. This is what the demo shows.
+The analysis in this app is not directed by a fixed pipeline. It is directed by a model.
 
-**Investigator mode** — opt-in, currently being benchmarked: the model directs its own investigation, choosing what to examine based on what it finds. Every claim still requires cited evidence.
+The model watches the clip and decides what to examine — choosing which moments matter, which signals to follow, which to ignore. If it notices something unexpected, it investigates. The investigation is not predetermined. It responds to the video in front of it. Every finding it produces is anchored to measured evidence — a tracked position, a counted occurrence, a measured angle, an exact timestamp. The player can rewind to the moment and verify it themselves. But what led the model there was an investigation, not a script.
 
-Then there is what this looks like when it runs.
+That is the differentiator: **evidence-backed adaptive coaching.** Evidence-backed, because every claim is grounded in measurement. Adaptive, because the investigation itself is directed by what the model finds — not by a predetermined sequence of checks.
 
-In one clip — no checklist, no instructions — the AI noticed that in 6 of 8 strokes, the player's head tilted down 0.3 seconds before contact. It cross-referenced this against ball quality: all 6 strokes with the head dip produced flat trajectories; the 2 without it produced measurably more topspin. It traced the pattern to the moment of brush contact — the player was losing sight of the ball at the critical instant.
+**What that looks like**
+
+In one clip — no instructions, no checklist — the model noticed that in 6 of 8 strokes, the player's head tilted down 0.3 seconds before contact. It cross-referenced this against ball quality: all 6 strokes with the head dip produced flat trajectories; the 2 without it produced measurably more topspin. It traced the pattern to the moment of brush contact — the player was losing sight of the ball at the critical instant.
 
 The coach had not spotted it. Not after weeks of sessions with this player.
 
-Nobody programmed "check head position." The AI found the pattern itself, in the first clip, and traced it to its physical cause.
+Nobody programmed "check head position." The model found the pattern itself, in the first clip, because the investigation led it there.
 
 Four more moments like this: [03-the-moments.md](03-the-moments.md).
 
