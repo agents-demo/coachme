@@ -28,19 +28,27 @@ The app is deliberately **backend-agnostic** — the coaching logic does not dep
 
 ## Why This Is Different — And Why It Matters
 
-Every player who has ever sought coaching advice has heard "keep your elbow up" or "transfer your weight." Correct advice — but impossible to act on without knowing *when* it went wrong and *how consistently* it happens across a session.
+The obvious answer to the coaching gap is AI. Ask a model about your technique; get advice back. The problem: language-based advice comes from knowledge of technique, not from watching. It tells you what good looks like. It cannot tell you what you did — because it was not there.
 
-The gap is not coaching knowledge. The gap is specificity tied to evidence. A coach watching a live session spots a recurring elbow drop in ten minutes. A player reviewing their own video without knowing what to look for can watch the same clip ten times and miss it entirely.
+That distinction is not a technical footnote. It is the reason players hear "keep your elbow up" a hundred times and still drop their elbow on the backswing.
 
-This app closes that gap in a specific way. Computer vision runs first: pose estimation at 30fps, ball tracking per frame, motion analysis across the full clip. Only then does the coaching layer write. **If a claim cannot be supported by a measured value, the pipeline drops it.** What remains are findings a player can verify by rewinding to the exact timestamp.
+This app watches before it writes. Computer vision runs across the entire clip — measuring movement, tracking the ball, detecting body mechanics. Only then does the coaching layer produce findings. And it operates under a rule with no exceptions: **if a finding cannot be supported by a specific measurement — an angle, a position, a count, a timestamp — it does not appear in the report.** The pipeline drops the claim. What remains is advice a player can verify by rewinding to the exact moment.
 
-That principle — measure before you write, cite evidence for every claim — is the core differentiator: **evidence-backed adaptive coaching.** Two implementation layers:
+That principle has a name: **evidence-backed adaptive coaching.** Two layers:
 
-**Standard mode** (the reliable default, demo-ready): a fixed pipeline — measure, observe, write, verify. Every finding cites a timestamp and a measured value. The pipeline drops any claim it cannot support with evidence. This is what the demo shows and what players can verify themselves by checking the timestamps.
+**Standard mode** — the reliable default: a fixed pipeline that measures, observes, writes and verifies. Every claim is grounded in evidence or dropped. This is what the demo shows.
 
-**Investigator mode** (opt-in, benchmark in progress): the model directs its own investigation — choosing which tools and time windows to inspect, ignoring irrelevant signals, digging deeper when the evidence leads somewhere unexpected. Every finding still requires a cited evidence ID. Whether it produces better outcomes than Standard is the hypothesis the benchmark measures.
+**Investigator mode** — opt-in, currently being benchmarked: the model directs its own investigation, choosing what to examine based on what it finds. Every claim still requires cited evidence.
 
-What model-directed investigation looks like in practice: in one clip, without being told what to look for, the AI noticed the player's head tilted down 0.3 seconds before contact in 6 of 8 strokes — and connected it directly to flat trajectories. The coach had not spotted the pattern after weeks of sessions together. Nobody programmed "check head position." Four more moments like this: [03-the-moments.md](03-the-moments.md).
+Then there is what this looks like when it runs.
+
+In one clip — no checklist, no instructions — the AI noticed that in 6 of 8 strokes, the player's head tilted down 0.3 seconds before contact. It cross-referenced this against ball quality: all 6 strokes with the head dip produced flat trajectories; the 2 without it produced measurably more topspin. It traced the pattern to the moment of brush contact — the player was losing sight of the ball at the critical instant.
+
+The coach had not spotted it. Not after weeks of sessions with this player.
+
+Nobody programmed "check head position." The AI found the pattern itself, in the first clip, and traced it to its physical cause.
+
+Four more moments like this: [03-the-moments.md](03-the-moments.md).
 
 ---
 
