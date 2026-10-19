@@ -18,40 +18,33 @@ This is not a niche problem. Table tennis alone has approximately 300 million re
 
 ## What This Is
 
-A mobile + web app that accepts a practice video and returns a structured coaching report — specific observations tied to timestamps, concrete drills, and progress tracking over time.
+A player records a practice session. The app watches it — frame by frame, measuring body mechanics, footwork and ball behaviour. Then it writes a coaching report: every finding tied to an exact timestamp, every claim grounded in a measured value the player can verify by rewinding the video. Specific drills, matched to what went wrong. Progress compared to the last session.
 
-**Not** a chatbot. Not "describe your swing and I'll give tips." The AI *watches* the video, detects body mechanics and ball behavior, and writes findings that are grounded in what it actually measured.
+The report reads like what a good coach says after watching a session: "Your elbow dropped below your wrist at second 1.5, 3.1 and 7.0 — that is why your stroke arc is flat and the ball stays low." Findings from this video, this session. Not general technique principles.
 
-The app is deliberately **backend-agnostic** (the coaching logic does not depend on any specific AI provider or compute hardware). Its value is the coaching loop, not the engine underneath it. Different model providers and compute backends can run it. Ascend and the openJiuwen/Ascend integration are the Huawei scale path: if the app earns repeated consumer use, that use creates recurring inference and training demand that can be served on Ascend.
+The app is deliberately **backend-agnostic** — the coaching logic does not depend on any specific AI provider or compute hardware. Ascend and the openJiuwen/Ascend integration are the Huawei scale path: a working app with real recurring users creates the kind of batch inference and training demand that Ascend is built to serve.
 
 ---
 
-## Why This Matters for Huawei / openJiuwen
+## Why This Is Different — And Why It Matters
 
-### 1. The differentiator: evidence-backed adaptive coaching
+Every player who has ever sought coaching advice has heard "keep your elbow up" or "transfer your weight." Correct advice — but impossible to act on without knowing *when* it went wrong and *how consistently* it happens across a session.
 
-The differentiator is **evidence-backed adaptive coaching**: the pipeline measures before it writes,
-ties every finding to measured evidence and a timestamp, and adapts the investigation to what is
-found. It is one differentiator, with two layers of implementation.
+The gap is not coaching knowledge. The gap is specificity tied to evidence. A coach watching a live session spots a recurring elbow drop in ten minutes. A player reviewing their own video without knowing what to look for can watch the same clip ten times and miss it entirely.
 
-**Standard mode** (the reliable default, demo-ready): a fixed pipeline — observe, measure, focused
-vision, write, verify. Every finding cites a timestamp and a measured value; the pipeline drops any
-claim it cannot support. This is what the demo shows and what users can verify by checking the
-timestamps. It already separates the product from generic AI chatbots, which produce advice without
-measurements.
+This app closes that gap in a specific way. Computer vision runs first: pose estimation at 30fps, ball tracking per frame, motion analysis across the full clip. Only then does the coaching layer write. **If a claim cannot be supported by a measured value, the pipeline drops it.** What remains are findings a player can verify by rewinding to the exact timestamp.
 
-**Investigator mode** (the adaptive layer, opt-in while being benchmarked): the model directs its
-own investigation — choosing which tools and time windows to use, ignoring ball tracking if
-irrelevant, digging into wrist/racket mechanics when the evidence leads there. Every claim still
-requires a cited evidence ID. Whether it produces better outcomes than Standard is the hypothesis;
-the benchmark measures it.
+That principle — measure before you write, cite evidence for every claim — is the core differentiator: **evidence-backed adaptive coaching.** Two implementation layers:
 
-What this looks like: in one clip, without being told what to look for, the AI noticed the player's
-head tilted down 0.3 seconds before contact in 6 of 8 strokes — and connected it directly to flat
-trajectories. The coach had not spotted it. Nobody programmed "check head position." Four more
-moments like this: [03-the-moments.md](03-the-moments.md).
+**Standard mode** (the reliable default, demo-ready): a fixed pipeline — measure, observe, write, verify. Every finding cites a timestamp and a measured value. The pipeline drops any claim it cannot support with evidence. This is what the demo shows and what players can verify themselves by checking the timestamps.
 
-### 2. Multi-modal throughout
+**Investigator mode** (opt-in, benchmark in progress): the model directs its own investigation — choosing which tools and time windows to inspect, ignoring irrelevant signals, digging deeper when the evidence leads somewhere unexpected. Every finding still requires a cited evidence ID. Whether it produces better outcomes than Standard is the hypothesis the benchmark measures.
+
+What model-directed investigation looks like in practice: in one clip, without being told what to look for, the AI noticed the player's head tilted down 0.3 seconds before contact in 6 of 8 strokes — and connected it directly to flat trajectories. The coach had not spotted the pattern after weeks of sessions together. Nobody programmed "check head position." Four more moments like this: [03-the-moments.md](03-the-moments.md).
+
+---
+
+## Multi-modal throughout
 
 | What | Modality |
 |------|----------|
@@ -64,7 +57,9 @@ moments like this: [03-the-moments.md](03-the-moments.md).
 
 Three modalities today. The roadmap adds two more. Every modality is a real GPU/NPU workload.
 
-### 3. A recurring workload for Huawei Ascend
+---
+
+## A Recurring Workload for Huawei Ascend
 
 Every time a user analyzes a video:
 - pose inference runs across the clip;
@@ -72,97 +67,88 @@ Every time a user analyzes a video:
 - the vision model reads sampled frames;
 - the LLM reasons over structured metrics and frames.
 
-**Ascend opportunity:** this is a batch video-inference workload, not a one-off chat request.
-Pose, ball and vision batches can run on **Ascend 310/310P inference** hardware, and models can be
-trained on **Ascend 910-class** systems through **CANN** and **MindSpore**. Private or regional cloud
-deployment is a natural fit; on-device inference is a separate optimization, not the Ascend story.
+This is a batch video-inference workload, not a one-off chat request. Pose, ball and vision batches can run on **Ascend 310/310P inference** hardware; models can be trained on **Ascend 910-class** systems through **CANN** and **MindSpore**. Private or regional cloud deployment is a natural fit; on-device inference is a separate optimisation, not the Ascend story.
 
-This is not a user who sends one text message. This is a user who burns meaningful compute every time
-they practice — potentially five times a week.
+A committed player analyses every practice session — potentially five times a week. This is not a user who sends one text message. This is a user who creates meaningful, recurring compute demand every time they train.
 
-The app does not need Ascend to be useful. The win-win is that a useful app, adopted repeatedly, creates the kind of recurring inference and training demand that Ascend is built to serve.
+The app does not need Ascend to be useful. The win-win: a useful app, adopted repeatedly, creates exactly the kind of recurring inference and training demand that Ascend is built to serve.
 
 ---
 
-## Current Demo
+## The Demo
 
-### What works today
-- Upload any video → get a real, structured coaching report
-- Report has: summary, specific observations with timestamps, recommended drills, detected metrics (knee angle, elbow angle, footwork range, rotation values)
+### What it does today
+- Upload any video → structured coaching report in 30–90 seconds
+- Report includes: summary, specific observations with timestamps, recommended drills, detected metrics (knee angle, elbow angle, footwork range, rotation values)
 - Web app (SvelteKit) + Android app both functional
 - Session history and progress tracking
 
-### Honest current state
+### Where the product stands today
+Working prototype, not yet a commercial launch. The stage is deliberate:
 
-- **Zero paying users today.** The product is a working prototype, not a commercial launch.
-- **Benchmark not yet run.** Investigator mode is opt-in while the evaluation set is built; its quality advantage over Standard is the hypothesis, not yet a measured result.
-- **One sport validated.** Table tennis mechanics are the only proven domain; tennis and badminton are on the roadmap but untested.
-- **No accounts or cloud sync.** Session history is device-local.
-- These are not reasons to reject the concept. They are reasons the Phase 1 ask is modest and the timeline is short: validation is the goal of Phase 1, not scaling.
+- **One sport validated** — table tennis mechanics are proven; tennis, badminton and padel are the expansion path once the core is hardened
+- **Investigator mode opt-in** — the benchmark is in progress; Standard is the reliable default today
+- **Accounts and cloud sync in Phase 2** — session history is device-local for now
+- **First paying users in Phase 2** — Phase 1 makes the demo compelling enough to acquire them
 
-### Next product milestones
-- **Video robustness:** filming guidance and quality checks are in place; wider angle/lighting support is on the roadmap
-- **Accounts and sync:** the next product milestone for cross-device history
-- **Analysis time:** 30-90 seconds today; the Phase 1 target is under 60 seconds
-- **Sports coverage:** table tennis is validated; tennis, badminton and padel are the expansion path
-- **Investigator rollout:** opt-in while the benchmark is completed; Standard remains the reliable default
+These are sequenced development stages. Phase 1 is short precisely because the foundation is already working.
 
-### The demo we can show right now
-A real 10-second training clip (Michael Osher, club session, professional table) analyzed to produce:
-- 5 specific coaching findings grounded in what the AI measured, each citing exact timestamps
-- Accurate reading: shoulder rotation 14°, hip rotation 9° (both far below optimal), footwork coverage 5% of frame (stationary), knee bend moderately bent
+### The demo
+A real training clip (Michael Osher, club session, professional table) analyzed to produce:
+- 5 specific coaching findings, each grounded in what the AI measured, each citing exact timestamps
+- Measured readings: shoulder rotation 14°, hip rotation 9° (both far below optimal), footwork coverage 5% of frame (stationary), knee bend moderately bent
 - 5 concrete drills with progression cues matched to the findings
 
-This is a real output. Not mocked beyond the data input.
+Real output from a real clip.
 
 ---
 
-## Roadmap — What Actually Gets Built
+## Roadmap — Three Phases
 
-### Phase 1 — Demo to Convincing Demo (4–6 weeks)
+### Phase 1 — Bulletproof Demo (4–6 weeks)
 
-**Goal:** The demo always impresses. Every stakeholder who sees it asks "how do I get this?"
+**Goal:** Every person who sees the demo asks "how do I get this?"
 
 | Task | Why |
 |------|-----|
-| Harden prompt pipeline — ensure output is always specific, never generic | The current risk: LLM occasionally falls back to generic advice. This must be eliminated. |
-| Multi-session comparison in UI | Show "last week vs. this week" — makes the subscription value obvious |
-| Demo video with annotated overlay (hardcoded) | Visually show AI seeing the player — most compelling moment in any demo |
-| 60-second analysis target | Reduce perceived wait time |
+| Harden prompt pipeline — output always specific, never generic | The current risk: LLM occasionally falls back to generic advice. Must be eliminated. |
+| Multi-session comparison in UI | "Last week vs. this week" makes the subscription value self-evident |
+| Demo video with annotated overlay | Visually show the AI watching the player — the most compelling moment in any demo |
+| 60-second analysis target | Eliminate the perceived wait |
 
-**Deliverable:** A repeatable demo that can be shown to anyone and lands every time.
+**Deliverable:** A demo that lands every time, with anyone in the room.
 
 ---
 
-### Phase 2 — MVP with Real Users (6–10 weeks after Phase 1)
+### Phase 2 — Real Users, Real Revenue (6–10 weeks after Phase 1)
 
-**Goal:** 50 real users using it weekly, paying or on a trial.
+**Goal:** 50 users using it weekly, paying or on a trial.
 
 | Task | Why |
 |------|-----|
 | Cloud accounts + sync | Users need their session history on any device |
-| Subscription payment (basic) | Even $5/month from 100 users is a signal |
+| Subscription payment | Even $5/month from 100 users is a concrete market signal |
 | Video robustness improvements | Handle more lighting conditions, camera distances, angles |
-| Harden Investigator mode | Finish budgets, permissions, cancellation and evaluation; make the model-directed path observable and reliable |
+| Harden Investigator mode | Finish budgets, permissions, cancellation and evaluation; make the model-directed path reliable |
 | Android polish — share report, export PDF | Users want to send their report to their coach |
 
-**Deliverable:** Working, paying product. Not large, but real.
+**Deliverable:** A working, paying product. Not large — real.
 
 ---
 
 ### Phase 3 — Platform Play (3–5 months after Phase 2)
 
-**Goal:** Expand the moat. Make it hard for anyone else to catch up.
+**Goal:** Data moat. Expansion. Hard to catch up.
 
 | Task | Why |
 |------|-----|
 | Table detection | Unlocks 5+ new metrics: player position on court, shot placement, distance from table |
-| Stroke classifier | Distinguish forehand topspin / backhand / serve / push automatically — enables per-stroke-type breakdown |
-| Voice coaching output | LLM narrates the report — user hears coaching feedback while watching their video. Third modality. |
+| Stroke classifier | Forehand topspin / backhand / serve / push automatically — per-stroke-type breakdown |
+| Voice coaching output | LLM narrates the report — coaching feedback while watching the video. Third modality. |
 | Expand to tennis + badminton | Same engine, 3× market |
-| Ascend cloud/edge deployment | All inference and training on Huawei hardware; private or regional deployment with no change to the user experience |
+| Ascend cloud/edge deployment | All inference and training on Huawei hardware; private or regional deployment with no change to user experience |
 
-**Deliverable:** A platform, not just an app. Network effects from user data improve the models.
+**Deliverable:** A platform, not just an app. Every session trains the next one.
 
 ---
 
@@ -171,36 +157,44 @@ This is a real output. Not mocked beyond the data input.
 **Freemium subscription:**
 - Free: 3 sessions per month, basic report
 - Pro ($8–12/month): unlimited sessions, full metrics, progress charts, export
-- Club ($40–80/month per coach): coach sees multiple players' reports, tracks progress across students
+- Club ($40–80/month per coach): coach dashboard across all students, progress tracking, share links
 
-**Why subscription is right:**
-- Value compounds over time (users stay to see progress)
-- High frequency of use: a committed player analyzes every practice session
-- Data advantage: every session improves coaching quality over time
+China pricing: RMB 30–50/month (~USD 4–7) — not a USD conversion of a Western price point applied to a different market.
 
-**TAM signal:**
-- **Primary market — China:** ~85M daily club players, ~10M competitive; 双减-driven ¥400B+ children's sports industry growing at 15%+/year. Parents are the buyers for junior players. Pricing: RMB 30–50/month (~USD 4–7), not a USD 10 conversion.
-- Table tennis globally: ~300M recreational players (ITTF estimate), ~40M serious players in the tier who would pay
-- Racket sports combined (table tennis, tennis, badminton, padel, squash, pickleball): 500M+ participants — not additive; many players play more than one sport
-- At $10/month × 0.1% of addressable serious table-tennis players: $5M ARR from table tennis alone; China adds a separately-sized, RMB-denominated market on top
+**Why subscription is the right model:**
+- Value compounds over time — users stay to see whether they improved
+- High frequency of use — a committed player analyses every practice session
+- Data advantage — every session improves coaching quality; the longer the platform runs, the harder it is to replicate
+
+**The market:**
+
+| Segment | Size |
+|---|---|
+| Primary — China (daily club players) | ~85M daily / ~10M competitive |
+| China children's sports industry (双减-driven) | ¥400B+, growing 15%+/year |
+| Table tennis globally | ~300M recreational (ITTF), ~40M serious |
+| Racket sports combined | 500M+ participants globally |
+| Serious table tennis players reachable at launch | ~40M worldwide |
+
+Unit economics: at $10/month, 0.1% of serious table-tennis players = $5M ARR from one sport. China is a separately-sized, RMB-denominated market on top.
 
 ---
 
-## What Huawei gains from this
+## What Huawei Gains
 
-1. **A reference vertical app** - sports coaching is easy to understand, visually impressive, and real-world useful.
-2. **Recurring accelerator demand** - every analyzed session is inference; every improvement cycle is a training opportunity. Successful consumer usage is what turns apps into Ascend demand.
-3. **A deployable product with a clear Huawei path** - the app does not depend on Ascend to work; openJiuwen/Ascend integration means that when it earns real use, that use can be served on Huawei infrastructure with no change to the user experience.
-4. **A monetizable product** - not a research demo. An app people pay for, whose compute can run on Huawei infrastructure.
+1. **A reference vertical AI app** — sports coaching is visually impressive, immediately understandable, and demonstrably real-world useful
+2. **Recurring Ascend demand** — every analysed session is inference; every improvement cycle is training. Consumer adoption converts directly to hardware utilisation
+3. **A clear Huawei deployment path** — the app works without Ascend; openJiuwen/Ascend integration means that when it earns real use, that use runs on Huawei infrastructure with no change to the user experience
+4. **A monetisable product, not a research demo** — real subscriptions, daily use, compounding data
 
 ---
 
 ## What We Need to Proceed
 
-1. **Green light on Phase 1** — 4–6 weeks of focused engineering to make the demo bulletproof
-2. **Evaluation clips and coach labels** — the benchmark set that decides whether Investigator is ready
-3. **Ascend/CANN access and deployment guidance** for Phase 3 cloud/edge inference and training
-4. **Design support** — one UX/UI pass to make the app look like a Huawei product, not a prototype
+1. **Phase 1 approval** — 4–6 weeks of focused engineering to make the demo compelling every time
+2. **Evaluation clips and coach labels** — the benchmark set that validates whether Investigator is ready
+3. **Ascend/CANN access and deployment guidance** — for Phase 3 cloud/edge inference and training
+4. **Design support** — one UX/UI pass to make the app look like a Huawei product
 
 ---
 
