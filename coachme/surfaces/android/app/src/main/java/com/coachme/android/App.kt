@@ -1,6 +1,7 @@
 package com.coachme.android
 
 import android.app.Application
+import com.coachme.android.data.DemoSeeder
 import com.coachme.android.data.Youtube
 import dagger.hilt.android.HiltAndroidApp
 
@@ -9,6 +10,7 @@ import dagger.hilt.android.HiltAndroidApp
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
+        DemoSeeder.seed(this)
         // Prepare the yt-dlp environment in the background so the first YouTube link is quick.
         Youtube.warmUp(this)
     }
