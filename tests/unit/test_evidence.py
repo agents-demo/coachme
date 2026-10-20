@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from topspin_review.domain.evidence import EvidenceRecord, is_valid, validate
+from coachme.domain.evidence import EvidenceRecord, is_valid, validate
 
 
 def _record(**patch):

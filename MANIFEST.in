@@ -1,4 +1,4 @@
-recursive-include topspin_review/surfaces/gui2/client/build *
+recursive-include coachme/surfaces/gui2/client/build *
 recursive-include docs *.md
 recursive-include tests/eval *.json
 include requirements.txt

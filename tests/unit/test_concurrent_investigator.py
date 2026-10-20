@@ -9,7 +9,7 @@ import asyncio
 import threading
 from pathlib import Path
 
-from topspin_review.core.stages.investigate.context import Budget, InvestigationContext
+from coachme.core.stages.investigate.context import Budget, InvestigationContext
 
 
 def _ctx(tmp_path: Path, name: str, max_calls: int = 8) -> InvestigationContext:

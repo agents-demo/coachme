@@ -54,6 +54,6 @@ that Ascend is built to serve.
 
 ## Removed
 
-The old `TopSpin_Huawei_Pitch.pptx` was deleted — it predated the Investigator
+The old Huawei pitch deck was deleted — it predated the Investigator
 story and incorrectly claimed the fixed pipeline was agentic. Recreate a deck
 from the one-pager and narrative once the message is stable.

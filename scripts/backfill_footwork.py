@@ -16,10 +16,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from topspin_review.core import config  # noqa: E402
-from topspin_review.core.stages.measure import sampling  # noqa: E402
-from topspin_review.core.video import metrics  # noqa: E402
-from topspin_review.integrations.storage import runtime  # noqa: E402
+from coachme.core import config  # noqa: E402
+from coachme.core.stages.measure import sampling  # noqa: E402
+from coachme.core.video import metrics  # noqa: E402
+from coachme.integrations.storage import runtime  # noqa: E402
 
 
 def main() -> None:

@@ -39,7 +39,7 @@ def main() -> int:
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     args = parser.parse_args()
 
-    workdir = Path(tempfile.gettempdir()) / "topspin_ball"
+    workdir = Path(tempfile.gettempdir()) / "coachme_ball"
     workdir.mkdir(parents=True, exist_ok=True)
 
     weights = Path(args.weights) if args.weights else workdir / "best.pt"

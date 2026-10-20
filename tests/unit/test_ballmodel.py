@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from topspin_review.integrations import ballmodel
+from coachme.integrations import ballmodel
 
 _N = 50  # a real Ultralytics export has thousands of anchors; pad to exercise the shape logic
 

@@ -14,12 +14,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from topspin_review.core.stages.investigate.context import (
+from coachme.core.stages.investigate.context import (
     Budget,
     InvestigationContext,
     InvestigationError,
 )
-from topspin_review.core.stages.investigate.tools import (
+from coachme.core.stages.investigate.tools import (
     _look,
     _pose,
     _signal_summary,
@@ -135,9 +135,9 @@ def _fake_window(with_angles: bool) -> MagicMock:
     return win
 
 
-@patch("topspin_review.core.stages.investigate.tools.pose")
-@patch("topspin_review.core.stages.investigate.tools.toolbox")
-@patch("topspin_review.core.stages.investigate.tools.imaging")
+@patch("coachme.core.stages.investigate.tools.pose")
+@patch("coachme.core.stages.investigate.tools.toolbox")
+@patch("coachme.core.stages.investigate.tools.imaging")
 def test_pose_confidence_high_when_angles_present(mock_imaging, mock_toolbox, mock_pose, tmp_path) -> None:
     mock_pose.available.return_value = True
     mock_pose.overlay.return_value = []  # no annotated frames → no PNG written
@@ -148,9 +148,9 @@ def test_pose_confidence_high_when_angles_present(mock_imaging, mock_toolbox, mo
     assert result["confidence"] == "high"
 
 
-@patch("topspin_review.core.stages.investigate.tools.pose")
-@patch("topspin_review.core.stages.investigate.tools.toolbox")
-@patch("topspin_review.core.stages.investigate.tools.imaging")
+@patch("coachme.core.stages.investigate.tools.pose")
+@patch("coachme.core.stages.investigate.tools.toolbox")
+@patch("coachme.core.stages.investigate.tools.imaging")
 def test_pose_confidence_medium_when_no_angles(mock_imaging, mock_toolbox, mock_pose, tmp_path) -> None:
     mock_pose.available.return_value = True
     mock_pose.overlay.return_value = []
@@ -162,7 +162,7 @@ def test_pose_confidence_medium_when_no_angles(mock_imaging, mock_toolbox, mock_
     assert result["confidence"] == "medium"
 
 
-@patch("topspin_review.core.stages.investigate.tools.pose")
+@patch("coachme.core.stages.investigate.tools.pose")
 def test_pose_raises_when_unavailable(mock_pose, tmp_path) -> None:
     mock_pose.available.return_value = False
     ctx = _ctx(tmp_path)
@@ -176,13 +176,13 @@ def test_pose_raises_when_unavailable(mock_pose, tmp_path) -> None:
 # ---------------------------------------------------------------------------
 
 
-@patch("topspin_review.core.stages.investigate.tools.build_agent")
+@patch("coachme.core.stages.investigate.tools.build_agent")
 def test_build_tools_returns_six_callables(mock_build_agent, tmp_path) -> None:
     mock_agent = MagicMock()
     mock_agent.agent = MagicMock()
     mock_build_agent.return_value = mock_agent
 
-    from topspin_review.core.stages.investigate.tools import build_tools
+    from coachme.core.stages.investigate.tools import build_tools
 
     ctx = _ctx(tmp_path)
     tools = build_tools(ctx)

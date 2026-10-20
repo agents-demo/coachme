@@ -1,6 +1,6 @@
 # Architecture
 
-Topspin Review is layered (hexagonal). Dependencies point **inward** only.
+CoachMe is layered (hexagonal). Dependencies point **inward** only.
 
 ```
 surfaces  ──▶  core  ──▶  integrations  ──▶  domain
@@ -22,7 +22,7 @@ constant matching the stage packages), so a violation fails CI.
 ## Package map
 
 ```
-topspin_review/
+coachme/
 ├── __init__.py            # version only (no side effects)
 ├── domain/                # report, evidence, game_reading, progress, compare, evaluate, drills, annotations, render
 ├── integrations/          # outbound adapters
@@ -141,7 +141,7 @@ core/
 ## openjiuwen integration
 
 All framework access is funnelled through `integrations/agents/`; the rest of the
-app imports only `topspin_review.integrations.agents`.
+app imports only `coachme.integrations.agents`.
 
 - **Model clients** — `integrations.agents.agent.models` is **internal**
   (`make_text_model` / `make_vision_model`, lazy `openjiuwen...Model`, reading

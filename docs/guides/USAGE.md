@@ -1,4 +1,4 @@
-# Using Topspin Review
+# Using CoachMe
 
 Record a session — table tennis, tennis, badminton, squash, padel — and get back **form and
 footwork insights**, the main things to fix, and drills. A local video file goes in; a local
@@ -56,7 +56,7 @@ So the frames follow the **action**, not the clock. (ffmpeg's only job is to han
 
 ## 2. Setup
 
-On this machine `python`/`pip` are **not on PATH** — use the repo venv. From the `topspin-review`
+On this machine `python`/`pip` are **not on PATH** — use the repo venv. From the `coachme`
 folder:
 
 ```powershell
@@ -82,7 +82,7 @@ One engine, several inbound adapters. All expose the same analysis.
 **Web UI (Streamlit)** → http://localhost:8501:
 
 ```powershell
-& $PY -m streamlit run topspin_review/surfaces/gui/ui.py
+& $PY -m streamlit run coachme/surfaces/gui/ui.py
 ```
 
 - **Sessions** — history; open or delete a session.
@@ -96,8 +96,8 @@ One engine, several inbound adapters. All expose the same analysis.
 **Web app (gui2)** → http://127.0.0.1:8000/gui2/:
 
 ```powershell
-cd topspin_review\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
-& $PY -m uvicorn topspin_review.surfaces.gui2:app --port 8000
+cd coachme\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
+& $PY -m uvicorn coachme.surfaces.gui2:app --port 8000
 ```
 
 A FastAPI server (`server/`) serving a SvelteKit SPA (`client/`). Same engine, built for the
@@ -110,11 +110,11 @@ started from the header's **＋ New analysis**. The server also exposes the JSON
 
 **CLI** — see §5.
 
-**HTTP API** — a minimal API over the same service (`uvicorn topspin_review.surfaces.api:app`), §6.
+**HTTP API** — a minimal API over the same service (`uvicorn coachme.surfaces.api:app`), §6.
 
-**MCP** — exposes `analyze_sport_video` to MCP clients (`python -m topspin_review.surfaces.mcp.server`).
+**MCP** — exposes `analyze_sport_video` to MCP clients (`python -m coachme.surfaces.mcp.server`).
 
-**Programmatic** — `from topspin_review.core.service import analyze_video_sync`.
+**Programmatic** — `from coachme.core.service import analyze_video_sync`.
 
 ---
 
@@ -131,28 +131,28 @@ started from the header's **＋ New analysis**. The server also exposes the JSON
 ## 5. Command line
 
 ```powershell
-& $PY -m topspin_review.surfaces.cli profile                                  # set your profile
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4          # analyze (default path)
-& $PY -m topspin_review.surfaces.cli analyze clip.mp4 --box 0.2,0.1,0.8,0.9   # restrict to a region
-& $PY -m topspin_review.surfaces.cli analyze clip.mp4 --agentic               # guided window selection
-& $PY -m topspin_review.surfaces.cli analyze clip.mp4 --mode investigator     # experimental investigator
-& $PY -m topspin_review.surfaces.cli history                                  # recent reports
-& $PY -m topspin_review.surfaces.cli export clip.mp4                          # Markdown/HTML/PDF
-& $PY -m topspin_review.surfaces.cli compare a.mp4 b.mp4                      # diff two sessions
-& $PY -m topspin_review.surfaces.cli reset                                    # clear saved reports
+& $PY -m coachme.surfaces.cli profile                                  # set your profile
+& $PY -m coachme.surfaces.cli analyze runtime/data/sample.mp4          # analyze (default path)
+& $PY -m coachme.surfaces.cli analyze clip.mp4 --box 0.2,0.1,0.8,0.9   # restrict to a region
+& $PY -m coachme.surfaces.cli analyze clip.mp4 --agentic               # guided window selection
+& $PY -m coachme.surfaces.cli analyze clip.mp4 --mode investigator     # experimental investigator
+& $PY -m coachme.surfaces.cli history                                  # recent reports
+& $PY -m coachme.surfaces.cli export clip.mp4                          # Markdown/HTML/PDF
+& $PY -m coachme.surfaces.cli compare a.mp4 b.mp4                      # diff two sessions
+& $PY -m coachme.surfaces.cli reset                                    # clear saved reports
 ```
 
 Run the analysis in its own process (used by the UI, useful in scripts):
 
 ```powershell
-& $PY -m topspin_review.core.jobs.worker runtime/data/sample.mp4 --progress progress.json --agentic
+& $PY -m coachme.core.jobs.worker runtime/data/sample.mp4 --progress progress.json --agentic
 ```
 
 ---
 
 ## 6. HTTP API
 
-Start with `uvicorn topspin_review.surfaces.api:app`. Routes:
+Start with `uvicorn coachme.surfaces.api:app`. Routes:
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -160,7 +160,7 @@ Start with `uvicorn topspin_review.surfaces.api:app`. Routes:
 | GET | `/reports/{stem}` | one full report |
 | POST | `/analyze` | analyze a `{video_path, region_box?}` and return the report |
 
-The gui2 server (`uvicorn topspin_review.surfaces.gui2:app`) is a richer API and also serves the SPA:
+The gui2 server (`uvicorn coachme.surfaces.gui2:app`) is a richer API and also serves the SPA:
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -190,7 +190,7 @@ The gui2 server (`uvicorn topspin_review.surfaces.gui2:app`) is a richer API and
 Rebuild the gui2 web app after editing its client:
 
 ```powershell
-cd topspin_review\surfaces\gui2\client
+cd coachme\surfaces\gui2\client
 npm run build          # writes client/build/ which the server serves at /gui2/
 ```
 
@@ -201,8 +201,8 @@ Typical first run:
 
 ```powershell
 & $PY tests\integration\make_sample.py
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4
-& $PY -m topspin_review.surfaces.cli export runtime/data/sample.mp4
+& $PY -m coachme.surfaces.cli analyze runtime/data/sample.mp4
+& $PY -m coachme.surfaces.cli export runtime/data/sample.mp4
 ```
 
 ---

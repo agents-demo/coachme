@@ -1,4 +1,4 @@
-# TopSpin Review — Pitch for Huawei Internal Stakeholders
+# CoachMe — Pitch for Huawei Internal Stakeholders
 
 > **One-sentence pitch:** Film a practice session. The app watches it like a coach and tells you exactly what to fix — specific to your technique, at the exact moment it went wrong.
 

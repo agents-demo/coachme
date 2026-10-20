@@ -16,12 +16,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from topspin_review.domain import (  # noqa: E402
+from coachme.domain import (  # noqa: E402
     evaluate,
     progress,
 )
-from topspin_review.domain import report as report_schema  # noqa: E402
-from topspin_review.integrations.storage import store
+from coachme.domain import report as report_schema  # noqa: E402
+from coachme.integrations.storage import store
 
 DEFAULT_MIN_SCORE = int(os.getenv("REPORT_MIN_SCORE", "60"))
 

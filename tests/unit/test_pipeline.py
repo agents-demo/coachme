@@ -6,13 +6,13 @@ import numpy as np
 import pytest
 from PIL import Image, ImageDraw
 
-from topspin_review.core.stages import observe
-from topspin_review.core.stages.measure import ball
-from topspin_review.core.video import cvutil, metrics
-from topspin_review.domain import compare as compare_mod
-from topspin_review.domain import evaluate, progress, report
-from topspin_review.integrations import reporting as export
-from topspin_review.integrations.agents.telemetry import usage
+from coachme.core.stages import observe
+from coachme.core.stages.measure import ball
+from coachme.core.video import cvutil, metrics
+from coachme.domain import compare as compare_mod
+from coachme.domain import evaluate, progress, report
+from coachme.integrations import reporting as export
+from coachme.integrations.agents.telemetry import usage
 
 
 @pytest.fixture(autouse=True)
@@ -152,7 +152,7 @@ def test_export_markdown_and_html():
 
 
 def test_retrieval_context():
-    from topspin_review.core.stages.coach import retrieve_reports
+    from coachme.core.stages.coach import retrieve_reports
 
     reports = [
         {"source": "a.mp4", "issues": [{"issue": "poor footwork and split step"}], "focus": "footwork"},
@@ -189,7 +189,7 @@ def test_usage_extraction():
 
 
 def test_service_describe():
-    from topspin_review.core import service
+    from coachme.core import service
 
     desc = service.describe()
     assert desc["name"] == "analyze_sport_video"
@@ -202,20 +202,20 @@ def test_api_routes_registered():
     import pytest
 
     pytest.importorskip("fastapi")
-    from topspin_review.surfaces import api
+    from coachme.surfaces import api
 
     paths = {getattr(route, "path", None) for route in api.app.routes}
     assert {"/analyze", "/reports"} <= paths
 
 
 def test_mcp_server_module_imports():
-    from topspin_review.surfaces.mcp import server
+    from coachme.surfaces.mcp import server
 
     assert callable(server.main)
 
 
 def test_pose_graceful_without_mediapipe():
-    from topspin_review.integrations import pose
+    from coachme.integrations import pose
 
     assert pose.summarize(None) == {}
     assert pose.overlay([], None) == []

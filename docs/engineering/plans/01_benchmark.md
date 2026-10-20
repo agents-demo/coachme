@@ -278,8 +278,8 @@ Label acquisition is a 1–2 week dependency, not an Investigator coding task.
 
 | Deliverable | Purpose |
 |---|---|
-| `topspin_review/benchmark/` | Installable runner, scorer, schemas and CLI |
-| `topspin-benchmark` | `run`, `score`, `ui` and `import` commands |
+| `coachme/benchmark/` | Installable runner, scorer, schemas and CLI |
+| `coachme-benchmark` | `run`, `score`, `ui` and `import` commands |
 | `manifest.json` | Clips, metadata, consent, checksums |
 | `labels.json` | Coach ground truth |
 | `rating_sheet.csv` | Combined blind ratings export; each rater gets only a blank per-rater template |
@@ -297,7 +297,7 @@ v1; do not confuse the benchmark UI with `surfaces/gui2`.
 ## 11. File layout
 
 ```text
-topspin_review/benchmark/
+coachme/benchmark/
   __init__.py
   cli.py                    # run, score, ui, import
   runner.py
@@ -309,7 +309,7 @@ topspin_review/benchmark/
     server/
     client/
 
-benchmark/                  # default TOPSPIN_BENCHMARK_DATA
+benchmark/                  # default COACHME_BENCHMARK_DATA
   README.md                 # tracked
   manifest.example.json     # tracked, no real people or paths
   labels.example.json       # tracked, schema only
@@ -332,7 +332,7 @@ benchmark/                  # default TOPSPIN_BENCHMARK_DATA
 tests/benchmark/            # unit and API tests only
 ```
 
-`TOPSPIN_BENCHMARK_DATA` overrides the default data root. Set it to a path
+`COACHME_BENCHMARK_DATA` overrides the default data root. Set it to a path
 outside the repository for real clips. Commit only `README.md`, example schemas
 and the inner `.gitignore`.
 
@@ -465,14 +465,14 @@ Rules:
 
 **Prerequisite:** the runner must use an isolated data root. It must not write into
 the user’s `runtime/data` or use the demo-cache fallback. Before implementing the
-runner, add a `TOPSPIN_DATA_DIR` override (used by `runtime.py` and `store.py`) or
+runner, add a `COACHME_DATA_DIR` override (used by `runtime.py` and `store.py`) or
 run inside a disposable container. Until that exists, cost, latency and report
 paths are not trustworthy. Use a fresh cache per run and `DEMO_FALLBACK=false`.
 
 CLI:
 
 ```text
-topspin-benchmark run \
+coachme-benchmark run \
   --manifest benchmark/manifest.json \
   --out benchmark/runs/<run_id> \
   --modes standard,guided,investigator
@@ -481,7 +481,7 @@ topspin-benchmark run \
 The local review UI is launched with:
 
 ```text
-topspin-benchmark ui --data benchmark --port 8765
+coachme-benchmark ui --data benchmark --port 8765
 ```
 
 Behavior:
@@ -489,7 +489,7 @@ Behavior:
 - create a filesystem-safe `run_id`;
 - map `standard -> deterministic`, `guided -> agentic`, `investigator -> investigator`;
 - run each clip sequentially in a subprocess:
-  `python -m topspin_review.surfaces.cli analyze <clip> --mode <strategy>`;
+  `python -m coachme.surfaces.cli analyze <clip> --mode <strategy>`;
 - write raw reports under `raw/<mode>/<clip_id>.json`;
 - write `traces/<mode>/<clip_id>.json` with evidence records, tool sequence, budget
   and timings; Standard trace may be report-only;
@@ -506,7 +506,7 @@ Behavior:
 gates. After runs, labels and ratings exist, compute the score explicitly:
 
 ```text
-topspin-benchmark score --run benchmark/runs/<run_id>
+coachme-benchmark score --run benchmark/runs/<run_id>
 ```
 
 The UI exposes this as `POST /api/runs/{run_id}/score` and shows “Score not
@@ -709,7 +709,7 @@ only for a production run.
 
 | # | Task | Acceptance |
 |---|---|---|
-| 1 | Isolated data root (`TOPSPIN_DATA_DIR` or container) | benchmark never writes to user runtime |
+| 1 | Isolated data root (`COACHME_DATA_DIR` or container) | benchmark never writes to user runtime |
 | 2 | Manifest schema + validator | invalid manifest fails clearly |
 | 3 | Label schema + validator | invalid theme/time/consent fails |
 | 4 | Report normalizer | Standard and Investigator share one finding shape |

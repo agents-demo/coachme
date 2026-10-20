@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "topspin-review"
+name = "coachme"
 version = "0.1.0"
 description = "Analyze a racket-sport session video into a measured, evidence-based coaching report."
 readme = "README.md"
@@ -39,14 +39,14 @@ all = [
 ]
 
 [project.scripts]
-topspin-review = "topspin_review.surfaces.cli:main"
+coachme = "coachme.surfaces.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["topspin_review*"]
+include = ["coachme*"]
 
 [tool.setuptools.package-data]
-"topspin_review.surfaces.gui2" = ["client/build/**", "client/build/*"]
+"coachme.surfaces.gui2" = ["client/build/**", "client/build/*"]
 
 [tool.ruff]
 line-length = 120

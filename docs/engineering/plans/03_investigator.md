@@ -3,7 +3,7 @@
 **Role:** implementation plan for the Investigator feature. Start here only when building Investigator.
 
 **Status:** MVP spec; implementation in progress (revision 1.2)
-**Scope:** a new opt-in analysis mode for Topspin Review
+**Scope:** a new opt-in analysis mode for CoachMe
 **Terms:** **Evidence-backed adaptive coaching** is the marketing differentiator. **Investigator** is the product mode. **Model-as-orchestrator** is the architecture. **Model-directed, evidence-grounded investigation** is the mechanism/behaviour. "Free investigation" is internal shorthand only. See [Glossary](../../GLOSSARY.md).
 
 **Goal:** make the model own the investigation, not just write the report
@@ -70,7 +70,7 @@ mechanics because that is where its hypothesis leads.
 
 ### 2.1 Deterministic strategy
 
-`topspin_review/core/strategies/deterministic.py` is the default. It runs:
+`coachme/core/strategies/deterministic.py` is the default. It runs:
 
 1. `base.Strategy._prepare()` -> `measure.measure()`
 2. deterministic artifact generation
@@ -433,7 +433,7 @@ checklist execution.
 Draft:
 
 ```
-You are Topspin Review's investigator. You are a coach with tools, not a report
+You are CoachMe's investigator. You are a coach with tools, not a report
 writer following a fixed pipeline.
 
 Your job is to produce a short, evidence-grounded coaching report. You decide what
@@ -546,7 +546,7 @@ partial-report path with limitations.
 
 ---
 
-## 10. Topspin code changes
+## 10. CoachMe code changes
 
 ### 10.1 New files
 
@@ -587,7 +587,7 @@ partial-report path with limitations.
 | `surfaces/gui2/client/src/lib/components/LiveJob.svelte` | investigation feed |
 | `surfaces/gui2/client/src/routes/result/+page.svelte` | investigation/coverage panel |
 | `surfaces/cli/main.py` | `--mode` (keep `--agentic` alias) |
-| `topspin_review/surfaces/api.py` / MCP | optional mode parameter |
+| `coachme/surfaces/api.py` / MCP | optional mode parameter |
 | `docs/guides/USAGE.md` | document the mode and budgets |
 
 ### 10.3 Strategy interface
@@ -943,7 +943,7 @@ Reproduce the current checks with:
 
 ```powershell
 .venv\Scripts\python.exe -m pytest tests/unit -q
-.venv\Scripts\python.exe -m ruff check topspin_review tests/unit
+.venv\Scripts\python.exe -m ruff check coachme tests/unit
 ```
 
 ### 18.3 Implementation status after the prototype
@@ -1862,8 +1862,8 @@ rails = [*backend_rails.resolve(self.params.rails), *self.params.extra_rails]
 `InvestigatorStrategy` builds:
 
 ```python
-from topspin_review.integrations.agents.agent.rails import TokenBudgetRail
-from topspin_review.integrations.agents.agent.rails import _count_tokens
+from coachme.integrations.agents.agent.rails import TokenBudgetRail
+from coachme.integrations.agents.agent.rails import _count_tokens
 
 rail = TokenBudgetRail(config.investigator_max_tokens(), _count_tokens)
 ```
@@ -2259,23 +2259,23 @@ These are experiments, not unresolved design decisions.
 
 | Concern | Current location |
 |---|---|
-| Fixed pipeline | `topspin_review/core/strategies/deterministic.py` |
-| Mandatory full measurement | `topspin_review/core/strategies/base.py:69-80` |
-| Existing agentic prototype | `topspin_review/core/strategies/agentic.py` |
-| Measurement | `topspin_review/core/stages/measure/measure.py` |
-| Sampling | `topspin_review/core/stages/measure/sampling.py` |
-| Pose | `topspin_review/integrations/pose.py` |
-| Ball | `topspin_review/core/stages/measure/ball.py`, `integrations/ballmodel.py` |
-| Strokes | `topspin_review/core/stages/measure/strokes.py` |
-| Vision passes | `topspin_review/core/stages/observe/` |
-| Report tools | `topspin_review/core/stages/coach/report_tools.py` |
-| Report schema | `topspin_review/domain/report.py` |
-| Agent builder | `topspin_review/integrations/agents/agent/builder/` |
+| Fixed pipeline | `coachme/core/strategies/deterministic.py` |
+| Mandatory full measurement | `coachme/core/strategies/base.py:69-80` |
+| Existing agentic prototype | `coachme/core/strategies/agentic.py` |
+| Measurement | `coachme/core/stages/measure/measure.py` |
+| Sampling | `coachme/core/stages/measure/sampling.py` |
+| Pose | `coachme/integrations/pose.py` |
+| Ball | `coachme/core/stages/measure/ball.py`, `integrations/ballmodel.py` |
+| Strokes | `coachme/core/stages/measure/strokes.py` |
+| Vision passes | `coachme/core/stages/observe/` |
+| Report tools | `coachme/core/stages/coach/report_tools.py` |
+| Report schema | `coachme/domain/report.py` |
+| Agent builder | `coachme/integrations/agents/agent/builder/` |
 | openjiuwen DeepAgent | `C:\Workspace\openjiuwen\agent-core\openjiuwen\harness\factory.py` |
 | ReAct loop | `C:\Workspace\openjiuwen\agent-core\openjiuwen\core\single_agent\agents\react_agent.py` |
 | Streaming | `C:\Workspace\openjiuwen\agent-core\openjiuwen\harness\deep_agent.py:3325`, `core/runner/runner.py:849` |
-| Rails | `topspin_review/integrations/agents/agent/rails.py` |
-| Jobs/progress | `topspin_review/surfaces/gui2/server/jobs.py`, `core/progress.py` |
+| Rails | `coachme/integrations/agents/agent/rails.py` |
+| Jobs/progress | `coachme/surfaces/gui2/server/jobs.py`, `core/progress.py` |
 
 ## Appendix B — What this mode is not
 

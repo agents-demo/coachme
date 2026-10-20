@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from topspin_review.core.strategies.resolve_strategy import (
+from coachme.core.strategies.resolve_strategy import (
     AGENTIC,
     DETERMINISTIC,
     INVESTIGATOR,

@@ -1,4 +1,4 @@
-# Contributing to Topspin Review
+# Contributing to CoachMe
 
 Record a racket-sport session video and get back a coaching report (strengths, issues with evidence, drills, focus).
 
@@ -16,8 +16,8 @@ $PY = "C:\Workspace\openjiuwen\jiuwenswarm\.venv\Scripts\python.exe"
 ## Run
 
 ```powershell
-& $PY -m streamlit run topspin_review/surfaces/gui/ui.py    # Web UI
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4   # CLI
+& $PY -m streamlit run coachme/surfaces/gui/ui.py    # Web UI
+& $PY -m coachme.surfaces.cli analyze runtime/data/sample.mp4   # CLI
 ```
 
 ## Checks

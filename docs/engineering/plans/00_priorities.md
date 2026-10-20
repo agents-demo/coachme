@@ -1,4 +1,4 @@
-# Topspin Review — Roadmap & Priorities
+# CoachMe — Roadmap & Priorities
 
 **Role:** master roadmap and sequencing guide. Start here for "what next."
 Each feature has its own plan file (linked below); this file is the index,

@@ -1,6 +1,6 @@
 # Run a demo — step by step
 
-This page shows how to run Topspin Review and get a result. It uses a real model
+This page shows how to run CoachMe and get a result. It uses a real model
 (a **text** model for the report and a **vision** model to read the frames) on a
 short racket-sport clip.
 
@@ -16,7 +16,7 @@ Open a PowerShell window and set the Python path once:
 
 ```powershell
 $PY = "C:\Workspace\openjiuwen\jiuwenswarm\.venv\Scripts\python.exe"
-cd C:\Workspace\openjiuwendemos\topspin-review
+cd C:\Workspace\openjiuwendemos\coachme
 ```
 
 Check that `.env` has a model (a real model, not a fake):
@@ -49,7 +49,7 @@ full-body works best. A single photo works too (you get posture feedback only).
 ### 1. Start the UI
 
 ```powershell
-& $PY -m streamlit run topspin_review/surfaces/gui/ui.py
+& $PY -m streamlit run coachme/surfaces/gui/ui.py
 ```
 
 Leave this window open.
@@ -100,8 +100,8 @@ video experience: scrub the video, tap a moment to jump to it, sync the movement
 sessions. Build it once (needs Node), then run the server:
 
 ```powershell
-cd topspin_review\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
-& $PY -m uvicorn topspin_review.surfaces.gui2:app --port 8000
+cd coachme\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
+& $PY -m uvicorn coachme.surfaces.gui2:app --port 8000
 ```
 
 Then open:
@@ -124,16 +124,16 @@ compare pairwise — sessions from the **Sessions** page.
 Start the app in one window:
 
 ```powershell
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4
+& $PY -m coachme.surfaces.cli analyze runtime/data/sample.mp4
 ```
 
 Other commands:
 
 ```powershell
-& $PY -m topspin_review.surfaces.cli profile   # set your profile
-& $PY -m topspin_review.surfaces.cli history   # past reports
-& $PY -m topspin_review.surfaces.cli export runtime/data/sample.mp4
-& $PY -m topspin_review.surfaces.cli compare a.mp4 b.mp4
+& $PY -m coachme.surfaces.cli profile   # set your profile
+& $PY -m coachme.surfaces.cli history   # past reports
+& $PY -m coachme.surfaces.cli export runtime/data/sample.mp4
+& $PY -m coachme.surfaces.cli compare a.mp4 b.mp4
 ```
 
 ---
@@ -141,20 +141,20 @@ Other commands:
 ## Option D — programmatic / HTTP / MCP
 
 ```python
-from topspin_review.core.service import analyze_video_sync
+from coachme.core.service import analyze_video_sync
 result = analyze_video_sync("runtime/data/sample.mp4")
 ```
 
 ```powershell
-& $PY -m uvicorn topspin_review.surfaces.api:app     # HTTP API
-& $PY -m topspin_review.surfaces.mcp.server          # MCP tool: analyze_sport_video
+& $PY -m uvicorn coachme.surfaces.api:app     # HTTP API
+& $PY -m coachme.surfaces.mcp.server          # MCP tool: analyze_sport_video
 ```
 
 ---
 
 ## What the run does
 
-Topspin Review runs three stages (plus verification, retrieval and clip-cutting):
+CoachMe runs three stages (plus verification, retrieval and clip-cutting):
 
 | Stage | What it does |
 |---|---|

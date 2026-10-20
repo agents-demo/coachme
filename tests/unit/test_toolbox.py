@@ -4,8 +4,8 @@ import imageio.v2 as imageio
 import numpy as np
 from PIL import Image
 
-from topspin_review.core.stages.measure import toolbox
-from topspin_review.core.video import metrics
+from coachme.core.stages.measure import toolbox
+from coachme.core.video import metrics
 
 
 def _frames(n: int = 6) -> tuple[list[Image.Image], list[float]]:

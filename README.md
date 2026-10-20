@@ -1,4 +1,4 @@
-# Topspin Review
+# CoachMe
 
 Record a session — table tennis, tennis, badminton, squash, padel — and get back **form and footwork insights**, the main things to fix, and drills. Built on [openjiuwen](https://github.com/openJiuwen-ai/agent-core).
 
@@ -60,30 +60,30 @@ are enough; everything else degrades gracefully when missing.
 
 ## Use
 
-Run from the `topspin-review` folder.
+Run from the `coachme` folder.
 
 ```powershell
 # set your profile (sport, level, hand, goal)
-& $PY -m topspin_review.surfaces.cli profile
+& $PY -m coachme.surfaces.cli profile
 
 # analyze a video (defaults to runtime/data/sample.mp4)
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4
+& $PY -m coachme.surfaces.cli analyze runtime/data/sample.mp4
 
 # see past reports
-& $PY -m topspin_review.surfaces.cli history
+& $PY -m coachme.surfaces.cli history
 ```
 
 Web UI (Streamlit):
 
 ```powershell
-& $PY -m streamlit run topspin_review/surfaces/gui/ui.py
+& $PY -m streamlit run coachme/surfaces/gui/ui.py
 ```
 
 Web app (gui2 — FastAPI + SvelteKit SPA). Build once, then run:
 
 ```powershell
-cd topspin_review\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
-& $PY -m uvicorn topspin_review.surfaces.gui2:app --port 8000
+cd coachme\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
+& $PY -m uvicorn coachme.surfaces.gui2:app --port 8000
 # then open http://127.0.0.1:8000/gui2/
 ```
 
@@ -110,12 +110,12 @@ surfaces → core → integrations → domain
 ```
 
 ```
-topspin-review/
+coachme/
 ├── pyproject.toml            # packaging, extras (pose/pdf/api/mcp/web/dev), ruff/pytest config
 ├── runtime/                  # generated state, gitignored (created on first run)
 │   ├── workspace/  logs/     # DeepAgent workspace scaffold + openjiuwen logs
 │   └── data/                 # profile, <video>_report.json, cache/, artifacts/, exports/
-├── topspin_review/
+├── coachme/
 │   ├── __init__.py           # version only (no side effects)
 │   ├── domain/               # pure: report, game reading, progress, compare, evaluate, drills, render
 │   ├── integrations/         # outbound adapters (see below)
@@ -157,7 +157,7 @@ no shared package is required.
 
 ## How it uses openjiuwen
 
-All openjiuwen access is funnelled through `topspin_review.integrations.agents/` (the app never
+All openjiuwen access is funnelled through `coachme.integrations.agents/` (the app never
 imports `openjiuwen` directly). Its façade is small: `build`, `TextParams`/`VisionParams`,
 `run_agent`, `run_text`, `ConfigError`, `configure_logging`. Internally:
 
@@ -176,11 +176,11 @@ them: `core/stages/coach/report_tools.py`.
 ```powershell
 $PY = "C:\Workspace\openjiuwen\jiuwenswarm\.venv\Scripts\python.exe"
 & $PY -m pip install -r requirements.txt
-& $PY -m pip install -e .            # console script: topspin-review
+& $PY -m pip install -e .            # console script: coachme
 # & $PY -m pip install -e .[all]      # + every optional extra
 ```
 
-Installing is optional: running `-m topspin_review...` from the project folder
+Installing is optional: running `-m coachme...` from the project folder
 also works — the project is self-contained.
 
 ## Development
@@ -195,10 +195,10 @@ also works — the project is self-contained.
 Compare two analyzed sessions, export, and serve:
 
 ```powershell
-& $PY -m topspin_review.surfaces.cli compare video11.mp4 video12.mp4
-& $PY -m topspin_review.surfaces.cli export video12.mp4
-& $PY -m uvicorn topspin_review.surfaces.api:app
-& $PY -m topspin_review.surfaces.mcp.server
+& $PY -m coachme.surfaces.cli compare video11.mp4 video12.mp4
+& $PY -m coachme.surfaces.cli export video12.mp4
+& $PY -m uvicorn coachme.surfaces.api:app
+& $PY -m coachme.surfaces.mcp.server
 ```
 
 CI (`.github/workflows/ci.yml`) runs all three. Analysis requires a model endpoint
@@ -207,7 +207,7 @@ CI (`.github/workflows/ci.yml`) runs all three. Analysis requires a model endpoi
 Programmatic use:
 
 ```python
-from topspin_review.core.service import analyze_video_sync
+from coachme.core.service import analyze_video_sync
 result = analyze_video_sync("runtime/data/session.mp4")
 ```
 
@@ -241,7 +241,7 @@ result = analyze_video_sync("runtime/data/session.mp4")
   recurring themes, issue counts per session, focus history, and whether last session's focus was
   **achieved**. In the web UI, comparing two sessions lives on the **Sessions** page.
 - **Export** a report to Markdown + self-contained HTML: `analyze` does it automatically, or run
-  `python -m topspin_review.surfaces.cli export [video]`. Open the HTML and print to PDF if needed.
+  `python -m coachme.surfaces.cli export [video]`. Open the HTML and print to PDF if needed.
 - **Player region:** if the auto primary-subject pick is wrong, pass
   `--box left,top,right,bottom` (0..1) or use the UI sliders to restrict analysis.
 - Real joint pose: `pip install -r requirements.txt` (installs `mediapipe`), then `motion.pose_estimate` returns

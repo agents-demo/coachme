@@ -159,7 +159,7 @@ A year before we built this, the pipeline would have been too slow, too inaccura
 ## Data privacy — the Huawei-specific angle
 For Huawei markets, deployment control matters as much as the model.
 
-A cloud-only competitor requires uploading personal video - of people, their movements, their training sessions - to servers operated by third parties, potentially in foreign jurisdictions. Topspin can offer two modes: a **local-first** mode where the clip stays on the device, and a **hosted** mode running on **Ascend in a private or regional cloud**, under the operator's control. These are different deployment choices, not the same privacy claim.
+A cloud-only competitor requires uploading personal video - of people, their movements, their training sessions - to servers operated by third parties, potentially in foreign jurisdictions. CoachMe can offer two modes: a **local-first** mode where the clip stays on the device, and a **hosted** mode running on **Ascend in a private or regional cloud**, under the operator's control. These are different deployment choices, not the same privacy claim.
 
 Frame it as: "Clubs can keep video local. Hosted deployments can run on Ascend in-region, under your control. We do not require a foreign cloud to make this work."
 ---

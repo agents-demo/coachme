@@ -5,8 +5,8 @@ import json
 import threading
 from pathlib import Path
 
-from topspin_review.core.progress import Progress
-from topspin_review.core.stages.investigate.context import Budget, InvestigationContext
+from coachme.core.progress import Progress
+from coachme.core.stages.investigate.context import Budget, InvestigationContext
 
 
 def _context(tmp_path: Path, **budget) -> tuple[InvestigationContext, Progress]:

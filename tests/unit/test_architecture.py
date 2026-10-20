@@ -15,7 +15,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-PKG = Path(__file__).resolve().parents[2] / "topspin_review"
+PKG = Path(__file__).resolve().parents[2] / "coachme"
 
 # For each layer, the layers it must NOT import (dependencies point inward only).
 FORBIDDEN: dict[str, set[str]] = {
@@ -53,13 +53,13 @@ def test_layer_dependencies_point_inward():
             continue
         for name in _imports(path):
             for other in forbidden:
-                if name == f"topspin_review.{other}" or name.startswith(f"topspin_review.{other}."):
+                if name == f"coachme.{other}" or name.startswith(f"coachme.{other}."):
                     violations.append(f"{path.relative_to(PKG)}: {layer} -> {other} ({name})")
     assert not violations, "layer violations:\n" + "\n".join(violations)
 
 
 def test_stages_constant_matches_stage_packages():
-    from topspin_review.core.stages import STAGES
+    from coachme.core.stages import STAGES
 
     stages_dir = PKG / "core" / "stages"
     found = {p.name for p in stages_dir.iterdir() if p.is_dir() and (p / "__init__.py").exists()}

@@ -41,13 +41,13 @@ adjudicate disagreements and export reproducible results.
 | Source of truth | Files under the benchmark data root | CLI, UI and exports share one contract |
 | Database | None | Runs are directories; labels/ratings are versioned JSON |
 | Default bind | `127.0.0.1` only | Personal video and labels are sensitive |
-| Run execution | Spawn `topspin-benchmark run` as a subprocess | UI cannot corrupt a long analysis |
+| Run execution | Spawn `coachme-benchmark run` as a subprocess | UI cannot corrupt a long analysis |
 | Concurrency | One active run per UI process | Avoids model/cost races in v1 |
 | Writes | Atomic replace plus ETag/If-Match | Prevents silent overwrites |
 | Blind enforcement | Server omits mapping; separate rater packets for true isolation | UI hiding alone is not a security boundary |
-| Code location | `topspin_review/benchmark/ui/` | Benchmark is a real subsystem, not a test fixture |
+| Code location | `coachme/benchmark/ui/` | Benchmark is a real subsystem, not a test fixture |
 | Frame step | `video.currentTime += ±(1/fps)` via JS | HTML5 has no native frame-step; seek by one frame duration is the practical equivalent |
-| Data location | `benchmark/` or `TOPSPIN_BENCHMARK_DATA` | Large clips and runs stay out of the package |
+| Data location | `benchmark/` or `COACHME_BENCHMARK_DATA` | Large clips and runs stay out of the package |
 
 ## 4. Users and roles
 
@@ -287,7 +287,7 @@ If a rater is missing, the clip is not adjudicable; show the missing rater.
 4. Operator confirms modes and environment.
 5. `POST /api/runs` returns `202` and a `run_id`.
 6. UI opens the dashboard and begins polling `GET /api/runs/{run_id}/progress` every 5 seconds.
-7. Server spawns `topspin-benchmark run` with an argument list, no shell.
+7. Server spawns `coachme-benchmark run` with an argument list, no shell.
 8. On completion the server updates `run.json`; scoring is **not** automatic.
 9. Dashboard switches to complete, failed or cancelled and shows `score_status`
    as `missing` until the operator clicks “Recompute score”.
@@ -566,7 +566,7 @@ by the scorer.
 Code:
 
 ```text
-topspin_review/benchmark/
+coachme/benchmark/
   __init__.py
   cli.py                 # run, score, ui, import
   runner.py
@@ -610,7 +610,7 @@ topspin_review/benchmark/
 Data:
 
 ```text
-benchmark/               # default TOPSPIN_BENCHMARK_DATA
+benchmark/               # default COACHME_BENCHMARK_DATA
   README.md              # tracked
   manifest.example.json  # tracked, schema only
   labels.example.json    # tracked, schema only
@@ -643,20 +643,20 @@ runs/
 ```
 
 Real manifests, labels, clips, ratings and runs must never be committed. Use
-`TOPSPIN_BENCHMARK_DATA` for a data root outside the repository.
+`COACHME_BENCHMARK_DATA` for a data root outside the repository.
 
 Commands:
 
 ```text
-topspin-benchmark run --manifest benchmark/manifest.json --modes standard,investigator
-topspin-benchmark score --run benchmark/runs/<run_id>
-topspin-benchmark ui --data benchmark --port 8765
-topspin-benchmark import --from <run_dir>
+coachme-benchmark run --manifest benchmark/manifest.json --modes standard,investigator
+coachme-benchmark score --run benchmark/runs/<run_id>
+coachme-benchmark ui --data benchmark --port 8765
+coachme-benchmark import --from <run_dir>
 ```
 
 Packaging:
 
-- add `topspin-benchmark = "topspin_review.benchmark.cli:main"` to
+- add `coachme-benchmark = "coachme.benchmark.cli:main"` to
   `[project.scripts]`;
 - reuse the `api` extra (`fastapi`, `uvicorn`); do not add a second web framework;
 - bundle the built SvelteKit client as package data, using the same pattern as
@@ -666,8 +666,8 @@ Packaging:
 - the UI server binds to loopback by default and refuses non-loopback unless an
   explicit future `--allow-remote` implementation with auth exists.
 
-The benchmark UI must use `TOPSPIN_BENCHMARK_DATA`, not `runtime/data`. The runner
-sets `TOPSPIN_DATA_DIR` to a run-scoped analysis directory and disables the demo
+The benchmark UI must use `COACHME_BENCHMARK_DATA`, not `runtime/data`. The runner
+sets `COACHME_DATA_DIR` to a run-scoped analysis directory and disables the demo
 fallback.
 
 ## 11. Process and state handling
@@ -723,7 +723,7 @@ This is the concurrency lock. It is created before spawning and deleted on compl
   "run_id": "...",
   "pid": 12345,
   "started_at": "...",
-  "command": ["python", "-m", "topspin_review.benchmark.cli", "run", "..."],
+  "command": ["python", "-m", "coachme.benchmark.cli", "run", "..."],
   "modes": ["standard", "investigator"],
   "environment": "local",
   "required_raters": 2
@@ -858,7 +858,7 @@ Each step must leave the CLI usable and the data files valid by themselves.
 
 ## 18. Definition of done
 
-- `topspin-benchmark ui` starts a local server and opens the SPA;
+- `coachme-benchmark ui` starts a local server and opens the SPA;
 - a run can be launched, cancelled and rescored from the UI;
 - every clip can be reviewed with timestamp seeking;
 - a coach can label all clips without touching JSON;

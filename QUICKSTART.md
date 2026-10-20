@@ -4,7 +4,7 @@ Record a session — table tennis, tennis, badminton, squash, padel — and get 
 report (strengths, issues with evidence, drills, a focus, progress vs the last report). A local
 video file goes in; a local report comes out.
 
-Run every command **from the `topspin-review` folder**. On this machine `pip`/`python` are not on
+Run every command **from the `coachme` folder**. On this machine `pip`/`python` are not on
 PATH, so use the repo venv's python:
 
 ```powershell
@@ -25,27 +25,27 @@ $PY = "C:\Workspace\openjiuwen\jiuwenswarm\.venv\Scripts\python.exe"
 **Web UI (Streamlit)** — opens http://localhost:8501:
 
 ```powershell
-& $PY -m streamlit run topspin_review/surfaces/gui/ui.py
+& $PY -m streamlit run coachme/surfaces/gui/ui.py
 ```
 
 **Web app (gui2)** — FastAPI + SvelteKit SPA at http://127.0.0.1:8000/gui2/:
 
 ```powershell
-cd topspin_review\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
-& $PY -m uvicorn topspin_review.surfaces.gui2:app --port 8000
+cd coachme\surfaces\gui2\client; npm install; npm run build; cd ..\..\..\..
+& $PY -m uvicorn coachme.surfaces.gui2:app --port 8000
 ```
 
 **CLI** — set your profile, then analyze a video:
 
 ```powershell
 # sport, level, hand, goal
-& $PY -m topspin_review.surfaces.cli profile
+& $PY -m coachme.surfaces.cli profile
 
 # analyze a video (defaults to runtime/data/sample.mp4)
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4
+& $PY -m coachme.surfaces.cli analyze runtime/data/sample.mp4
 
 # past reports
-& $PY -m topspin_review.surfaces.cli history
+& $PY -m coachme.surfaces.cli history
 ```
 
 No recording handy? Make a synthetic sample video:
@@ -58,22 +58,22 @@ No recording handy? Make a synthetic sample video:
 
 ```powershell
 # restrict analysis to a player region: left,top,right,bottom (0..1)
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4 --box 0.2,0.1,0.8,0.9
+& $PY -m coachme.surfaces.cli analyze runtime/data/sample.mp4 --box 0.2,0.1,0.8,0.9
 
 # let the model drive the analysis (agentic mode)
-& $PY -m topspin_review.surfaces.cli analyze runtime/data/sample.mp4 --agentic
+& $PY -m coachme.surfaces.cli analyze runtime/data/sample.mp4 --agentic
 
 # compare two analyzed sessions, export, serve
-& $PY -m topspin_review.surfaces.cli compare video11.mp4 video12.mp4
-& $PY -m topspin_review.surfaces.cli export video12.mp4
-& $PY -m uvicorn topspin_review.surfaces.api:app
-& $PY -m topspin_review.surfaces.mcp.server
+& $PY -m coachme.surfaces.cli compare video11.mp4 video12.mp4
+& $PY -m coachme.surfaces.cli export video12.mp4
+& $PY -m uvicorn coachme.surfaces.api:app
+& $PY -m coachme.surfaces.mcp.server
 ```
 
 Programmatic use:
 
 ```python
-from topspin_review.core.service import analyze_video_sync
+from coachme.core.service import analyze_video_sync
 result = analyze_video_sync("runtime/data/session.mp4")
 ```
 

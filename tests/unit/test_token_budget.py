@@ -1,7 +1,7 @@
 """Verify that token usage from the rail is reflected in Budget.tokens."""
 from __future__ import annotations
 
-from topspin_review.integrations.agents.agent.rails import TokenBudgetRail
+from coachme.integrations.agents.agent.rails import TokenBudgetRail
 
 
 class _FakeCtx:
@@ -57,7 +57,7 @@ def test_rail_requests_force_finish_when_budget_exceeded() -> None:
 
 def test_budget_tokens_can_be_set_from_rail() -> None:
     """Simulate how the investigator strategy syncs the rail back to Budget."""
-    from topspin_review.core.stages.investigate.context import Budget
+    from coachme.core.stages.investigate.context import Budget
 
     budget = Budget(max_tokens=5000)
     assert budget.tokens == 0

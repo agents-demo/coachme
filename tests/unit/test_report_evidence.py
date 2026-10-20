@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from topspin_review.core.stages.coach import report_tools
-from topspin_review.domain import report as report_schema
-from topspin_review.domain.evidence import EvidenceRecord
+from coachme.core.stages.coach import report_tools
+from coachme.domain import report as report_schema
+from coachme.domain.evidence import EvidenceRecord
 
 
 def _record(

@@ -1,10 +1,10 @@
 # Comprehensive Market Research: Size, Trends and Forecasts in AI-Assisted Racket-Sport Coaching (2020–2030)
 
-**Topspin Review — B2C-first opportunity assessment and conditional investment case**
+**CoachMe — B2C-first opportunity assessment and conditional investment case**
 
 *Research document. The figures are planning estimates triangulated from participation,
 technology and company data. They are directional, not audited market statistics. The central
-question is not whether the category is large, but whether Topspin can build a paid business in it.
+question is not whether the category is large, but whether CoachMe can build a paid business in it.
 See the methodology note and sources in the appendix.*
 
 ---
@@ -44,7 +44,7 @@ racket-sport subset of **USD 250–450 million**. Under a base case of 25–35% 
 market reaches **USD 4.5–9 billion by 2030**, and the racket-sport subset **USD 1.0–1.8 billion**.
 These are planning ranges, not forecasts.
 
-Topspin Review is positioned at the intersection of measurement, coaching and progress. Its current
+CoachMe is positioned at the intersection of measurement, coaching and progress. Its current
 product turns a practice video into a structured coaching report with timestamped evidence, drills,
 progress comparison, bilingual web and Android experiences, and local-first processing.
 
@@ -255,7 +255,7 @@ feedback**, excluding hardware and human coaching fees.
 
 *Ranges are illustrative planning estimates. They are deliberately wide because public definitions
 differ. The racket-sport subset is not a fixed percentage of the core market; it is the portion most
-directly comparable to Topspin Review.*
+directly comparable to CoachMe.*
 
 ### 2.3 Estimated path, 2020–2030
 
@@ -278,7 +278,7 @@ unsettled.
 |---|---:|---|
 | Global racket-sport participants | 500M+ | Table tennis ~300M, tennis ~87M, badminton 200M+, padel ~35M, squash ~20M, pickleball ~24M US (~22M globally active); overlaps |
 | Serious, frequent players | 100–150M | Play weekly, own a smartphone, willing to improve |
-| Serious table-tennis players | ~40M | Topspin's primary serviceable market |
+| Serious table-tennis players | ~40M | CoachMe's primary serviceable market |
 | Smartphone + payment + language reachable | 20–30M | Excludes markets without payment or localisation |
 | Base-case paying users by 2028 | 50,000 | 0.1–0.2% of the primary serviceable market |
 | Base-case ARR at USD 8–12/month | USD 5–7M | Consumer only; coach/club revenue is additional |
@@ -310,7 +310,7 @@ the main reason the verdict is conditional rather than unconditional.
 
 ### 2.6 Revenue models and unit economics
 
-The right model depends on the buyer. The recommended order for Topspin is consumer first,
+The right model depends on the buyer. The recommended order for CoachMe is consumer first,
 coach/club second.
 
 | Model | Buyer | Price signal | Strength | Risk |
@@ -364,7 +364,7 @@ prove that individual players will pay for it directly.
 - “I want drills that match my actual problem, not generic YouTube advice.”
 
 Existing behaviour already includes filming, slow-motion playback, comparing clips and sending videos
-to coaches. Topspin does not need to create a new habit; it needs to make an existing habit faster
+to coaches. CoachMe does not need to create a new habit; it needs to make an existing habit faster
 and more useful.
 
 ### 3.3 Behavioural shifts
@@ -474,15 +474,15 @@ pushing them?”
 | 1. Manual review | Coach's Eye, V1, Hudl | Watch, pause, annotate | Labour-intensive; requires expertise |
 | 2. Automatic statistics | SwingVision, HomeCourt, PlaySight | Line calls, shot counts, heat maps | Sport-specific; little coaching |
 | 3. 3D biomechanics | Sportsbox AI, Onform | Precise body mechanics | Often golf-first; expensive; setup-sensitive |
-| 4. AI coaching reports | Topspin Review and emerging apps | Measured evidence + plain-language coaching + drills | Trust, capture quality, cost |
+| 4. AI coaching reports | CoachMe and emerging apps | Measured evidence + plain-language coaching + drills | Trust, capture quality, cost |
 | 5. Agentic / live coaching | Early prototypes | Adaptive investigation, real-time feedback | Accuracy, latency, safety |
 
-Topspin is positioned at stage 4 and is building toward stage 5. Stage 2 is becoming crowded, stage
+CoachMe is positioned at stage 4 and is building toward stage 5. Stage 2 is becoming crowded, stage
 3 is technically deep but narrow, and stage 5 is not yet reliable enough for a mass consumer product.
 
 ### 4.2 Competitive map
 
-| Player | Category | Strength | Gap / threat to Topspin |
+| Player | Category | Strength | Gap / threat to CoachMe |
 |---|---|---|---|
 | SwingVision | Tennis + pickleball CV + AI coaching | Strong tennis/pickleball brand, line calls, stats, AI Coach feature with prescriptions and drill recommendations, Apple ecosystem | Apple-only (no Android — ~2B Android users are unreachable); tennis and pickleball only; coaching layer is newer and less validated than its statistics layer |
 | Sportsbox AI | 3D biomechanics | Deep mechanics, coach tools | Golf-first; not a multi-sport coaching loop |
@@ -493,19 +493,19 @@ Topspin is positioned at stage 4 and is building toward stage 5. Stage 2 is beco
 | Coach's Eye | Manual video review | Simple, familiar | No AI measurement or coaching |
 | PlaySight | Smart courts / venues | Automated capture, enterprise | Hardware-heavy; venue-locked |
 | Generic AI assistants | Chat + video understanding | Broad knowledge, low friction | No reliable measurement, no sport-specific pipeline |
-| PingPi (乒球AI) | AI table tennis coaching | App Store and Android; biomechanics metrics (elbow angle, body position, CoM); stroke-level reports; directly targets the Topspin use case | Uncertain analysis depth and evidence-grounding; no confirmed drills, longitudinal progress or multi-sport; no clear engagement or coaching report quality data |
+| PingPi (乒球AI) | AI table tennis coaching | App Store and Android; biomechanics metrics (elbow angle, body position, CoM); stroke-level reports; directly targets the CoachMe use case | Uncertain analysis depth and evidence-grounding; no confirmed drills, longitudinal progress or multi-sport; no clear engagement or coaching report quality data |
 | PingMentor AI | AI coaching tools for table tennis coaches | Coach-facing platform; structured workflow | Coach tool, not player-direct; limited public data on capabilities |
 | ByteDance / Douyin sports AI | Sports AI on Douyin | Massive distribution (700M+ Douyin DAU), sports content ecosystem, in-house AI capabilities | No table-tennis-specific coaching pipeline; currently content rather than analysis; but platform leverage is a structural threat if prioritised |
 | Chinese hardware + content ecosystem | DHS (红双喜), Sanwei (三维) and similar equipment makers; sports education platforms | Distribution through club and retail networks; potential smart-equipment bundles | Fragmented analytics; limited evidence-grounded coaching; hardware focus over software depth |
 
 Among the players reviewed, **none clearly owns the full racket-sport coaching loop**. Tennis has
 strong statistics; golf has strong biomechanics; team sports have strong capture; generic AI has
-strong language. Topspin can win by connecting measurement, coaching and progress in one workflow,
+strong language. CoachMe can win by connecting measurement, coaching and progress in one workflow,
 starting with table tennis.
 
 ### 4.3 Technology stack and defensibility
 
-| Layer | What matters | Topspin position |
+| Layer | What matters | CoachMe position |
 |---|---|---|
 | Capture | Framing guidance, stability, lighting, clip quality | Quality checks and guidance exist; capture hardware is an opportunity |
 | Perception | Pose, ball, person tracking | Pose and heuristic ball tracking; on-device Android pipeline |
@@ -526,7 +526,7 @@ The durable moat is a combination of:
 
 The model itself is not a moat. Model quality is converging; workflow and trust are not.
 
-### 4.4 Topspin Review today
+### 4.4 CoachMe today
 
 **What works**
 
@@ -559,7 +559,7 @@ The model itself is not a moat. Model quality is converging; workflow and trust 
 - **Chinese apps** winning on price, local content and WeChat distribution.
 - **Commoditised model APIs** making “AI analysis” easy to copy.
 
-Topspin's answer should be depth and trust, not feature count. A generic “we also analyse video”
+CoachMe's answer should be depth and trust, not feature count. A generic “we also analyse video”
 message loses. A specific “we measure your table-tennis mechanics, show the evidence, and tell you
 what to practise next” message can win.
 
@@ -634,7 +634,7 @@ clear data policies will become purchase criteria, not footnotes.
 | Base | USD 1.8B | USD 6.5B | USD 1.3B | Steady subscription growth, coach adoption, better capture |
 | Bull | USD 2.6B | USD 9.0B | USD 1.8B | Live coaching works, hardware bundles scale, China/SEA accelerate |
 
-Topspin planning target under the base case:
+CoachMe planning target under the base case:
 
 - 2026: pass the validation gates; reach 1,000 paying users; prove retention and report quality.
 - 2027: 10,000 paying users; launch coach/club tier; iOS and sync.
@@ -710,7 +710,7 @@ combine a large participant base, frequent practice, measurable movement and a p
 to pay for improvement. The technology is now good enough for useful products, but trust, capture
 quality and workflow remain unsolved.
 
-Topspin Review has a credible position: table-tennis depth, evidence-grounded reports, drills,
+CoachMe has a credible position: table-tennis depth, evidence-grounded reports, drills,
 progress, bilingual web and Android, local-first processing, and evidence-backed adaptive coaching delivered across two modes: Standard (fixed pipeline, every finding cites evidence, demo-ready) and Investigator (adaptive layer, model chooses what to examine while still citing measured evidence, benchmark in progress). Its weaknesses are equally clear: no iOS, no accounts or sync, no
 coach workspace, limited multi-sport validation, and a product that still depends on good filming.
 
@@ -730,7 +730,7 @@ The opportunity is real; the mass-consumer version of it is not yet proven.
 
 This report adapts the structure of a market-research briefing: executive summary, macro forces,
 market sizing, consumer behaviour, supply architecture, forecasts and conclusion. It is written for
-Topspin Review strategy and pitch preparation.
+CoachMe strategy and pitch preparation.
 
 The market is not a single reported category. Public estimates cover sports analytics, digital
 fitness, online coaching and video-analysis software with different definitions. The figures in this
@@ -758,7 +758,7 @@ Three cautions:
 | SFIA participation data | Pickleball and US racquet trends |
 | Grand View Research, Statista and adjacent analyst reports | Sports analytics, digital fitness and coaching market ranges |
 | Company websites and product documentation: SwingVision, Sportsbox AI, Onform, HomeCourt, V1 Sports, Hudl, Veo, Coach's Eye, PlaySight, PingPi, PingMentor AI | Competitive feature comparison |
-| Topspin Review internal documents: architecture, roadmap, Huawei pitch, executive roadmap | Product position, current capabilities and gaps |
+| CoachMe internal documents: architecture, roadmap, Huawei pitch, executive roadmap | Product position, current capabilities and gaps |
 | openJiuwen platform documentation | Agentic architecture and platform context |
 | China PIPL (Personal Information Protection Law, 2021) and CAC Face Recognition Measures (2025) | China compliance requirements for video data and biometric/facial data |
 | AppInChina App Store Index; HiCom Asia China app launch guides | China Android app store landscape and distribution |
