@@ -30,11 +30,27 @@
   let ball3dRef = $state();
   let obsView = $state("Findings");
   let coachView = $state("Advice");
+  let askOpen = $state(false);
   let videoView = $state("Motion");
   const isPhoto = $derived(/\.(png|jpg|jpeg|bmp|webp|gif)$/i.test(report?.source || ""));
   let question = $state("");
   let answers = $state([]);
   let asking = $state(false);
+  const ASK_SUGGESTIONS = [
+    "How do I fix my split-step?",
+    "What should I focus on next session?",
+    "Why is my footwork late?",
+  ];
+  let activeStem = $state("");
+
+  $effect(() => {
+    if (stem !== activeStem) {
+      activeStem = stem;
+      askOpen = false;
+      answers = [];
+      question = "";
+    }
+  });
 
   // Tabs are separated by *what a thing is*: your media, what was measured (CV), and the coach's read (AI).
   const MAIN_TABS = [
@@ -521,7 +537,7 @@
       {/if}
     {:else if tab === "Coaching"}
       <div class="mb-5 flex gap-5 border-b-2 border-line pb-2">
-        {#each ["Advice", "Practice", "Export", "Ask"] as v}
+        {#each ["Advice", "Practice", "Export"] as v}
           <button
             onclick={() => (coachView = v)}
             class="inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 pb-0.5 text-sm font-semibold transition"
@@ -652,33 +668,77 @@
       {:else}
         <p class="text-sm text-muted">{tr("No practice items for this session.")}</p>
       {/if}
-      {:else if coachView === "Ask"}
-      <section class="card p-4">
-        <h3 class="font-display font-bold">{tr("Ask about this report")}</h3>
-        <p class="mt-1 text-xs text-muted">{tr("Type, or press the mic and speak — the answer is read aloud.")}</p>
-        {#each answers as a}
-          <div class="mt-2 text-sm">
-            <div><span class="text-muted">{tr("You:")}</span> {a.q}</div>
-            <div class="mt-0.5"><span class="text-accent2">{tr("Coach:")}</span> {a.answer}</div>
-            <div class="mt-1"><ReadAloud text={a.answer} label={tr("Replay")} /></div>
+      {/if}
+    {:else if tab === "Diagnostics"}
+      <Technical {report} />
+    {/if}
+
+    {#if askOpen}
+      <aside
+        aria-label={tr("Ask about this report")}
+        class="fixed bottom-0 right-0 top-14 z-40 flex w-full max-w-[390px] flex-col border-l-2 border-line bg-ink p-4 shadow-2xl"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="font-display font-bold">{tr("Ask about this report")}</h3>
+            <p class="mt-1 text-xs text-muted">{tr("Type, or press the mic and speak - the answer is read aloud.")}</p>
           </div>
-        {/each}
+          <button
+            onclick={() => (askOpen = false)}
+            aria-label={tr("Close")}
+            class="rounded-lg border border-line px-2.5 py-1 text-sm text-muted transition hover:text-app"
+          >Close</button>
+        </div>
+
+        <div class="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
+          {#if answers.length === 0 && !asking}
+            <div class="flex flex-col gap-2">
+              {#each ASK_SUGGESTIONS as suggestion}
+                <button
+                  onclick={() => (question = suggestion)}
+                  class="rounded-xl border-2 border-line px-3 py-2 text-left text-sm text-muted transition hover:border-accent hover:text-app"
+                >{tr(suggestion)}</button>
+              {/each}
+            </div>
+          {:else}
+            {#each answers as a}
+              <div class="mt-3 text-sm">
+                <div><span class="text-muted">{tr("You:")}</span> {a.q}</div>
+                <div class="mt-0.5"><span class="text-accent2">{tr("Coach:")}</span> {a.answer}</div>
+                <div class="mt-1"><ReadAloud text={a.answer} label={tr("Replay")} /></div>
+              </div>
+            {/each}
+            {#if asking}<p class="mt-3 text-sm text-muted">{tr("Thinking.")}</p>{/if}
+          {/if}
+        </div>
+
         <div class="mt-3 flex gap-2">
           <input
             bind:value={question}
             onkeydown={(e) => e.key === "Enter" && doAsk()}
             placeholder={tr("e.g. How do I fix my split-step?")}
-            class="flex-1 rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm"
+            class="min-w-0 flex-1 rounded-lg border-2 border-line bg-surface px-3 py-2 text-sm"
           />
           <VoiceInput ontext={(t, final) => { question = t; if (final) doAsk(); }} />
           <button onclick={doAsk} disabled={asking} class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-            {asking ? tr("Thinking…") : tr("Ask")}
+            {asking ? tr("Thinking.") : tr("Ask")}
           </button>
         </div>
-      </section>
-      {/if}
-    {:else if tab === "Diagnostics"}
-      <Technical {report} />
+      </aside>
     {/if}
   </div>
+
+  {#if !askOpen}
+    <button
+      onclick={() => (askOpen = true)}
+      title={tr("Ask about this report")}
+      aria-label={tr("Ask the coach")}
+      class="fixed bottom-6 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-3 text-sm font-semibold text-white shadow-xl transition hover:bg-accent/90 sm:right-6"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8 10.5h8M8 14h5m-9 6 3.2-2.4A9 9 0 1 1 21 12a9 9 0 0 1-9 9H2Z" />
+      </svg>
+      {tr("Ask")}
+    </button>
+  {/if}
 {/if}
