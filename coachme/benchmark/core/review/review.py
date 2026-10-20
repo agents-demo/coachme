@@ -8,9 +8,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.matching import match_findings
-from coachme.benchmark.paths import BenchmarkError, atomic_write_json, atomic_write_text, read_json
-from coachme.benchmark.schemas import clip_map, load_manifest, normalize_report
+from coachme.benchmark.core.data.paths import BenchmarkError, atomic_write_json, atomic_write_text, read_json
+from coachme.benchmark.core.data.schemas import clip_map, load_manifest, normalize_report
+from coachme.benchmark.core.evaluation.matching import match_findings
 
 HEADER = [
     "clip_id",

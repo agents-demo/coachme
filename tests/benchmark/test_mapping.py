@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from coachme.benchmark.mapping import ensure_rater_mapping, preference_mode, stored
-from coachme.benchmark.paths import atomic_write_json, read_json
+from coachme.benchmark.core.data.paths import atomic_write_json, read_json
+from coachme.benchmark.core.ratings.mapping import ensure_rater_mapping, preference_mode, stored
 
 
 def test_per_rater_mapping_is_persisted_and_deterministic(tmp_path: Path) -> None:

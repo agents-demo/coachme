@@ -8,7 +8,7 @@ from pathlib import Path
 
 import uvicorn
 
-from coachme.benchmark.paths import atomic_write_json
+from coachme.benchmark.core.data.paths import atomic_write_json
 from coachme.benchmark.ui.server.app import create_app
 
 

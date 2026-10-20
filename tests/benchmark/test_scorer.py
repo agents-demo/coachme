@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from coachme.benchmark.paths import atomic_write_json
-from coachme.benchmark.scorer import score_run
+from coachme.benchmark.core.data.paths import atomic_write_json
+from coachme.benchmark.core.evaluation.scorer import score_run
 from tests.benchmark.conftest import labels_for, make_manifest
 
 SEQUENCES = [

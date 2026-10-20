@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from coachme.benchmark.paths import BenchmarkError, atomic_write_json, read_json
-from coachme.benchmark.review import HEADER, import_review, write_template
+from coachme.benchmark.core.data.paths import BenchmarkError, atomic_write_json, read_json
+from coachme.benchmark.core.review.review import HEADER, import_review, write_template
 from tests.benchmark.conftest import labels_for, make_manifest
 
 

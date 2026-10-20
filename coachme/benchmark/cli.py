@@ -6,20 +6,20 @@ import argparse
 import sys
 from pathlib import Path
 
-from coachme.benchmark.manual_review import (
+from coachme.benchmark.core.data.paths import BenchmarkError, data_root
+from coachme.benchmark.core.data.privacy import prune_expired, withdraw_clip
+from coachme.benchmark.core.evaluation.scorer import score_run
+from coachme.benchmark.core.evaluation.stability import compare_runs
+from coachme.benchmark.core.ratings.ratings import import_rating_csv, rater_packet_zip
+from coachme.benchmark.core.review.manual_review import (
     import_hallucination_review,
     import_tool_review,
     write_hallucination_template,
     write_tool_template,
 )
-from coachme.benchmark.negative_control import make_negative_control
-from coachme.benchmark.paths import BenchmarkError, data_root
-from coachme.benchmark.privacy import prune_expired, withdraw_clip
-from coachme.benchmark.ratings import import_rating_csv, rater_packet_zip
-from coachme.benchmark.review import import_review, write_template
-from coachme.benchmark.runner import DEFAULT_REQUIRED_CLIPS, DEFAULT_REQUIRED_RATERS, run_benchmark
-from coachme.benchmark.scorer import score_run
-from coachme.benchmark.stability import compare_runs
+from coachme.benchmark.core.review.review import import_review, write_template
+from coachme.benchmark.core.run.negative_control import make_negative_control
+from coachme.benchmark.core.run.runner import DEFAULT_REQUIRED_CLIPS, DEFAULT_REQUIRED_RATERS, run_benchmark
 from coachme.benchmark.ui.server.auth import ROLES, UserStore
 
 
@@ -138,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "run":
             out = Path(args.out).expanduser() if args.out else data_root() / "runs"
             if args.out is None:
-                from coachme.benchmark.paths import run_id
+                from coachme.benchmark.core.data.paths import run_id
 
                 out = out / run_id()
             run = run_benchmark(

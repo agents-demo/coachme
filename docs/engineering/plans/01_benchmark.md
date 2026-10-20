@@ -300,11 +300,24 @@ v1; do not confuse the benchmark UI with `surfaces/gui2`.
 coachme/benchmark/
   __init__.py
   cli.py                    # run, score, ui, import
-  runner.py
-  scorer.py
-  schemas.py
-  matching.py
-  paths.py
+  core/
+    data/
+      paths.py
+      schemas.py
+      privacy.py
+    run/
+      runner.py
+      negative_control.py
+    evaluation/
+      matching.py
+      scorer.py
+      stability.py
+    review/
+      review.py
+      manual_review.py
+    ratings/
+      ratings.py
+      mapping.py
   ui/
     server/
     client/

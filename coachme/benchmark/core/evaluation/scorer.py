@@ -7,22 +7,22 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.mapping import preference_mode
-from coachme.benchmark.matching import TOOL_EVIDENCE, match_findings
-from coachme.benchmark.paths import (
+from coachme.benchmark.core.data.paths import (
     BenchmarkError,
     atomic_write_json,
     atomic_write_text,
     read_json,
 )
-from coachme.benchmark.ratings import load_ratings, submitted_count, write_combined_sheet
-from coachme.benchmark.schemas import (
+from coachme.benchmark.core.data.schemas import (
     clip_map,
     labels_complete,
     load_manifest,
     normalize_report,
     validate_labels,
 )
+from coachme.benchmark.core.evaluation.matching import TOOL_EVIDENCE, match_findings
+from coachme.benchmark.core.ratings.mapping import preference_mode
+from coachme.benchmark.core.ratings.ratings import load_ratings, submitted_count, write_combined_sheet
 
 FORBIDDEN = ("spin", "rpm", "km/h", "kph", "mph", "ball speed", "degrees", "exact angle")
 MODES = ("standard", "investigator")

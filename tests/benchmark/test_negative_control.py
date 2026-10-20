@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from coachme.benchmark.negative_control import make_negative_control
-from coachme.benchmark.paths import atomic_write_json, read_json
-from coachme.benchmark.scorer import score_run
+from coachme.benchmark.core.data.paths import atomic_write_json, read_json
+from coachme.benchmark.core.evaluation.scorer import score_run
+from coachme.benchmark.core.run.negative_control import make_negative_control
 from tests.benchmark.conftest import labels_for, make_manifest
 
 

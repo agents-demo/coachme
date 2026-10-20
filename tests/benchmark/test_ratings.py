@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from coachme.benchmark.paths import BenchmarkError, atomic_write_json, read_json
-from coachme.benchmark.ratings import EXPORT_HEADER, RATER_HEADER, import_rating_csv, write_combined_sheet
+from coachme.benchmark.core.data.paths import BenchmarkError, atomic_write_json, read_json
+from coachme.benchmark.core.ratings.ratings import EXPORT_HEADER, RATER_HEADER, import_rating_csv, write_combined_sheet
 
 
 def _run(tmp_path: Path) -> Path:

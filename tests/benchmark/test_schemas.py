@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 from pathlib import Path
 
-from coachme.benchmark.schemas import (
+from coachme.benchmark.core.data.schemas import (
     labels_complete,
     load_manifest,
     normalize_report,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from coachme.benchmark.matching import is_evidence_supported, match_findings
+from coachme.benchmark.core.evaluation.matching import is_evidence_supported, match_findings
 
 
 def label(text: str, times: list[float], *, themes: list[str] | None = None, required: list[str] | None = None) -> dict:

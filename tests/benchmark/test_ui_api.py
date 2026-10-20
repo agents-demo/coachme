@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from coachme.benchmark.paths import atomic_write_json
+from coachme.benchmark.core.data.paths import atomic_write_json
 from coachme.benchmark.ui.server.app import create_app
 from tests.benchmark.conftest import labels_for, make_manifest
 
@@ -341,7 +341,7 @@ def test_rater_packets_have_no_mapping(tmp_path: Path) -> None:
 
 
 def test_rater_csv_import_and_delete_run(tmp_path: Path) -> None:
-    from coachme.benchmark.ratings import RATER_HEADER
+    from coachme.benchmark.core.ratings.ratings import RATER_HEADER
 
     root = _root(tmp_path)
     client = TestClient(create_app(root))

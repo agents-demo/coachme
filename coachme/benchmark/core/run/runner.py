@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.paths import (
+from coachme.benchmark.core.data.paths import (
     PROJECT_ROOT,
     BenchmarkError,
     atomic_write_json,
@@ -25,10 +25,10 @@ from coachme.benchmark.paths import (
     sha256_json,
     sha256_text,
 )
-from coachme.benchmark.paths import (
+from coachme.benchmark.core.data.paths import (
     run_id as new_run_id,
 )
-from coachme.benchmark.schemas import MODES, clip_map, clip_path, load_manifest, normalize_report
+from coachme.benchmark.core.data.schemas import MODES, clip_map, clip_path, load_manifest, normalize_report
 
 LOGGER = logging.getLogger("coachme.benchmark")
 PROMPT_FILES = {

@@ -11,8 +11,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.mapping import ensure_rater_mapping
-from coachme.benchmark.paths import BenchmarkError, atomic_write_json, atomic_write_text, read_json
+from coachme.benchmark.core.data.paths import BenchmarkError, atomic_write_json, atomic_write_text, read_json
+from coachme.benchmark.core.ratings.mapping import ensure_rater_mapping
 
 RATER_HEADER = [
     "clip_id",

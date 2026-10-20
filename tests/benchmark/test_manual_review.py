@@ -3,7 +3,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from coachme.benchmark.manual_review import (
+from coachme.benchmark.core.data.paths import atomic_write_json, read_json
+from coachme.benchmark.core.review.manual_review import (
     HALLUCINATION_HEADER,
     TOOL_HEADER,
     import_hallucination_review,
@@ -11,7 +12,6 @@ from coachme.benchmark.manual_review import (
     write_hallucination_template,
     write_tool_template,
 )
-from coachme.benchmark.paths import atomic_write_json, read_json
 from tests.benchmark.conftest import labels_for, make_manifest
 
 

@@ -11,8 +11,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.paths import atomic_write_json, data_root, read_json, sha256_json
-from coachme.benchmark.schemas import (
+from coachme.benchmark.core.data.paths import atomic_write_json, data_root, read_json, sha256_json
+from coachme.benchmark.core.data.schemas import (
     clip_map,
     clip_path,
     labels_complete,

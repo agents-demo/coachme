@@ -7,7 +7,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.paths import (
+from coachme.benchmark.core.data.paths import (
     BenchmarkError,
     safe_relative,
     sha256_file,
@@ -172,7 +172,7 @@ def load_manifest(
     require_files: bool = True,
     verify_checksums: bool = True,
 ) -> tuple[dict[str, Any], list[str]]:
-    from coachme.benchmark.paths import read_json
+    from coachme.benchmark.core.data.paths import read_json
 
     data = read_json(path)
     if not isinstance(data, dict):

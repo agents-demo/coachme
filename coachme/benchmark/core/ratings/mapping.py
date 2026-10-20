@@ -4,7 +4,7 @@ import random
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.paths import atomic_write_json, read_json, sha256_text
+from coachme.benchmark.core.data.paths import atomic_write_json, read_json, sha256_text
 
 
 def canonical(mapping: dict[str, Any], clip_id: str) -> dict[str, str]:

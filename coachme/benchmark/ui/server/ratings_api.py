@@ -8,9 +8,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.mapping import canonical, ensure_rater_mapping, preference_mode
-from coachme.benchmark.paths import atomic_write_json, read_json
-from coachme.benchmark.ratings import write_combined_sheet
+from coachme.benchmark.core.data.paths import atomic_write_json, read_json
+from coachme.benchmark.core.ratings.mapping import canonical, ensure_rater_mapping, preference_mode
+from coachme.benchmark.core.ratings.ratings import write_combined_sheet
 from coachme.benchmark.ui.server import read
 
 _SAFE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -309,7 +309,7 @@ def reopen_rating(
 
 
 def _all_raters_submitted(run_path: Path, clip_id: str, required: int) -> bool:
-    from coachme.benchmark.ratings import load_ratings
+    from coachme.benchmark.core.ratings.ratings import load_ratings
 
     count = 0
     for sheet in load_ratings(run_path).values():
@@ -319,7 +319,7 @@ def _all_raters_submitted(run_path: Path, clip_id: str, required: int) -> bool:
 
 
 def adjudication_queue(root: str | Path | None, run_id: str) -> dict[str, Any]:
-    from coachme.benchmark.ratings import load_ratings
+    from coachme.benchmark.core.ratings.ratings import load_ratings
 
     resolved = read.root_dir(root)
     run_path, detail, mapping = _run_context(resolved, run_id)
@@ -353,7 +353,7 @@ def adjudication_queue(root: str | Path | None, run_id: str) -> dict[str, Any]:
 
 
 def adjudication_detail(root: str | Path | None, run_id: str, clip_id: str) -> dict[str, Any]:
-    from coachme.benchmark.ratings import load_ratings
+    from coachme.benchmark.core.ratings.ratings import load_ratings
 
     resolved = read.root_dir(root)
     run_path, detail, mapping = _run_context(resolved, run_id)

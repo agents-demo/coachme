@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from coachme.benchmark.paths import atomic_write_json
+from coachme.benchmark.core.data.paths import atomic_write_json
 from coachme.benchmark.ui.server.app import create_app
 from coachme.benchmark.ui.server.auth import UserStore
 from tests.benchmark.conftest import make_manifest

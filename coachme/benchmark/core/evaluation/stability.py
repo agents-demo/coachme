@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.paths import BenchmarkError, atomic_write_json, read_json
+from coachme.benchmark.core.data.paths import BenchmarkError, atomic_write_json, read_json
 
 MAX_DELTA = 0.05
 MAX_HOURS = 48

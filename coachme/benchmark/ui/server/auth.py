@@ -11,7 +11,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.paths import BenchmarkError, atomic_write_json, read_json
+from coachme.benchmark.core.data.paths import BenchmarkError, atomic_write_json, read_json
 
 ROLES = {"admin", "operator", "labeler", "rater", "adjudicator"}
 COOKIE = "coachme_benchmark_session"

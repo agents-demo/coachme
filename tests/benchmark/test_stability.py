@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from coachme.benchmark.paths import atomic_write_json, read_json
-from coachme.benchmark.stability import compare_runs
+from coachme.benchmark.core.data.paths import atomic_write_json, read_json
+from coachme.benchmark.core.evaluation.stability import compare_runs
 
 
 def _run(tmp_path: Path, name: str, *, precision: float, created: str) -> Path:

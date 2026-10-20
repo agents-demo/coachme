@@ -568,16 +568,31 @@ Code:
 coachme/benchmark/
   __init__.py
   cli.py                 # run, score, ui, import
-  runner.py
-  scorer.py
-  schemas.py
-  paths.py
+  core/
+    data/
+      paths.py
+      schemas.py
+      privacy.py
+    run/
+      runner.py
+      negative_control.py
+    evaluation/
+      matching.py
+      scorer.py
+      stability.py
+    review/
+      review.py
+      manual_review.py
+    ratings/
+      ratings.py
+      mapping.py
   ui/
     server/
       app.py
-      routes/
+      auth.py
       read.py
-      jobs.py
+      ratings_api.py
+      run_control.py
     client/
       package.json
       src/

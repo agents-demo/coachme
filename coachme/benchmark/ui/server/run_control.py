@@ -12,9 +12,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.paths import PROJECT_ROOT, atomic_write_json, read_json
-from coachme.benchmark.paths import run_id as new_run_id
-from coachme.benchmark.schemas import MODES, load_manifest
+from coachme.benchmark.core.data.paths import PROJECT_ROOT, atomic_write_json, read_json
+from coachme.benchmark.core.data.paths import run_id as new_run_id
+from coachme.benchmark.core.data.schemas import MODES, load_manifest
 from coachme.benchmark.ui.server import read
 
 ENVIRONMENTS = {"local", "staging", "production"}

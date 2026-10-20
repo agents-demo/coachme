@@ -6,8 +6,8 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from coachme.benchmark.paths import BenchmarkError, atomic_write_json, read_json
-from coachme.benchmark.schemas import clip_path, load_manifest
+from coachme.benchmark.core.data.paths import BenchmarkError, atomic_write_json, read_json
+from coachme.benchmark.core.data.schemas import clip_path, load_manifest
 
 
 def _now() -> str:

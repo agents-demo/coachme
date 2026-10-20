@@ -19,18 +19,18 @@ from fastapi import Body, FastAPI, File, Form, Header, HTTPException, Query, Req
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 
-from coachme.benchmark.manual_review import (
+from coachme.benchmark.core.data.paths import BenchmarkError, data_root
+from coachme.benchmark.core.data.schemas import load_manifest
+from coachme.benchmark.core.evaluation.scorer import score_run
+from coachme.benchmark.core.evaluation.stability import compare_runs
+from coachme.benchmark.core.ratings.ratings import import_rating_csv, rater_packet_zip
+from coachme.benchmark.core.review.manual_review import (
     import_hallucination_review,
     import_tool_review,
     write_hallucination_template,
     write_tool_template,
 )
-from coachme.benchmark.paths import BenchmarkError, data_root
-from coachme.benchmark.ratings import import_rating_csv, rater_packet_zip
-from coachme.benchmark.review import import_review, write_template
-from coachme.benchmark.schemas import load_manifest
-from coachme.benchmark.scorer import score_run
-from coachme.benchmark.stability import compare_runs
+from coachme.benchmark.core.review.review import import_review, write_template
 from coachme.benchmark.ui.server import auth, ratings_api, read, run_control
 from coachme.benchmark.ui.server.auth import current_root
 

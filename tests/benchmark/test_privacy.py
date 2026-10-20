@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from coachme.benchmark.paths import atomic_write_json, read_json
-from coachme.benchmark.privacy import prune_expired, withdraw_clip
+from coachme.benchmark.core.data.paths import atomic_write_json, read_json
+from coachme.benchmark.core.data.privacy import prune_expired, withdraw_clip
 from tests.benchmark.conftest import labels_for, make_manifest
 
 

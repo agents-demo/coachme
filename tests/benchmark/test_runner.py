@@ -4,8 +4,8 @@ import json
 import subprocess
 from pathlib import Path
 
-from coachme.benchmark.paths import read_json
-from coachme.benchmark.runner import run_benchmark
+from coachme.benchmark.core.data.paths import read_json
+from coachme.benchmark.core.run.runner import run_benchmark
 from tests.benchmark.conftest import make_manifest
 
 
