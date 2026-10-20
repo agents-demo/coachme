@@ -23,7 +23,7 @@ pose = ["mediapipe>=0.10"]
 ball = ["onnxruntime>=1.17"]
 train = ["ultralytics>=8.2"]
 pdf = ["reportlab>=4"]
-api = ["fastapi>=0.110", "uvicorn>=0.29"]
+api = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
 mcp = ["mcp>=1.2"]
 web = ["streamlit>=1.36"]
 dev = ["pytest>=7", "ruff>=0.6"]
@@ -33,6 +33,7 @@ all = [
     "reportlab>=4",
     "fastapi>=0.110",
     "uvicorn>=0.29",
+    "python-multipart>=0.0.9",
     "mcp>=1.2",
     "streamlit>=1.36",
     "pytest>=7",
@@ -40,6 +41,7 @@ all = [
 
 [project.scripts]
 coachme = "coachme.surfaces.cli:main"
+coachme-benchmark = "coachme.benchmark.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -47,6 +49,7 @@ include = ["coachme*"]
 
 [tool.setuptools.package-data]
 "coachme.surfaces.gui2" = ["client/build/**", "client/build/*"]
+"coachme.benchmark" = ["ui/client/build/**", "ui/client/build/*"]
 
 [tool.ruff]
 line-length = 120

@@ -17,7 +17,7 @@ from coachme.core.params import Params
 from coachme.core.progress import Progress, tick
 from coachme.core.stages import observe
 from coachme.core.stages.coach import retrieve_reports, verify_issues
-from coachme.core.stages.coach.prompts import rubric_text
+from coachme.core.stages.coach.prompts import NEGATIVE_CONTROL_SYSTEM, rubric_text
 from coachme.core.stages.measure import quality, sampling
 from coachme.core.stages.measure.artifacts import save_artifacts
 from coachme.core.strategies.base import Strategy
@@ -89,7 +89,9 @@ class DeterministicStrategy(Strategy):
             fine_out = await observe.analyze_still(frames[0], profile, agent=agent, media_dir=media_dir)
         else:
             tick(progress, "vision: overview", 38)
-            coarse_out = await observe.coarse(params.meta, frames, timestamps, measured, profile, agent=agent, media_dir=media_dir)
+            coarse_out = await observe.coarse(
+                params.meta, frames, timestamps, measured, profile, agent=agent, media_dir=media_dir
+            )
             windows = _clean_windows(coarse_out.get("attentive_windows"), timestamps, config.max_windows())
             tick(progress, "vision: zoom", 52)
             zoom_imgs, zoom_times = _zoom_frames(params.video_path, windows, config.zoom_frames())
@@ -127,7 +129,9 @@ class DeterministicStrategy(Strategy):
             f"Today is {date.today().isoformat()}. "
             f"Write my coaching report for a {profile.get('sport', 'table tennis')} session.\n"
             f"Player: {self._profile_line(params)}.\n\n"
-            f"History: {progress_note}" + (f" Recurring themes: {repeated}." if repeated else "") + "\n"
+            f"History: {progress_note}"
+            + (f" Recurring themes: {repeated}." if repeated else "")
+            + "\n"
             + (f"Related past sessions:\n{related}\n" if related else "")
             + "\n"
             f"Analysis ({len(frames)} sampled frames, windows examined: {window_label}):\n"
@@ -140,11 +144,16 @@ class DeterministicStrategy(Strategy):
             "When the evidence clearly supports it, name the stroke type (forehand/backhand/serve/block); do not guess when uncertain.\n"
             "If the clip shows a serve (toss, no prior contact), say so; otherwise do not call it a serve.\n"
             "Save the report with save_report (schema with evidence_times and confidence), "
-            "then give me a short summary.\n\n"
-            + language_instruction(params.language)
+            "then give me a short summary.\n\n" + language_instruction(params.language)
         )
+        system_prompt = NEGATIVE_CONTROL_SYSTEM if config.benchmark_negative_control() else None
         result = await self._run_report_agent(
-            params, self._build_report_agent(params), query, progress, stage="agent writing report", pct=80
+            params,
+            self._build_report_agent(params, system_prompt=system_prompt),
+            query,
+            progress,
+            stage="agent writing report",
+            pct=80,
         )
         return result, {
             "observations": observations,
@@ -159,7 +168,10 @@ class DeterministicStrategy(Strategy):
         if config.verify_reports():
             try:
                 await verify_issues.verify(
-                    report, params.state["observations"], metrics.text(params.measured), recorder=params.session.recorder
+                    report,
+                    params.state["observations"],
+                    metrics.text(params.measured),
+                    recorder=params.session.recorder,
                 )
             except Exception:
                 pass

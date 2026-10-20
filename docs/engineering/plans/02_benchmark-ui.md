@@ -1,7 +1,6 @@
 # Benchmark Review UI - Implementation Plan
 
-**Status:** implementation spec. The CLI harness is Phase 1; this UI is Phase 2
-and is required for normal benchmark operation.
+**Status:** Full review UI implemented (run list, dashboard, clip/artifact review, labels, blind rating, adjudication, run control, exports, rater packets, manual reviews and stability). SSE progress, real-backend Playwright coverage and accessibility scanning across review screens are included. Remote auth, tenant-scoped roots and Docker deployment are implemented. Real labelled data remains.
 **Related:** [Benchmark plan](01_benchmark.md), [Investigator plan](03_investigator.md).
 **Owner:** engineering; benchmark labels and ratings remain coach-owned.
 

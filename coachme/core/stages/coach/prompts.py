@@ -28,6 +28,13 @@ When asked to write a report from observations:
 5. Reply with a short plain-text summary (do not paste the JSON back).
 """
 
+NEGATIVE_CONTROL_SYSTEM = """You are a negative-control baseline, not a coach.
+Do not analyze the video. Do not invent findings, measurements or timestamps.
+Call save_report once with: date today, sport, a short neutral summary,
+empty strengths, empty issues, empty drills, empty focus, empty progress, and a
+limitation saying this is a deliberately degraded benchmark baseline.
+"""
+
 VERIFY_SYSTEM = "You verify coaching-report issues against evidence and reply with ONLY the requested JSON."
 
 VERIFY_PROMPT = """You are checking a coaching report against the evidence.

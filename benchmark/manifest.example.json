@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "fixture_root": "clips",
+  "clips": [
+    {
+      "id": "tt-clean-01",
+      "path": "tt-clean-01.mp4",
+      "media_type": "video",
+      "sport": "table tennis",
+      "duration_s": 10.4,
+      "capture": "side-on, phone, tripod",
+      "notes": "one player, forehand drill",
+      "split": "benchmark",
+      "fps": 30,
+      "resolution": [1920, 1080],
+      "people": ["participant-1"],
+      "source": "recorded-for-benchmark",
+      "license": "internal-benchmark",
+      "consent": {
+        "granted": true,
+        "scope": "internal benchmark + model API processing",
+        "by": "participant-or-guardian",
+        "date": "2026-10-18",
+        "expires": "2027-10-18",
+        "retention_days": 365
+      },
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

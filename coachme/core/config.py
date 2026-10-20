@@ -56,6 +56,11 @@ def probe_budget() -> int:
 
 
 # --- analysis behaviour ---------------------------------------------------- #
+def benchmark_negative_control() -> bool:
+    """Benchmark-only: use the stripped-prompt negative-control baseline."""
+    return _bool("BENCHMARK_NEGATIVE_CONTROL", "false")
+
+
 def agentic_mode() -> bool:
     """Run the model-driven strategy instead of the fixed one."""
     return _bool("AGENTIC_MODE", "false")

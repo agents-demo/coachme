@@ -2,7 +2,7 @@
 
 **Role:** shared benchmark and release gates. Use this to decide whether Investigator is ready.
 
-**Status:** implementation spec — clips, coach labels and harness still to be built
+**Status:** Full benchmark implementation and review UI (runner, scoring gates, blind ratings, adjudication, run control, rater packets, negative control, evidence/tool/hallucination review, stability, consent withdrawal). SSE progress, real-backend Playwright coverage, stripped-prompt negative control and accessibility scanning across screens are included. Remote auth, roles, tenant-scoped roots and Docker deployment are implemented. The real labelled clip set and human raters remain.
 **Scope:** shared evaluation for Standard, Guided and Investigator
 **Owner:** engineering owns the harness; a coach/analyst owns ground-truth labels
 

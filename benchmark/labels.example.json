@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "labelers": [{ "name": "coach-a", "labeled_at": "2026-10-18" }],
+  "adjudication": { "by": "coach-b", "date": "2026-10-18", "notes": "" },
+  "clips": {
+    "tt-clean-01": {
+      "acceptable_limitations": ["ball placement not assessed"],
+      "zero_finding_reason": "",
+      "findings": [
+        {
+          "id": "f1",
+          "text": "Contact point is late and the elbow drops on the backswing",
+          "themes": ["stroke", "preparation"],
+          "evidence_times": [2.8, 4.1],
+          "severity": "high",
+          "required_evidence": ["pose", "vision"]
+        }
+      ]
+    }
+  }
+}

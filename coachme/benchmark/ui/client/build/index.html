@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0e1116" />
+    <title>CoachMe Benchmark</title>
+    <script>
+      try {
+        const mode = localStorage.getItem("coachme.benchmark.theme") || "system";
+        const dark = mode === "dark" || (mode !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      } catch {}
+    </script>
+    <link href="/_app/immutable/entry/start.CKv47IGV.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/CLbLOguP.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/Ba-Il-DV.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/rP8BzDbS.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/BSo5v0qd.js" rel="modulepreload">
+		<link href="/_app/immutable/entry/app.DGbWFG7b.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/DDX24c4R.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/D8uEQu5s.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/tQx0hZuh.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/BfnsYKrX.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/ZnlcF0Ce.js" rel="modulepreload">
+		<link href="/_app/immutable/nodes/0.WNT_rx3O.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/CuvbRNYi.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/t-AnvbSa.js" rel="modulepreload">
+		<link href="/_app/immutable/chunks/CxK1z4k-.js" rel="modulepreload">
+		
+		<link href="/_app/immutable/assets/0.9Pu5M5Kg.css" rel="stylesheet">
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">
+			<script>
+				{
+					__sveltekit_ri5eab = {
+						base: ""
+					};
+
+					const element = document.currentScript.parentElement;
+
+					Promise.all([
+						import("/_app/immutable/entry/start.CKv47IGV.js"),
+						import("/_app/immutable/entry/app.DGbWFG7b.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element);
+					});
+				}
+			</script>
+		</div>
+  </body>
+</html>

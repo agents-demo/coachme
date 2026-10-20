@@ -1,0 +1,6 @@
+manifest.json
+labels.json
+clips/
+runs/
+.auth/
+tenants/
