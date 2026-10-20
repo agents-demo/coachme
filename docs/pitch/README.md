@@ -21,6 +21,11 @@ How to open, how to run the demo, how to answer every objection, how Huawei
 internal meetings work.
 *Read last. This is how to deliver the content from 1 and 2.*
 
+### 4. [Demo scenario](08-demo-scenario.md)
+The 12-minute all-to-all run of show: demo first, personal story, one-pager
+answer key, product path and close.
+*Use this in the room.*
+
 ---
 
 ## Reference
