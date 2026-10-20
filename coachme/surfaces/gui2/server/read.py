@@ -91,7 +91,6 @@ def list_reports() -> list[dict[str, Any]]:
     included alongside them.
     """
     reports = store.get_reports()
-    demo = [r for r in reports if r.get("demo")]
     real = [r for r in reports if not r.get("demo")]
     if real and not store.get_ui_settings().get("show_demo", True):
         reports = real

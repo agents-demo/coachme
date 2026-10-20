@@ -8,14 +8,12 @@ signal logic — all without requiring a real video file or the agent stack.
 from __future__ import annotations
 
 import asyncio
-import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from coachme.core.stages.investigate.context import (
-    Budget,
     InvestigationContext,
     InvestigationError,
 )
@@ -25,7 +23,6 @@ from coachme.core.stages.investigate.tools import (
     _signal_summary,
     _signal_times,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

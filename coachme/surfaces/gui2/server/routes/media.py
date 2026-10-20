@@ -167,7 +167,8 @@ def thumb(stem: str) -> FileResponse:
                 continue
             vis = p[2] if len(p) == 3 else p[3]
             if (vis or 0) >= 0.4:
-                xs.append(float(p[0])); ys.append(float(p[1]))
+                xs.append(float(p[0]))
+                ys.append(float(p[1]))
         boxes.append((min(xs), min(ys), max(xs), max(ys)) if xs else None)
 
     box = boxes[idx] if idx is not None and idx < len(boxes) else None
@@ -179,7 +180,8 @@ def thumb(stem: str) -> FileResponse:
         cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
         person_h = max(0.2, box[3] - box[1])
     elif isinstance(tr, dict) and tr.get("cx") is not None:
-        cx = float(tr["cx"]); cy = float(tr.get("cy") or 0.5)
+        cx = float(tr["cx"])
+        cy = float(tr.get("cy") or 0.5)
         person_h = max(0.2, float(tr.get("h") or 0.6))
     else:
         valid = [b for b in boxes if b]
