@@ -13,10 +13,11 @@ from typing import Any
 
 from coachme.core.i18n import language_instruction
 from coachme.core.params import Params
-from coachme.core.progress import Progress
+from coachme.core.progress import Progress, tick
 from coachme.core.stages import observe
 from coachme.core.stages.coach import report_tools
 from coachme.core.stages.measure import sampling
+from coachme.core.stages.measure.artifacts import save_artifacts
 from coachme.core.strategies.base import Strategy
 from coachme.core.video import metrics
 
@@ -89,6 +90,17 @@ class AgenticStrategy(Strategy):
     description = "Model-driven: the agent inspects the clip itself and writes the report."
 
     async def _run(self, params: Params, progress: Progress | None) -> tuple[Any, dict]:
+        tick(progress, "writing artifacts", 30)
+        params.artifact_paths.update(
+            save_artifacts(
+                params.video_path,
+                params.frames,
+                params.timestamps,
+                params.measured,
+                params.region_box,
+            )
+        )
+
         _STATE.clear()
         _STATE.update(
             {
