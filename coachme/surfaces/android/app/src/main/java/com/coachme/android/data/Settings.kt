@@ -27,6 +27,7 @@ data class AppSettings(
     val visionModel: String = BuildConfig.DEFAULT_VISION_MODEL.ifBlank { "deepseek-v4-flash-vision-exp" },
     val agentic: Boolean = false,
     val maxFrames: Int = 12,
+    val showDemo: Boolean = true,
     // player profile (feeds prompts + rubric)
     val sport: String = "table tennis",
     val level: String = "intermediate",
@@ -49,6 +50,7 @@ class SettingsStore(private val context: Context) {
         val visionModel = stringPreferencesKey("vision_model")
         val agentic = booleanPreferencesKey("agentic")
         val maxFrames = intPreferencesKey("max_frames")
+        val showDemo = booleanPreferencesKey("show_demo")
         val sport = stringPreferencesKey("sport")
         val level = stringPreferencesKey("level")
         val hand = stringPreferencesKey("hand")
@@ -97,6 +99,7 @@ class SettingsStore(private val context: Context) {
             visionModel = p[K.visionModel] ?: AppSettings().visionModel,
             agentic = p[K.agentic] ?: false,
             maxFrames = p[K.maxFrames] ?: 12,
+            showDemo = p[K.showDemo] ?: true,
             sport = p[K.sport] ?: "table tennis",
             level = p[K.level] ?: "intermediate",
             hand = p[K.hand] ?: "right",
@@ -130,6 +133,7 @@ class SettingsStore(private val context: Context) {
             p[K.visionModel] = clean.visionModel
             p[K.agentic] = clean.agentic
             p[K.maxFrames] = clean.maxFrames
+            p[K.showDemo] = clean.showDemo
             p[K.sport] = clean.sport
             p[K.level] = clean.level
             p[K.hand] = clean.hand

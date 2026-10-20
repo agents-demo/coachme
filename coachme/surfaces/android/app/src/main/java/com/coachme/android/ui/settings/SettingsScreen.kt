@@ -221,6 +221,7 @@ class SettingsViewModel @Inject constructor(
                 appStyle = d.appStyle,
                 agentic = d.agentic,
                 maxFrames = d.maxFrames,
+                showDemo = d.showDemo,
                 lastTestAt = 0L,
             )
         }
@@ -263,6 +264,7 @@ class SettingsViewModel @Inject constructor(
                 appStyle = style,
                 agentic = bool("agentic", current.agentic),
                 maxFrames = num("maxFrames", current.maxFrames).coerceIn(4, 24),
+                showDemo = bool("showDemo", current.showDemo),
                 lastTestAt = 0L,
             )
         }
@@ -670,6 +672,15 @@ private fun StyleTab(s: AppSettings, vm: SettingsViewModel) {
             modifier = Modifier.padding(top = 10.dp),
         )
     }
+
+    CoachCard(modifier = Modifier.fillMaxWidth()) {
+        SwitchRow(
+            title = "Show demo session with my sessions",
+            subtitle = "When off, the demo is hidden as soon as you have at least one real session.",
+            checked = s.showDemo,
+            onCheckedChange = { checked -> vm.updateNow { it.copy(showDemo = checked) } },
+        )
+    }
 }
 
 @Composable
@@ -805,6 +816,7 @@ private fun exportSettings(context: Context, s: AppSettings) {
         put("appStyle", s.appStyle)
         put("agentic", s.agentic)
         put("maxFrames", s.maxFrames)
+        put("showDemo", s.showDemo)
     }.toString()
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "application/json"

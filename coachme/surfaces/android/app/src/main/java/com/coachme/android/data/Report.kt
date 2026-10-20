@@ -31,6 +31,7 @@ data class Report(
     val source: String = "",
     // User-editable display metadata (name shown instead of stem, tags for search, notes for free text)
     val name: String = "",
+    val demo: Boolean = false,
     val tags: List<String> = emptyList(),
     val notes: String = "",
     val metrics: JsonObject = JsonObject(emptyMap()),

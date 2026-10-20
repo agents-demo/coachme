@@ -107,6 +107,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -122,7 +123,7 @@ data class TrendsData(val topIssues: List<Pair<String, Int>>, val totalDrills: I
 class SessionsViewModel @Inject constructor(
     private val store: ReportStore,
     private val pipeline: Pipeline,
-    settingsStore: SettingsStore,
+    private val settingsStore: SettingsStore,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
     private var all: List<Report> = emptyList()
@@ -164,7 +165,10 @@ class SessionsViewModel @Inject constructor(
     private fun publish() { _reports.value = all.filter { keyOf(it) !in pending } }
 
     fun refresh() = viewModelScope.launch {
-        all = store.list(); pending.clear(); publish()
+        val showDemo = settingsStore.flow.first().showDemo
+        val loaded = store.list()
+        all = if (!showDemo && loaded.any { !it.demo }) loaded.filter { !it.demo } else loaded
+        pending.clear(); publish()
         _interrupted.value = withContext(Dispatchers.IO) { pipeline.pendingRun() }
         withContext(Dispatchers.IO) { generateThumbs(all) }
     }
