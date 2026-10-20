@@ -309,7 +309,7 @@ coachme/benchmark/
     server/
     client/
 
-benchmark/                  # default COACHME_BENCHMARK_DATA
+benchmark-data/            # default COACHME_BENCHMARK_DATA
   README.md                 # tracked
   manifest.example.json     # tracked, no real people or paths
   labels.example.json       # tracked, schema only
@@ -473,8 +473,8 @@ CLI:
 
 ```text
 coachme-benchmark run \
-  --manifest benchmark/manifest.json \
-  --out benchmark/runs/<run_id> \
+  --manifest benchmark-data/manifest.json \
+  --out benchmark-data/runs/<run_id> \
   --modes standard,guided,investigator
 ```
 
@@ -506,7 +506,7 @@ Behavior:
 gates. After runs, labels and ratings exist, compute the score explicitly:
 
 ```text
-coachme-benchmark score --run benchmark/runs/<run_id>
+coachme-benchmark score --run benchmark-data/runs/<run_id>
 ```
 
 The UI exposes this as `POST /api/runs/{run_id}/score` and shows “Score not

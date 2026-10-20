@@ -33,7 +33,7 @@ def _parser() -> argparse.ArgumentParser:
 
     p_run = sub.add_parser("run", help="run one or more analysis modes over a manifest")
     p_run.add_argument("--manifest", required=True, help="path to manifest.json")
-    p_run.add_argument("--out", default=None, help="output run directory (default: benchmark/runs/<run_id>)")
+    p_run.add_argument("--out", default=None, help="output run directory (default: benchmark-data/runs/<run_id>)")
     p_run.add_argument("--modes", default="standard,investigator", help="comma-separated: standard,guided,investigator")
     p_run.add_argument("--environment", default="local", choices=["local", "staging", "production"])
     p_run.add_argument("--label", default=None, help="optional run label, e.g. pilot")

@@ -213,7 +213,7 @@
   {:else if !runs.length}
     <p class="muted">
       No runs yet. Create one with
-      <span class="mono">coachme-benchmark run --manifest benchmark/manifest.json</span>.
+      <span class="mono">coachme-benchmark run --manifest benchmark-data/manifest.json</span>.
     </p>
   {:else if !filtered.length}
     <p class="muted">No runs match “{search}”.</p>

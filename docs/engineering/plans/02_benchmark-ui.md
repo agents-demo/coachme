@@ -46,7 +46,7 @@ adjudicate disagreements and export reproducible results.
 | Blind enforcement | Server omits mapping; separate rater packets for true isolation | UI hiding alone is not a security boundary |
 | Code location | `coachme/benchmark/ui/` | Benchmark is a real subsystem, not a test fixture |
 | Frame step | `video.currentTime += ±(1/fps)` via JS | HTML5 has no native frame-step; seek by one frame duration is the practical equivalent |
-| Data location | `benchmark/` or `COACHME_BENCHMARK_DATA` | Large clips and runs stay out of the package |
+| Data location | `benchmark-data/` or `COACHME_BENCHMARK_DATA` | Large clips and runs stay out of the package |
 
 ## 4. Users and roles
 
@@ -430,7 +430,7 @@ Rules:
   "config_hash": "...",
   "created_at": "2026-10-18T14:25:01Z",
   "data_root": "benchmark",
-  "run_dir": "benchmark/runs/20261018-142501-a1b2",
+  "run_dir": "benchmark-data/runs/20261018-142501-a1b2",
   "clips_total": 8,
   "clips_complete": 8,
   "clips_failed": 0,
@@ -609,7 +609,7 @@ coachme/benchmark/
 Data:
 
 ```text
-benchmark/               # default COACHME_BENCHMARK_DATA
+benchmark-data/         # default COACHME_BENCHMARK_DATA
   README.md              # tracked
   manifest.example.json  # tracked, schema only
   labels.example.json    # tracked, schema only
@@ -647,8 +647,8 @@ Real manifests, labels, clips, ratings and runs must never be committed. Use
 Commands:
 
 ```text
-coachme-benchmark run --manifest benchmark/manifest.json --modes standard,investigator
-coachme-benchmark score --run benchmark/runs/<run_id>
+coachme-benchmark run --manifest benchmark-data/manifest.json --modes standard,investigator
+coachme-benchmark score --run benchmark-data/runs/<run_id>
 coachme-benchmark ui --data benchmark --port 8765
 coachme-benchmark import --from <run_dir>
 ```
