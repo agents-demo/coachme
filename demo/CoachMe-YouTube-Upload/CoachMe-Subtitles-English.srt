@@ -1,0 +1,91 @@
+1
+00:00:00,500 --> 00:00:03,690
+Meet CoachMe — AI coaching for racket sports.
+
+2
+00:00:04,150 --> 00:00:11,461
+CoachMe turns a practice video into actionable coaching: what to fix, the exact moment it happened, and the drill to fix it.
+
+3
+00:00:12,090 --> 00:00:14,586
+The player on the left is Michael, from our team.
+
+4
+00:00:14,586 --> 00:00:20,442
+This is his table-tennis backhand topspin drill — ten seconds, one camera, no sensors.
+
+5
+00:00:22,070 --> 00:00:25,341
+Before the model writes anything, CoachMe measures the clip.
+
+6
+00:00:25,341 --> 00:00:31,105
+It samples the moments where motion happens, tracks the player and the ball, and maps movement over time.
+
+7
+00:00:32,690 --> 00:00:38,276
+These are the exact frames the vision model reads — not the whole video, just the moments that matter.
+
+8
+00:00:38,780 --> 00:00:42,167
+The Analysis tab keeps the measurements separate from the coaching.
+
+9
+00:00:42,167 --> 00:00:48,452
+Movement shows where the action happened; Pose shows the body as a skeleton, with joint angles frame by frame.
+
+10
+00:00:50,030 --> 00:00:57,491
+At the bottom of the Pose tab, Body 3D turns that skeleton into a model you can rotate, with the measured joint angles for the frame.
+
+11
+00:00:58,280 --> 00:01:01,574
+Then every finding carries a timestamp and a confidence.
+
+12
+00:01:01,574 --> 00:01:10,799
+Here's the key one: the elbow drops below wrist level during the backswing — high confidence — at 1.5, 3.1 and 7.0 seconds.
+
+13
+00:01:10,799 --> 00:01:12,269
+Let's look at 1.5.
+
+14
+00:01:14,640 --> 00:01:17,136
+Michael didn't notice this until the report showed him.
+
+15
+00:01:17,136 --> 00:01:20,758
+The elbow drop is real — and he can check it because it's his clip.
+
+16
+00:01:23,630 --> 00:01:30,096
+The report connects that to the result: with the elbow low, the paddle closes, so the swing goes forward instead of up.
+
+17
+00:01:30,096 --> 00:01:32,827
+That's why the arc is flat and there's no topspin.
+
+18
+00:01:32,827 --> 00:01:38,475
+It also credits what's working: a compact, repeatable stroke, contact in front of the body.
+
+19
+00:01:40,130 --> 00:01:47,626
+Then it turns the diagnosis into practice: shadow backhand loops with the elbow at waist height, brushing up, finishing at chin height.
+
+20
+00:01:47,626 --> 00:01:48,934
+One click marks it done.
+
+21
+00:01:51,640 --> 00:01:53,951
+Measure, coach, drill, track.
+
+22
+00:01:53,951 --> 00:01:59,263
+Table tennis is just the start — badminton, squash, padel and tennis are next.
+
+23
+00:01:59,263 --> 00:02:00,201
+That's CoachMe.
