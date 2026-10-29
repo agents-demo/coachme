@@ -28,3 +28,6 @@ todo/
 
 # benchmark deployment state
 deploy/benchmark/data/
+
+# generated video workspaces: large media and one-off build scripts
+demo/video2min*/
